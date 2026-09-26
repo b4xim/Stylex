@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+videos/
+*.pdf
+StyleX_Backend_Architecture_Guide.html
+StyleX_Mens_Menu.md
+StyleX_Backend_Architecture_Guide.html
+generate_architecture_pdf.py
+/public/images/
+/public/videos
+WHATSAPP_EMAIL_INTEGRATION_GUIDE.md
