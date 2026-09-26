@@ -71,7 +71,7 @@ export const ClientReviews: React.FC = () => {
             <div className="bg-white border border-[#c2c8c2]/50 rounded-2xl p-4 shadow-md flex items-center gap-4 lg:self-end">
               <div className="flex items-center gap-3">
                 <span className="font-display-hero text-[32px] font-bold text-[#112e20] leading-none">
-                  5.0
+                  4.8
                 </span>
                 <div>
                   <div className="flex text-[#fe753c] text-[14px] leading-none gap-0.5">★★★★★</div>

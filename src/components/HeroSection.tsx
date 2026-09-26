@@ -1,5 +1,5 @@
 import React from 'react';
-import { HERO_IMAGE, SALON_DATA } from '../data/salonData.ts';
+import { HERO_IMAGE } from '../data/salonData.ts';
 
 interface HeroSectionProps {
   onReserveClick: () => void;
@@ -7,8 +7,6 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExploreMenuClick }) => {
-  const whatsappLink = `https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Signature Salon Tirur, I would like to inquire about booking an appointment.')}`;
-
   return (
     <section
       id="hero-top"
@@ -27,14 +25,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
               HAIR · SKIN · BRIDAL & GROOM
             </p>
 
-            <h1 className="text-white font-display-hero text-[42px] sm:text-[54px] lg:text-[62px] leading-[1.08] tracking-tight">
-              Architectural Form.<br />
-              Bespoke Texture.<br />
-              <span className="italic font-normal text-[#d4ebe1]">Pure Botanical Luxury.</span>
+            <h1 className="text-white font-display-hero text-[40px] sm:text-[52px] lg:text-[60px] leading-[1.12] tracking-tight">
+              Luxury Hair, Skin &<br />
+              Bridal Salon.<br />
+              <span className="italic font-normal text-[#d4ebe1]">Style That Defines You.</span>
             </h1>
 
             <p className="text-[#c2cec6] text-[15px] sm:text-[16px] max-w-xl leading-relaxed font-normal">
-              Step inside Tirur’s premier signature salon at One Arcade, KG Padi Road. Experience customized Keratin silk infusions, French balayage, HydraFacial MD rituals, and complete VIP bridal suites.
+              Step inside Tirur’s premier signature salon at One Arcade, KG Padi Road. Experience professional haircutting, custom coloring, rejuvenating facials, and complete bridal packages.
             </p>
 
             {/* CTAs */}
@@ -46,16 +44,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
                 <span>Reserve Your Session</span>
                 <span className="material-symbols-outlined text-[18px]">calendar_today</span>
               </button>
-
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3.5 rounded-full bg-[#073327] hover:bg-[#0c4737] text-white font-semibold text-[14px] sm:text-[15px] border border-[#1b5040] shadow-md transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px] text-[#fe753c]">chat</span>
-                <span>WhatsApp Desk</span>
-              </a>
 
               <button
                 onClick={onExploreMenuClick}
@@ -71,16 +59,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
               <div className="inline-flex flex-wrap sm:flex-nowrap items-center gap-8 sm:gap-12 bg-[#0e372b]/70 border border-[#1d5644] rounded-2xl px-6 sm:px-7 py-5 backdrop-blur-md shadow-lg">
                 <div>
                   <div className="text-[28px] font-bold text-white font-display-hero flex items-baseline">
-                    14<span className="text-[#fe753c] font-normal text-[20px] ml-0.5">+</span>
+                    10<span className="text-[#fe753c] font-normal text-[20px] ml-0.5">+</span>
                   </div>
-                  <div className="text-[12px] text-[#9eb6aa] mt-0.5">Master Artisans</div>
+                  <div className="text-[12px] text-[#9eb6aa] mt-0.5">Master Stylists</div>
                 </div>
 
                 <div className="hidden sm:block w-px h-8 bg-white/10" />
 
                 <div>
                   <div className="text-[28px] font-bold text-white font-display-hero flex items-baseline">
-                    12k<span className="text-[#fe753c] font-normal text-[20px] ml-0.5">+</span>
+                    150<span className="text-[#fe753c] font-normal text-[20px] ml-0.5">+</span>
                   </div>
                   <div className="text-[12px] text-[#9eb6aa] mt-0.5">Transformations</div>
                 </div>
@@ -89,9 +77,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
 
                 <div>
                   <div className="text-[28px] font-bold text-white font-display-hero flex items-center gap-1">
-                    4.98<span className="text-[#fe753c] text-[20px] leading-none">★</span>
+                    4.8<span className="text-[#fe753c] text-[20px] leading-none">★</span>
                   </div>
-                  <div className="text-[12px] text-[#9eb6aa] mt-0.5">850+ Verified Reviews</div>
+                  <div className="text-[12px] text-[#9eb6aa] mt-0.5">100+ Verified Reviews</div>
                 </div>
               </div>
             </div>
@@ -128,9 +116,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[#fe753c] text-[13px] tracking-tight leading-none">★★★★★</span>
-                      <span className="text-white font-bold text-[13px] leading-none">4.9 / 5</span>
+                      <span className="text-white font-bold text-[13px] leading-none">4.8</span>
                     </div>
-                    <p className="text-[10px] text-[#9eb6aa] font-medium">From 850+ discerning guests</p>
+                    <p className="text-[10px] text-[#9eb6aa] font-medium">100+ Verified Reviews</p>
                   </div>
                 </div>
               </div>
@@ -138,12 +126,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
               {/* Floating Pills Lower-Left */}
               <div className="absolute bottom-20 left-2 sm:left-6 z-20 flex flex-col gap-2.5">
                 <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#0a271f]/90 backdrop-blur-md border border-[#1d5644] text-white text-[12px] shadow-lg">
-                  <span className="material-symbols-outlined text-[16px] text-[#fe9167]">wine_bar</span>
-                  <span className="font-medium tracking-wide">Complimentary Champagne & Consultation</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#fe753c]">support_agent</span>
+                  <span className="font-medium tracking-wide">Complimentary Consultation</span>
                 </div>
                 <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#0a271f]/90 backdrop-blur-md border border-[#1d5644] text-white text-[12px] shadow-lg self-start">
-                  <span className="material-symbols-outlined text-[16px] text-[#caead5]">eco</span>
-                  <span className="font-medium tracking-wide">Bio-Dynamic Care</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#caead5]">verified</span>
+                  <span className="font-medium tracking-wide">Premium High Quality Products</span>
                 </div>
               </div>
 
@@ -155,10 +143,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
                   </div>
                   <div className="space-y-0.5 text-left">
                     <p className="text-[9px] uppercase font-bold tracking-[0.2em] text-[#fe9167] font-label-caps">
-                      MASTER STYLISTS ON-SITE
+                      EXPERT STYLISTS ON-SITE
                     </p>
                     <h4 className="text-[13px] font-semibold text-white leading-snug">
-                      Bespoke Hair Sculpting & Couture Dye
+                      Professional Hair Styling & Color
                     </h4>
                   </div>
                 </div>

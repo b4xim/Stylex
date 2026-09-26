@@ -1,4 +1,4 @@
-import { SalonDetails, ServiceItem, PromoSlide, ReelItem, ReviewItem } from '../types.ts';
+import { SalonDetails, ServiceItem, PromoSlide, ReelItem, ReviewItem, MasterArtisan } from '../types.ts';
 
 export const SALON_DATA: SalonDetails = {
   brandName: 'STYLEX',
