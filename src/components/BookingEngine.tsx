@@ -571,19 +571,24 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowNotes(!showNotes)}
-                  className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#185341] hover:text-[#042018] cursor-pointer"
+                  className="w-full text-left flex flex-col gap-0.5 cursor-pointer group"
                 >
-                  <span className="material-symbols-outlined text-[16px] text-[#fe753c]">
-                    {showNotes ? 'remove_circle_outline' : 'add_circle_outline'}
+                  <div className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#185341] group-hover:text-[#042018] transition-colors">
+                    <span className="material-symbols-outlined text-[16px] text-[#fe753c]">
+                      {showNotes ? 'remove_circle_outline' : 'add_circle_outline'}
+                    </span>
+                    <span>{showNotes ? 'Hide special requests or extra services' : 'Add special requests or notes (optional)'}</span>
+                  </div>
+                  <span className="text-[11.5px] text-[#424844]/75 pl-5">
+                    If you need any extra services you may mention here
                   </span>
-                  <span>{showNotes ? 'Hide special requests' : 'Add special requests or notes (optional)'}</span>
                 </button>
 
                 {showNotes && (
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Hair texture, allergies, styling preferences..."
+                    placeholder="If you need any extra services or have special requests, mention them here..."
                     rows={2}
                     className="w-full px-3.5 py-2 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] text-[13px] placeholder-[#424844]/60 focus:outline-none focus:border-[#112e20] transition-colors resize-none shadow-sm"
                   />
@@ -614,7 +619,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       <span className="material-symbols-outlined text-[13px]">
                         {selectedGender === 'gents' ? 'man' : 'woman'}
                       </span>
-                      <span>{selectedGender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'}</span>
+                      <span>{selectedGender === 'gents' ? 'Gents' : 'Ladies'}</span>
                     </span>
                   </div>
                   <div>
@@ -660,6 +665,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     </div>
                     <span className="text-[12.5px] font-bold text-white">{selectedService.duration} Minutes</span>
                   </div>
+
+                  {notes.trim() && (
+                    <div className="bg-[#0f2d22] border border-[#fe753c]/30 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 space-y-0.5">
+                      <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#fe753c] font-label-caps flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                        <span>Extra Services / Notes</span>
+                      </p>
+                      <p className="text-[12px] text-white/95 truncate">"{notes}"</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reservation Status & Zero Prepayment */}

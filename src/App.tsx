@@ -29,6 +29,8 @@ export default function App() {
   const [activeReel, setActiveReel] = useState<ReelItem | null>(null);
   const [activePortfolioItem, setActivePortfolioItem] = useState<(typeof PORTFOLIO_WORKS)[0] | null>(null);
 
+  const [activeSection, setActiveSection] = useState<string>('home');
+
   // Sync browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
@@ -38,9 +40,57 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const isBookingPage = currentPath === '/booking';
+  const activeScreen = isBookingPage ? 'booking' : activeSection;
+
+  // Scroll spy for homepage sections to highlight active nav link on scroll
+  useEffect(() => {
+    if (isBookingPage) return;
+
+    const handleScroll = () => {
+      if (window.scrollY < 250) {
+        setActiveSection('home');
+        return;
+      }
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+        setActiveSection('contact');
+        return;
+      }
+
+      const sections = [
+        { id: 'hero-top', name: 'home' },
+        { id: 'services-curation', name: 'services' },
+        { id: 'contact-location', name: 'contact' },
+      ];
+
+      const scrollPosition = window.scrollY + 200;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i].id);
+        if (el && scrollPosition >= el.offsetTop) {
+          setActiveSection(sections[i].name);
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isBookingPage]);
+
   // Client-side router navigation
-  const navigate = (path: string, sectionId?: string) => {
+  const navigate = (path: string, sectionId?: string, screenName?: string) => {
     const targetPath = path.startsWith('/booking') ? '/booking' : '/';
+    if (screenName) {
+      setActiveSection(screenName);
+    } else if (sectionId === 'services-curation') {
+      setActiveSection('services');
+    } else if (sectionId === 'contact-location') {
+      setActiveSection('contact');
+    } else if (sectionId === 'hero-top') {
+      setActiveSection('home');
+    }
+
     if (window.location.pathname !== targetPath) {
       window.history.pushState({}, '', targetPath);
       setCurrentPath(targetPath);
@@ -60,9 +110,6 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-
-  const isBookingPage = currentPath === '/booking';
-  const activeScreen = isBookingPage ? 'booking' : 'home';
 
   // Scroll to booking engine with smooth scroll
   const scrollToBooking = (serviceId?: string) => {
@@ -132,6 +179,7 @@ export default function App() {
       <Navbar
         onOpenBooking={() => navigate('/booking')}
         activeScreen={activeScreen}
+        setActiveScreen={setActiveSection}
         onNavigate={navigate}
       />
 

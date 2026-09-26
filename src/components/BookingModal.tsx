@@ -47,7 +47,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
               <div className="flex items-center gap-2">
                 <p className="text-[10px] uppercase font-bold tracking-wider text-[#9eb6aa]">Service</p>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#18392d] text-[#fe753c] font-semibold border border-[#fe753c]/30">
-                  {booking.gender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'}
+                  {booking.gender === 'gents' ? 'Gents' : 'Ladies'}
                 </span>
               </div>
               <h4 className="text-[18px] font-semibold text-white font-display-hero mt-1">{booking.serviceName}</h4>
@@ -96,9 +96,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             </div>
             <div className="pt-1 border-t border-white/10 flex items-center gap-1.5 text-[#caead5] text-[11px]">
               <span className="material-symbols-outlined text-[14px] text-[#fe753c]">spa</span>
-              <span>Open daily until 1:00 AM • Complimentary herbal refreshment prepared.</span>
+              <span>Open daily until 1:00 AM • Complimentary refreshment prepared.</span>
             </div>
           </div>
+
+          {/* Special Requests / Extra Services if specified */}
+          {booking.notes && booking.notes.trim() && (
+            <div className="bg-[#0f2d22] border border-white/10 rounded-xl p-3 space-y-1 text-[12px]">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-[#fe753c]">Special Requests / Extra Services</p>
+              <p className="text-white text-[12.5px] italic">"{booking.notes}"</p>
+            </div>
+          )}
 
           {/* Simulated QR Code & Barcode */}
           <div className="flex items-center justify-between bg-white text-black p-3 rounded-2xl">

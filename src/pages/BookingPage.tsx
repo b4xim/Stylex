@@ -13,46 +13,24 @@ interface BookingPageProps {
 export const BookingPage: React.FC<BookingPageProps> = ({
   selectedServiceId = 'hair-1',
   onConfirmBooking,
-  onNavigateHome,
+  onNavigateHome: _onNavigateHome,
 }) => {
   return (
     <div className="w-full bg-[#f6faf7] min-h-screen">
       {/* Dedicated Booking Hero Banner (Slimmed for Mobile, Rich for Desktop) */}
-      <section className="w-full bg-gradient-to-b from-[#031b14] via-[#05261d] to-[#041d16] text-white pt-4 sm:pt-14 pb-8 sm:pb-20 px-3 sm:px-6 lg:px-12 relative overflow-hidden border-b border-[#144e3d]">
+      <section className="w-full bg-gradient-to-b from-[#031b14] via-[#05261d] to-[#041d16] text-white pt-8 sm:pt-14 pb-8 sm:pb-20 px-3 sm:px-6 lg:px-12 relative overflow-hidden border-b border-[#144e3d]">
         {/* Subtle Decorative Ambient Glows */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#fe753c]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#185341]/25 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-5xl mx-auto relative z-10 space-y-3 sm:space-y-6 text-center">
-          {/* Breadcrumb / Back Navigation */}
-          <div className="flex items-center justify-between sm:justify-center gap-2 text-[12px] font-medium text-[#a6d0be]">
-            <button
-              onClick={onNavigateHome}
-              className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full border border-white/10"
-            >
-              <span className="material-symbols-outlined text-[15px]">arrow_back</span>
-              <span>Back to Home</span>
-            </button>
-            <span className="text-[#fe753c] font-semibold text-[11px] uppercase tracking-wider sm:hidden">Online Booking</span>
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-white/30">/</span>
-              <span className="text-[#fe753c] font-semibold">Online Reservation</span>
-            </div>
-          </div>
-
-          {/* Section Badge (Desktop) */}
-          <div className="hidden sm:inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#072f23] text-[#a6d0be] border border-[#144e3d] text-[11px] font-bold tracking-widest uppercase shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-[#fe753c] animate-pulse" />
-            <span>StyleX Direct Concierge • Tirur Flagship</span>
-          </div>
-
           {/* Page Heading */}
           <div className="space-y-1.5 sm:space-y-3">
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight font-display-hero text-white leading-tight">
               Reserve Your Appointment
             </h1>
             <p className="hidden sm:block max-w-2xl mx-auto text-[#caead5]/90 text-[14.5px] sm:text-[16px] leading-relaxed">
-              Curate your look with our master stylists. Select your signature service, preferred artisan, and reservation slot with instantaneous WhatsApp confirmation.
+              Curate your look with our master stylists. Select your signature service, preferred stylist, and reservation slot with instantaneous WhatsApp confirmation.
             </p>
             <p className="sm:hidden text-[12px] text-[#caead5]/80 font-medium">
               Tirur Flagship • Open Daily 10:00 AM – 1:00 AM • Pay at Salon

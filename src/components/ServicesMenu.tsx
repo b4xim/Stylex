@@ -130,7 +130,8 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBoo
                   </div>
                 )}
 
-                <div className="space-y-3.5">
+                <div className="space-y-4">
+                  {/* Category & Duration */}
                   <div className="flex items-center justify-between">
                     <span
                       className={`font-label-caps text-[11px] uppercase tracking-widest font-bold ${
@@ -144,6 +145,7 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBoo
                     </span>
                   </div>
 
+                  {/* Title & Tagline */}
                   <div>
                     <h3 className="font-headline-sm text-[20px] text-[#112e20] group-hover:text-[#fe753c] transition-colors leading-snug font-display-hero">
                       {service.name}
@@ -155,18 +157,28 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBoo
                     )}
                   </div>
 
+                  {/* Description */}
                   <p className="font-body-md text-[13px] leading-relaxed text-[#424844]">
                     {service.description}
                   </p>
 
-                  <ul className="space-y-2 pt-1 text-[12px] text-[#424844]">
-                    {service.features.map((feat, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#fe753c] text-[16px]">check_circle</span>
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Sub-menu: Individual Services in this Section */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#727973] font-label-caps">
+                      Services in this section
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {service.features.map((feat, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#112e20] text-[11.5px] font-medium leading-none"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-[#fe753c] flex-shrink-0" />
+                          {feat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-5 mt-4 border-t border-[#c2c8c2]/30">

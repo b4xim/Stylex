@@ -5,7 +5,7 @@ interface NavbarProps {
   onOpenBooking: () => void;
   activeScreen?: string;
   setActiveScreen?: (screen: string) => void;
-  onNavigate?: (path: string, sectionId?: string) => void;
+  onNavigate?: (path: string, sectionId?: string, screenName?: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,12 +27,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleNavClick = (sectionId: string, screenName?: string, path?: string) => {
     setMobileMenuOpen(false);
-    if (onNavigate) {
-      onNavigate(path || (screenName === 'booking' ? '/booking' : '/'), sectionId);
-      return;
-    }
     if (setActiveScreen && screenName) {
       setActiveScreen(screenName);
+    }
+    if (onNavigate) {
+      onNavigate(path || (screenName === 'booking' ? '/booking' : '/'), sectionId, screenName);
+      return;
     }
     const element = document.getElementById(sectionId);
     if (element) {
@@ -134,14 +134,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               return (
                 <button
                   key={link.label}
+                  type="button"
                   onClick={() => handleNavClick(link.sectionId, link.screen, link.path)}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium tracking-wide transition-all cursor-pointer ${
+                  className={`relative px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium tracking-wide transition-colors cursor-pointer select-none focus:outline-none focus-visible:outline-none ${
                     isActive
-                      ? 'bg-[#0d3f31] text-white shadow-inner border border-[#1b614d]'
-                      : 'text-[#caead5]/80 hover:text-white hover:bg-white/5'
+                      ? 'text-white bg-white/[0.08]'
+                      : 'text-[#caead5]/75 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#fe753c] rounded-full shadow-[0_0_8px_rgba(254,117,60,0.8)]"
+                      aria-hidden="true"
+                    />
+                  )}
                 </button>
               );
             })}
