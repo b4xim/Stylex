@@ -1,29 +1,90 @@
-import React, { useState } from 'react';
-import { SERVICES, MASTER_ARTISANS } from '../data/salonData.ts';
+import React, { useState, useEffect } from 'react';
+import { SERVICES, MASTER_ARTISANS, TIME_SLOTS, SALON_DATA } from '../data/salonData.ts';
 import { BookingState } from '../types.ts';
 
 interface BookingEngineProps {
   onConfirmBooking: (booking: BookingState) => void;
   initialServiceId?: string;
+  showHeader?: boolean;
 }
 
-export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, initialServiceId }) => {
-  // Service selection
-  const defaultService = SERVICES.find((s) => s.id === initialServiceId) || SERVICES[0];
+export const BookingEngine: React.FC<BookingEngineProps> = ({
+  onConfirmBooking,
+  initialServiceId,
+  showHeader = true,
+}) => {
+  // Gender / Department selection (Gents vs Ladies)
+  const initialService = SERVICES.find((s) => s.id === initialServiceId);
+  const initialGender: 'gents' | 'ladies' = initialService?.gender === 'gents' ? 'gents' : 'ladies';
+
+  const [selectedGender, setSelectedGender] = useState<'gents' | 'ladies'>(initialGender);
+
+  // Available services filtered by selected gender
+  const availableServices = SERVICES.filter(
+    (s) => s.gender === selectedGender || s.gender === 'both'
+  );
+
+  // Default service for selected gender
+  const defaultService =
+    (initialService && (initialService.gender === selectedGender || initialService.gender === 'both'))
+      ? initialService
+      : availableServices[0];
+
   const [selectedService, setSelectedService] = useState(defaultService);
 
+  // Available artisans filtered by selected gender
+  const availableArtisans = MASTER_ARTISANS.filter(
+    (a) => a.gender === selectedGender || a.gender === 'both'
+  );
+
+  const [selectedArtisan, setSelectedArtisan] = useState('Any Artisan');
+
+  // When gender changes, automatically update services and stylists
+  const handleGenderChange = (newGender: 'gents' | 'ladies') => {
+    if (newGender === selectedGender) return;
+    setSelectedGender(newGender);
+
+    const newServices = SERVICES.filter((s) => s.gender === newGender || s.gender === 'both');
+    if (newServices.length > 0) {
+      setSelectedService(newServices[0]);
+    }
+
+    const newArtisans = MASTER_ARTISANS.filter((a) => a.gender === newGender || a.gender === 'both');
+    // If an artisan was selected that is specific to the old gender, reset to 'Any Artisan'
+    if (selectedArtisan !== 'Any Artisan' && !newArtisans.some((a) => a.name === selectedArtisan)) {
+      setSelectedArtisan('Any Artisan');
+    }
+  };
+
+  // Sync if initialServiceId changes externally
+  useEffect(() => {
+    if (!initialServiceId) return;
+    const found = SERVICES.find((s) => s.id === initialServiceId);
+    if (found) {
+      const g = found.gender === 'gents' ? 'gents' : 'ladies';
+      setSelectedGender(g);
+      setSelectedService(found);
+      const filteredArtisans = MASTER_ARTISANS.filter((a) => a.gender === g || a.gender === 'both');
+      if (selectedArtisan !== 'Any Artisan' && !filteredArtisans.some((a) => a.name === selectedArtisan)) {
+        setSelectedArtisan('Any Artisan');
+      }
+    }
+  }, [initialServiceId]);
+
   // Month & Day selection
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(9); // 9 = October
-  const [currentYear, setCurrentYear] = useState(2024);
-  const [selectedDay, setSelectedDay] = useState<number>(24);
+  const now = new Date();
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(now.getMonth());
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number>(now.getDate());
 
   // Time selection
-  const timeSlots = ['10:00 AM', '11:30 AM', '02:00 PM', '04:30 PM', '06:00 PM'];
-  const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
+  const timeSlots = TIME_SLOTS;
+  const [selectedTime, setSelectedTime] = useState<string>(TIME_SLOTS[0]);
 
-  // Artisan & Notes
-  const [selectedArtisan, setSelectedArtisan] = useState(MASTER_ARTISANS[0].name);
+  // Notes & Submission
   const [notes, setNotes] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
+  const [showCalendarOnMobile, setShowCalendarOnMobile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Month names
@@ -31,6 +92,19 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  // Quick 7 days for mobile 1-tap booking
+  const next7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return {
+      dayNum: d.getDate(),
+      monthIndex: d.getMonth(),
+      year: d.getFullYear(),
+      dayLabel: i === 0 ? 'Today' : i === 1 ? 'Tmrw' : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()],
+      dateStr: `${d.getDate()} ${monthNames[d.getMonth()].slice(0, 3)}`,
+    };
+  });
 
   const handlePrevMonth = () => {
     if (currentMonthIndex === 0) {
@@ -51,7 +125,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
   };
 
   const handleServiceChange = (serviceId: string) => {
-    const s = SERVICES.find((item) => item.id === serviceId);
+    const s = availableServices.find((item) => item.id === serviceId);
     if (s) setSelectedService(s);
   };
 
@@ -60,7 +134,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
   const deposit = Math.round(servicePrice * 0.25);
   const balance = servicePrice - deposit;
 
-  const dateString = `Thu, ${monthNames[currentMonthIndex].slice(0, 3)} ${selectedDay}`;
+  const dateObj = new Date(currentYear, currentMonthIndex, selectedDay);
+  const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()];
+  const dateString = `${dayName}, ${monthNames[currentMonthIndex].slice(0, 3)} ${selectedDay}, ${currentYear}`;
 
   const handleSubmit = () => {
     setIsSubmitting(true);
@@ -76,7 +152,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
         time: selectedTime,
         stylist: selectedArtisan,
         notes: notes,
-        beverage: 'Complimentary Brut Reserve Champagne'
+        beverage: 'Complimentary Artisanal Herbal Drink',
+        gender: selectedGender,
       });
     }, 600);
   };
@@ -88,114 +165,179 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
   const firstDayOfWeek = (new Date(currentYear, currentMonthIndex, 1).getDay() + 6) % 7; // Monday = 0
 
   return (
-    <section className="w-full bg-[#f6faf7] py-20 px-4 sm:px-6 lg:px-12 relative" id="booking-engine">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <section
+      className={`w-full bg-[#f6faf7] ${showHeader ? 'py-20' : 'pt-2 pb-12 sm:pb-16'} px-4 sm:px-6 lg:px-12 relative`}
+      id="booking-engine"
+    >
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#112e20]/10 text-[#112e20] font-label-caps text-[11px] uppercase tracking-wider font-bold">
-            <span className="material-symbols-outlined text-[16px]">room_service</span>
-            <span>Seamless Atelier Concierge</span>
+        {showHeader && (
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#112e20]/10 text-[#112e20] font-label-caps text-[11px] uppercase tracking-wider font-bold">
+              <span className="material-symbols-outlined text-[16px]">room_service</span>
+              <span>Seamless Atelier Concierge</span>
+            </div>
+
+            <h2 className="font-headline-lg text-[32px] sm:text-[40px] text-[#112e20] leading-tight">
+              Reserve Your Signature Appointment
+            </h2>
+
+            <p className="font-body-lg text-[15px] sm:text-[16px] text-[#424844]">
+              Select your tailor-made experience, preferred master artisan, and optimal time. Indulge in perfection
+              from arrival to finish.
+            </p>
           </div>
-
-          <h2 className="font-headline-lg text-[32px] sm:text-[40px] text-[#112e20] leading-tight">
-            Reserve Your Signature Appointment
-          </h2>
-
-          <p className="font-body-lg text-[15px] sm:text-[16px] text-[#424844]">
-            Select your tailor-made experience, preferred master artisan, and optimal time. Indulge in perfection
-            from arrival to finish.
-          </p>
-        </div>
+        )}
 
         {/* Outer Card Frame */}
-        <div className="bg-white rounded-3xl shadow-xl border border-[#c2c8c2]/50 relative overflow-hidden">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-[#c2c8c2]/50 relative overflow-hidden">
           {/* Step Indicator Header Bar */}
-          <div className="pb-6 pt-6 border-b border-[#c2c8c2]/40 px-6 md:px-8 bg-[#f0f5f1]/50">
-            <div className="grid grid-cols-3 gap-3 sm:gap-8 items-center max-w-2xl mx-auto">
+          <div className="py-3 sm:py-6 border-b border-[#c2c8c2]/40 px-4 sm:px-8 bg-[#f0f5f1]/50">
+            {/* Mobile: Ultra-compact Modern Progress Bar */}
+            <div className="flex sm:hidden items-center justify-between text-[11px] font-semibold text-[#112e20]">
+              <span className="flex items-center gap-1.5 text-[#112e20]">
+                <span className="w-5 h-5 rounded-full bg-[#112e20] text-white text-[10px] font-bold flex items-center justify-center">1</span>
+                <span>Service</span>
+              </span>
+              <span className="text-[#c2c8c2]">›</span>
+              <span className="flex items-center gap-1.5 text-[#fe753c]">
+                <span className="w-5 h-5 rounded-full bg-[#fe753c] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#fe753c]/30">2</span>
+                <span>Date & Time</span>
+              </span>
+              <span className="text-[#c2c8c2]">›</span>
+              <span className="flex items-center gap-1.5 text-[#424844]/60">
+                <span className="w-5 h-5 rounded-full bg-[#e5e9e6] text-[#424844] text-[10px] font-bold flex items-center justify-center">3</span>
+                <span>Confirm</span>
+              </span>
+            </div>
+
+            {/* Desktop: Full 3-column Step Display */}
+            <div className="hidden sm:grid grid-cols-3 gap-8 items-center max-w-2xl mx-auto">
               {/* Step 1 */}
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#112e20] text-white flex items-center justify-center font-bold text-[12px] shadow-sm flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#112e20] text-white flex items-center justify-center font-bold text-[12px] shadow-sm flex-shrink-0">
                   <span className="material-symbols-outlined text-[15px]">check</span>
                 </div>
                 <div>
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps">
                     STEP 01
                   </p>
-                  <p className="text-[12px] sm:text-[13px] font-semibold text-[#112e20]">Service</p>
+                  <p className="text-[13px] font-semibold text-[#112e20]">Service</p>
                 </div>
               </div>
 
               {/* Step 2 */}
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#fe753c] text-white flex items-center justify-center font-bold text-[12px] shadow-sm flex-shrink-0 ring-4 ring-[#fe753c]/20">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#fe753c] text-white flex items-center justify-center font-bold text-[12px] shadow-sm flex-shrink-0 ring-4 ring-[#fe753c]/20">
                   2
                 </div>
                 <div>
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#fe753c] font-label-caps">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#fe753c] font-label-caps">
                     STEP 02
                   </p>
-                  <p className="text-[12px] sm:text-[13px] font-bold text-[#112e20]">Schedule</p>
+                  <p className="text-[13px] font-bold text-[#112e20]">Schedule</p>
                 </div>
               </div>
 
               {/* Step 3 */}
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#e5e9e6] text-[#424844] flex items-center justify-center font-bold text-[12px] flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#e5e9e6] text-[#424844] flex items-center justify-center font-bold text-[12px] flex-shrink-0">
                   3
                 </div>
                 <div>
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#424844]/60 font-label-caps">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#424844]/60 font-label-caps">
                     STEP 03
                   </p>
-                  <p className="text-[12px] sm:text-[13px] font-medium text-[#424844]/60">Confirmation</p>
+                  <p className="text-[13px] font-medium text-[#424844]/60">Confirmation</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Interactive Booking Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-6 lg:p-8 bg-[#f0f5f1]/40 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 p-3.5 sm:p-6 lg:p-8 bg-[#f0f5f1]/40 items-stretch">
             {/* Left 7 Columns: Interactive Selectors */}
-            <div className="lg:col-span-7 space-y-7 p-5 sm:p-8 bg-white rounded-3xl border border-[#c2c8c2]/50 shadow-md">
-              {/* 1. Service Selection */}
-              <div className="space-y-3">
+            <div className="lg:col-span-7 space-y-5 sm:space-y-7 p-4 sm:p-8 bg-white rounded-2xl sm:rounded-3xl border border-[#c2c8c2]/50 shadow-md">
+              {/* Atelier Department Selector: Gents vs Ladies */}
+              <div className="space-y-2 pb-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[15px] sm:text-[16px] font-semibold text-[#112e20] tracking-tight font-title-md flex items-center gap-2">
+                  <label className="text-[11.5px] sm:text-[12px] font-bold uppercase tracking-wider text-[#112e20] font-label-caps flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-[#fe753c]">storefront</span>
+                    <span>Department</span>
+                  </label>
+                  <span className="text-[11px] font-semibold text-[#185341] bg-[#072f23]/10 px-2.5 py-0.5 rounded-full">
+                    {selectedGender === 'gents' ? 'Gents' : 'Ladies'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1 sm:p-1.5 bg-[#f0f5f1] rounded-2xl border border-[#c2c8c2]/60">
+                  <button
+                    type="button"
+                    onClick={() => handleGenderChange('gents')}
+                    className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-bold transition-all cursor-pointer ${
+                      selectedGender === 'gents'
+                        ? 'bg-[#112e20] text-white shadow-md'
+                        : 'text-[#424844] hover:text-[#112e20] hover:bg-white/70'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">man</span>
+                    <span className="text-[14px] sm:text-[15px] font-semibold">Gents</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleGenderChange('ladies')}
+                    className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-bold transition-all cursor-pointer ${
+                      selectedGender === 'ladies'
+                        ? 'bg-[#112e20] text-white shadow-md'
+                        : 'text-[#424844] hover:text-[#112e20] hover:bg-white/70'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">woman</span>
+                    <span className="text-[14px] sm:text-[15px] font-semibold">Ladies</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 1. Service Selection */}
+              <div className="space-y-2.5 pt-1 border-t border-[#c2c8c2]/30">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[14.5px] sm:text-[16px] font-semibold text-[#112e20] tracking-tight font-title-md flex items-center gap-2">
                     <span className="w-5 h-5 rounded-full bg-[#112e20]/10 text-[#112e20] text-[11px] font-bold inline-flex items-center justify-center">
                       1
                     </span>
-                    Select Desired Service
+                    <span>Select {selectedGender === 'gents' ? 'Gents' : 'Ladies'} Service</span>
                   </h3>
-                  <span className="text-[12px] text-[#424844]">Includes scalp diagnosis & blow-dry</span>
+                  <span className="text-[11px] sm:text-[12px] text-[#424844]">Includes diagnosis & style</span>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   <div className="relative">
                     <select
                       value={selectedService.id}
                       onChange={(e) => handleServiceChange(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-title-md text-[14px] sm:text-[15px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors shadow-sm"
+                      className="w-full px-3.5 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-title-md text-[13.5px] sm:text-[15px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors shadow-sm"
                     >
-                      {SERVICES.map((srv) => (
+                      {availableServices.map((srv) => (
                         <option key={srv.id} value={srv.id}>
-                          {srv.name} — ${srv.price} ({srv.duration} min)
+                          {srv.name} — ₹{srv.price.toLocaleString('en-IN')} ({srv.duration} min)
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Quick Select Buttons */}
-                  <div className="flex items-center gap-2 flex-wrap pt-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps">
-                      Quick Select:
+                  {/* Quick Select Buttons (Swipeable on Mobile) */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps whitespace-nowrap">
+                      Popular:
                     </span>
-                    {SERVICES.slice(0, 4).map((srv) => {
+                    {availableServices.slice(0, 5).map((srv) => {
                       const isSelected = selectedService.id === srv.id;
                       return (
                         <button
                           key={srv.id}
                           onClick={() => setSelectedService(srv)}
-                          className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full text-[11.5px] sm:text-[12px] font-medium whitespace-nowrap transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-[#112e20] text-white font-semibold shadow-sm'
                               : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:border-[#112e20]/40'
@@ -211,20 +353,72 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
               </div>
 
               {/* 2. Date & Time Selection */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4 pt-1 border-t border-[#c2c8c2]/30">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[15px] sm:text-[16px] font-semibold text-[#112e20] tracking-tight font-title-md flex items-center gap-2">
+                  <h3 className="text-[14.5px] sm:text-[16px] font-semibold text-[#112e20] tracking-tight font-title-md flex items-center gap-2">
                     <span className="w-5 h-5 rounded-full bg-[#112e20]/10 text-[#112e20] text-[11px] font-bold inline-flex items-center justify-center">
                       2
                     </span>
-                    Select Date & Available Time
+                    Select Date & Time
                   </h3>
-                  <span className="text-[12px] text-[#424844] font-medium">Pacific Standard Time (PST)</span>
+                  <span className="text-[10.5px] sm:text-[12px] text-[#185341] font-semibold bg-[#072f23]/10 px-2 py-0.5 rounded-full">
+                    Open 10 AM – 1 AM
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                  {/* Calendar Matrix (7 cols) */}
-                  <div className="md:col-span-7 bg-[#f0f5f1] border border-[#c2c8c2]/40 rounded-2xl p-4 space-y-3.5">
+                {/* Mobile Quick Date Chips (1-tap Selection) */}
+                <div className="md:hidden space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-[#424844] uppercase tracking-wider">
+                      Selected: <strong className="text-[#112e20]">{dateString}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendarOnMobile(!showCalendarOnMobile)}
+                      className="text-[11px] font-bold text-[#fe753c] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+                      <span>{showCalendarOnMobile ? 'Hide Month' : 'Full Month'}</span>
+                    </button>
+                  </div>
+
+                  {/* Horizontal Scrollable Day Chips */}
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {next7Days.map((item) => {
+                      const isSelected = selectedDay === item.dayNum && currentMonthIndex === item.monthIndex;
+                      return (
+                        <button
+                          key={`${item.year}-${item.monthIndex}-${item.dayNum}`}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDay(item.dayNum);
+                            setCurrentMonthIndex(item.monthIndex);
+                            setCurrentYear(item.year);
+                          }}
+                          className={`flex-shrink-0 w-16 py-2 px-1 rounded-xl text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#112e20] text-white shadow-md ring-2 ring-[#fe753c]'
+                              : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb]'
+                          }`}
+                        >
+                          <div className={`text-[10px] uppercase font-bold ${isSelected ? 'text-[#fe753c]' : 'text-[#424844]/80'}`}>
+                            {item.dayLabel}
+                          </div>
+                          <div className="text-[14px] font-bold leading-tight mt-0.5">
+                            {item.dayNum}
+                          </div>
+                          <div className={`text-[9px] ${isSelected ? 'text-[#caead5]' : 'text-[#424844]/60'}`}>
+                            {monthNames[item.monthIndex].slice(0, 3)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
+                  {/* Calendar Matrix: Shown on Desktop or when toggled on Mobile */}
+                  <div className={`md:col-span-7 bg-[#f0f5f1] border border-[#c2c8c2]/40 rounded-2xl p-4 space-y-3.5 ${showCalendarOnMobile ? 'block' : 'hidden md:block'}`}>
                     {/* Month Nav */}
                     <div className="flex items-center justify-between pb-3 border-b border-[#c2c8c2]/40">
                       <div className="flex items-center gap-2">
@@ -306,51 +500,35 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#fe753c]" />
-                        <span>Atelier Open</span>
+                        <span>Open 10 AM – 1 AM</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Time Slots (5 cols) */}
-                  <div className="md:col-span-5 space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844] font-label-caps block">
-                        Select Preferred Time Slot
-                      </label>
-                      <select
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                        className="w-full px-3.5 py-3 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] font-body-md text-[13px] focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors"
-                      >
-                        {timeSlots.map((slot) => (
-                          <option key={slot} value={slot}>
-                            {slot} — {slot.includes('AM') ? 'Morning Slot' : 'Afternoon/Eve'}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
+                  {/* Time Slots & Master Artisan (5 cols) */}
+                  <div className="md:col-span-5 space-y-3.5">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps">
-                          Quick Select
-                        </p>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844] font-label-caps block">
+                          Select Time Slot
+                        </label>
                         <span className="text-[11px] text-[#fe753c] font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">schedule</span> 5 Open
+                          <span className="material-symbols-outlined text-[13px]">schedule</span> 10 AM – 1 AM
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        {timeSlots.slice(0, 4).map((slot) => {
+                      {/* Touch-Friendly Grid of All Available Slots (3 cols: 5 neat rows of hourly slots) */}
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                        {timeSlots.map((slot) => {
                           const isSelected = selectedTime === slot;
                           return (
                             <button
                               key={slot}
                               onClick={() => setSelectedTime(slot)}
-                              className={`px-3 py-2 rounded-xl text-[12px] transition-all text-center cursor-pointer ${
+                              className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-semibold transition-all text-center cursor-pointer ${
                                 isSelected
-                                  ? 'bg-[#fe753c] text-white font-bold shadow-sm'
-                                  : 'bg-[#f0f5f1] text-[#181d1b] font-medium border border-[#c2c8c2]/50 hover:border-[#112e20]/40'
+                                  ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40'
+                                  : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb]'
                               }`}
                               type="button"
                             >
@@ -363,15 +541,21 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
 
                     {/* Master Artisan Choice */}
                     <div className="space-y-1.5 pt-1">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844] font-label-caps block">
-                        Master Artisan
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844] font-label-caps block">
+                          Preferred Stylist
+                        </label>
+                        <span className="text-[10px] text-[#424844]/70 font-medium bg-[#e8eee9] px-2 py-0.5 rounded-full border border-[#c2c8c2]/50">
+                          Optional
+                        </span>
+                      </div>
                       <select
                         value={selectedArtisan}
                         onChange={(e) => setSelectedArtisan(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] font-body-md text-[13px] focus:outline-none focus:border-[#112e20] cursor-pointer"
                       >
-                        {MASTER_ARTISANS.map((a) => (
+                        <option value="Any Artisan">Any Artisan (First Available Specialist)</option>
+                        {availableArtisans.map((a) => (
                           <option key={a.id} value={a.name}>
                             {a.name} ({a.specialty})
                           </option>
@@ -382,138 +566,144 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({ onConfirmBooking, 
                 </div>
               </div>
 
-              {/* 3. Special Requests & Atelier Notes */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[15px] sm:text-[16px] font-semibold text-[#112e20] tracking-tight font-title-md flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#112e20]/10 text-[#112e20] text-[11px] font-bold inline-flex items-center justify-center">
-                      3
-                    </span>
-                    Special Requests & Atelier Notes
-                  </h3>
-                  <span className="text-[12px] text-[#424844]">Optional</span>
-                </div>
+              {/* 3. Special Requests & Notes (Collapsible on Mobile) */}
+              <div className="space-y-2 pt-1 border-t border-[#c2c8c2]/30">
+                <button
+                  type="button"
+                  onClick={() => setShowNotes(!showNotes)}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#185341] hover:text-[#042018] cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-[#fe753c]">
+                    {showNotes ? 'remove_circle_outline' : 'add_circle_outline'}
+                  </span>
+                  <span>{showNotes ? 'Hide special requests' : 'Add special requests or notes (optional)'}</span>
+                </button>
 
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Hair texture, allergies, styling preferences, or complimentary beverage choice..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] font-body-md text-[14px] placeholder-[#424844]/60 focus:outline-none hover:border-[#112e20]/40 focus:border-[#112e20] transition-colors resize-none shadow-sm"
-                />
+                {showNotes && (
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Hair texture, allergies, styling preferences..."
+                    rows={2}
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] text-[13px] placeholder-[#424844]/60 focus:outline-none focus:border-[#112e20] transition-colors resize-none shadow-sm"
+                  />
+                )}
               </div>
             </div>
 
             {/* Right 5 Columns: Live Reservation Summary in Rich Emerald Canvas */}
-            <div className="lg:col-span-5 bg-[#071a14] text-white p-6 md:p-8 flex flex-col justify-between shadow-2xl border border-[#1d5644] rounded-3xl relative overflow-hidden h-full">
-              <div className="space-y-5">
+            <div className="lg:col-span-5 bg-[#071a14] text-white p-4 sm:p-8 flex flex-col justify-between shadow-2xl border border-[#1d5644] rounded-2xl sm:rounded-3xl relative overflow-hidden h-full">
+              <div className="space-y-3.5 sm:space-y-5">
                 {/* Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   <span className="text-[#fe753c] text-[11px] font-bold uppercase tracking-[0.18em] font-label-caps">
                     Reservation Summary
                   </span>
                   <span className="px-3 py-1 rounded-full bg-[#18392d]/80 text-[10px] font-bold tracking-wider text-[#9eb6aa] uppercase border border-white/10">
-                    Live Estimate
+                    Live Total
                   </span>
                 </div>
 
                 {/* Selected Service Card */}
-                <div className="space-y-1 pt-1">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9eb6aa] font-label-caps">
-                    Selected Service
-                  </p>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9eb6aa] font-label-caps">
+                      Selected Treatment
+                    </p>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#18392d] text-[#fe753c] text-[10px] font-bold uppercase tracking-wider border border-[#fe753c]/30">
+                      <span className="material-symbols-outlined text-[13px]">
+                        {selectedGender === 'gents' ? 'man' : 'woman'}
+                      </span>
+                      <span>{selectedGender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'}</span>
+                    </span>
+                  </div>
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-0.5">
-                      <h3 className="text-white font-headline-sm text-[22px] font-semibold tracking-normal font-display-hero">
+                      <h3 className="text-white font-headline-sm text-[18px] sm:text-[22px] font-semibold tracking-normal font-display-hero">
                         {selectedService.name}
                       </h3>
-                      <p className="text-[12px] text-[#9eb6aa]">{selectedService.categoryLabel} • {selectedArtisan}</p>
+                      <p className="text-[12px] text-[#9eb6aa]">
+                        {selectedService.categoryLabel} • {selectedArtisan === 'Any Artisan' ? 'Any Available Artisan' : selectedArtisan}
+                      </p>
                     </div>
-                    <span className="text-[20px] font-bold text-white tracking-tight">
-                      ${selectedService.price}.00
+                    <span className="text-[19px] sm:text-[20px] font-bold text-[#fe753c] tracking-tight">
+                      ₹{selectedService.price.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
 
                 {/* Date & Time Pods */}
-                <div className="space-y-2.5 pt-1">
-                  <div className="bg-[#0f2d22] border border-white/10 rounded-2xl p-3.5 flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#9eb6aa] font-label-caps">
+                <div className="space-y-2 pt-1">
+                  <div className="bg-[#0f2d22] border border-white/10 rounded-xl sm:rounded-2xl p-3 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#9eb6aa] font-label-caps">
                         Date
                       </p>
-                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-white">
-                        <span className="material-symbols-outlined text-[15px] text-[#fe753c]">calendar_today</span>
+                      <div className="flex items-center gap-1.5 text-[12.5px] sm:text-[13px] font-semibold text-white">
+                        <span className="material-symbols-outlined text-[14px] text-[#fe753c]">calendar_today</span>
                         <span>{dateString}</span>
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-left">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#9eb6aa] font-label-caps">
+                    <div className="space-y-0.5 text-left">
+                      <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#9eb6aa] font-label-caps">
                         Time
                       </p>
-                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-[#fe753c]">
-                        <span className="material-symbols-outlined text-[15px] text-[#fe753c]">schedule</span>
+                      <div className="flex items-center gap-1.5 text-[12.5px] sm:text-[13px] font-semibold text-[#fe753c]">
+                        <span className="material-symbols-outlined text-[14px] text-[#fe753c]">schedule</span>
                         <span>{selectedTime}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-[#0f2d22] border border-white/10 rounded-2xl p-3.5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px] text-[#9eb6aa]">timelapse</span>
+                  <div className="bg-[#0f2d22] border border-white/10 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px] text-[#9eb6aa]">timelapse</span>
                       <span className="text-[11px] font-bold uppercase tracking-wider text-[#9eb6aa] font-label-caps">
                         Estimated Duration
                       </span>
                     </div>
-                    <span className="text-[13px] font-bold text-white">{selectedService.duration} Minutes</span>
+                    <span className="text-[12.5px] font-bold text-white">{selectedService.duration} Minutes</span>
                   </div>
                 </div>
 
                 {/* Price Breakdown */}
-                <div className="pt-2 border-t border-white/10 space-y-2.5 text-[13px]">
-                  <div className="flex items-center justify-between text-[#c2cec6]">
-                    <span>Service Total</span>
-                    <span className="text-white font-medium">${selectedService.price}.00</span>
+                <div className="pt-2 border-t border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-white font-bold text-[14.5px] sm:text-[15.5px]">
+                    <span>Total Service Amount</span>
+                    <span className="text-[#fe753c] text-[18px] sm:text-[20px]">₹{selectedService.price.toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[#c2cec6]">
-                    <span>Deposit Due Now (25%)</span>
-                    <span className="text-[#fe753c] font-bold">${deposit}.00</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#c2cec6]">
-                    <span>Balance Due at Atelier</span>
-                    <span className="text-white font-medium">${balance}.00</span>
-                  </div>
-                  <p className="text-[9px] uppercase tracking-wider text-[#9eb6aa]/70 font-semibold pt-0.5">
-                    Remaining balance paid at checkout
+                  <p className="text-[10.5px] text-[#9eb6aa] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px] text-emerald-400">verified</span>
+                    <span>Zero prepayment required • Pay upon completion at Tirur desk</span>
                   </p>
                 </div>
               </div>
 
               {/* Submit CTA */}
-              <div className="space-y-3 pt-6">
+              <div className="space-y-2.5 pt-5">
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="w-full py-3.5 px-6 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white font-semibold text-[15px] shadow-[0_8px_24px_-4px_rgba(254,117,60,0.5)] transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
+                  className="w-full py-3.5 px-6 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14.5px] sm:text-[15px] shadow-[0_6px_20px_rgba(254,117,60,0.45)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
                   type="button"
                 >
                   {isSubmitting ? (
                     <>
                       <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-                      <span>Securing Atelier Slot...</span>
+                      <span>Securing Slot...</span>
                     </>
                   ) : (
                     <>
-                      <span>Confirm & Book Appointment</span>
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                      <span>Confirm Appointment</span>
+                      <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
                     </>
                   )}
                 </button>
 
-                <div className="bg-[#0d261d] border border-white/10 rounded-xl p-2.5 flex items-center justify-center gap-2 text-[11px] text-[#9eb6aa] text-center">
-                  <span className="material-symbols-outlined text-[15px] text-[#fe753c]">wine_bar</span>
-                  <span>Complimentary champagne & valet • 24h flexible reschedule</span>
+                <div className="hidden sm:flex bg-[#0d261d] border border-white/10 rounded-xl p-2 items-center justify-center gap-1.5 text-[10.5px] text-[#9eb6aa] text-center">
+                  <span className="material-symbols-outlined text-[13px] text-[#fe753c]">location_on</span>
+                  <span>One Arcade, Near Lenskart, Tirur • Open until 1:00 AM</span>
                 </div>
               </div>
             </div>

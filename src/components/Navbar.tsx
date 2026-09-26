@@ -1,17 +1,36 @@
-import React, { useState } from 'react';
-import { LOGO_URL } from '../data/salonData.ts';
+import React, { useState, useEffect } from 'react';
+import { LOGO_URL, SALON_DATA } from '../data/salonData.ts';
 
 interface NavbarProps {
   onOpenBooking: () => void;
   activeScreen?: string;
   setActiveScreen?: (screen: string) => void;
+  onNavigate?: (path: string, sectionId?: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenBooking, activeScreen = 'home', setActiveScreen }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenBooking,
+  activeScreen = 'home',
+  setActiveScreen,
+  onNavigate,
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const handleNavClick = (sectionId: string, screenName?: string) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleNavClick = (sectionId: string, screenName?: string, path?: string) => {
     setMobileMenuOpen(false);
+    if (onNavigate) {
+      onNavigate(path || (screenName === 'booking' ? '/booking' : '/'), sectionId);
+      return;
+    }
     if (setActiveScreen && screenName) {
       setActiveScreen(screenName);
     }
@@ -21,132 +40,130 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenBooking, activeScreen = 'h
     }
   };
 
+  const navLinks = [
+    { label: 'Home', sectionId: 'hero-top', screen: 'home', path: '/' },
+    { label: 'Booking', sectionId: 'booking-engine', screen: 'booking', path: '/booking' },
+    { label: 'Services Menu', sectionId: 'services-curation', screen: 'services', path: '/#services-curation' },
+    { label: 'Contact Us', sectionId: 'contact-location', screen: 'contact', path: '/#contact-location' },
+  ];
+
   return (
-    <header className="fixed top-0 left-0 w-full z-50">
-      {/* Top Luxury Ticker / Brand Bar */}
-      <div className="w-full bg-[#112e20] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-10 flex items-center justify-between font-label-md text-[13px]">
-          <div className="flex items-center gap-4 sm:gap-6">
+    <header className="fixed top-0 left-0 w-full z-50 transition-all duration-300">
+      {/* Ultra-Slim Top Notice Bar (Hidden on Mobile, Visible on Desktop/Tablet) */}
+      <div className="hidden sm:block w-full bg-[#021811] text-white border-b border-white/[0.08] text-[10px] sm:text-[10.5px] font-medium tracking-wide">
+        <div className="w-full px-3 sm:px-6 lg:px-8 h-6 flex items-center justify-between overflow-hidden">
+          {/* Left: Mobile Number & Operating Hours */}
+          <div className="flex items-center gap-2">
             <a
-              href="tel:+15557892539"
-              className="flex items-center gap-1.5 hover:text-[#fe753c] transition-colors"
+              href={`tel:${SALON_DATA.phoneNumberClean}`}
+              className="inline-flex items-center gap-1.5 font-bold tracking-wider text-white hover:text-[#fe753c] transition-colors"
+              title="Call StyleX Signature Salon"
             >
-              <span className="material-symbols-outlined text-[16px] text-[#caead5]">call</span>
-              <span>+1 (555) 789-2539</span>
+              <span className="relative flex h-2 w-2 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fe753c] opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#fe753c]" />
+              </span>
+              <span>{SALON_DATA.phoneDisplay}</span>
             </a>
-            <span className="hidden sm:flex items-center gap-1.5 text-white/80">
-              <span className="material-symbols-outlined text-[16px] text-[#caead5]">schedule</span>
-              <span>Tue - Sun: 9:00 AM - 8:00 PM</span>
+            <span className="text-white/20 hidden xs:inline">•</span>
+            <span className="text-[#a6d0be] hidden xs:inline text-[9.5px] sm:text-[10px] tracking-wider uppercase">
+              Open Daily 10 AM – 1 AM
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="hidden md:flex items-center gap-1.5 text-[#aeceba]">
-              <span className="material-symbols-outlined text-[16px]">location_on</span>
-              <span>482 Mayfair Boulevard, Suite 100</span>
+          {/* Right: Luxury Family Salon & Location */}
+          <div className="flex items-center gap-2 text-[#b0c4b8] text-[9.5px] sm:text-[10px]">
+            <span className="hidden sm:inline-flex items-center gap-1">
+              <span className="text-[#fe753c] text-[10px]">★</span>
+              <span>Luxury Family Salon</span>
             </span>
-            <span className="hidden lg:inline text-white/30">|</span>
-            <span className="font-label-caps text-[11px] uppercase tracking-wider text-[#ffdbcf] font-bold">
-              Luxury Concierge Service
-            </span>
+            <span className="hidden sm:inline text-white/20">•</span>
+            <a
+              href={SALON_DATA.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[#d4ebe1] hover:text-[#fe753c] transition-colors"
+              title="Directions to StyleX"
+            >
+              <span className="material-symbols-outlined text-[11px] text-[#fe753c]">location_on</span>
+              <span className="truncate max-w-[130px] sm:max-w-none">One Arcade, Near Lenskart</span>
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Main Navigation Bar */}
-      <div className="w-full bg-[#f6faf7]/90 backdrop-blur-xl border-b border-black/5 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-20 flex items-center justify-between gap-4">
-          {/* Brand Logo */}
-          <div className="flex items-center">
-            <button
-              onClick={() => handleNavClick('hero-top', 'home')}
-              className="inline-flex items-center text-left focus:outline-none"
-            >
-              <img
-                alt="StyleX Signature Salon"
-                className="h-9 sm:h-10 w-auto object-contain"
-                src={LOGO_URL}
-                onError={(e) => {
-                  // Fallback if image load fails
-                  (e.target as HTMLElement).style.display = 'none';
-                  const fallback = document.getElementById('logo-fallback-nav');
-                  if (fallback) fallback.style.display = 'flex';
-                }}
-              />
-              <div id="logo-fallback-nav" className="hidden flex-col">
-                <div className="flex items-baseline text-[24px] font-bold text-[#112e20]">
-                  <span>STYLE</span>
-                  <span className="text-[#9b4521] italic font-serif ml-0.5 text-[28px]">X</span>
-                </div>
-                <span className="text-[9px] uppercase tracking-[0.25em] text-[#112e20]/80 font-bold -mt-1">
-                  SIGNATURE SALON
-                </span>
-              </div>
-            </button>
-          </div>
+      {/* Main Slim Header Bar */}
+      <div
+        className={`w-full transition-all duration-300 ${
+          scrolled
+            ? 'bg-[#031b14]/95 backdrop-blur-xl border-b border-[#144e3d]/80 shadow-[0_4px_20px_rgba(0,0,0,0.35)]'
+            : 'bg-[#052118]/90 backdrop-blur-md border-b border-[#124536]/50 shadow-sm'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-11 sm:h-12 flex items-center justify-between gap-4 relative">
+          {/* Desktop Brand Logo (Left-aligned) */}
+          <button
+            onClick={() => handleNavClick('hero-top', 'home', '/')}
+            className="hidden sm:flex items-center select-none focus:outline-none group cursor-pointer"
+            aria-label="StyleX Signature Salon Home"
+          >
+            <img
+              alt="StyleX Signature Salon"
+              className="h-6 sm:h-6.5 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+              src={LOGO_URL}
+            />
+          </button>
 
-          {/* Desktop Nav Items */}
-          <nav className="hidden xl:flex items-center gap-8 text-[14px]">
-            <button
-              onClick={() => handleNavClick('hero-top', 'home')}
-              className={`font-body-md font-semibold transition-colors cursor-pointer ${
-                activeScreen === 'home' ? 'text-[#112e20]' : 'text-[#424844] hover:text-[#112e20]'
-              }`}
-            >
-              Home
-            </button>
-            <button
-              onClick={() => handleNavClick('promotions-carousel')}
-              className="font-body-md text-[#424844] hover:text-[#112e20] transition-colors cursor-pointer"
-            >
-              Privileges
-            </button>
-            <button
-              onClick={() => handleNavClick('booking-engine', 'booking')}
-              className={`font-body-md font-medium transition-colors cursor-pointer ${
-                activeScreen === 'booking' ? 'text-[#112e20] font-semibold' : 'text-[#424844] hover:text-[#112e20]'
-              }`}
-            >
-              Booking
-            </button>
-            <button
-              onClick={() => handleNavClick('services-curation', 'services')}
-              className={`font-body-md font-medium transition-colors cursor-pointer ${
-                activeScreen === 'services' ? 'text-[#112e20] font-semibold' : 'text-[#424844] hover:text-[#112e20]'
-              }`}
-            >
-              Services Menu
-            </button>
-            <button
-              onClick={() => handleNavClick('atelier-reels')}
-              className="font-body-md text-[#424844] hover:text-[#112e20] transition-colors cursor-pointer"
-            >
-              Atelier In Motion
-            </button>
-            <button
-              onClick={() => handleNavClick('contact-location')}
-              className="font-body-md text-[#424844] hover:text-[#112e20] transition-colors cursor-pointer"
-            >
-              Contact Us
-            </button>
+          {/* Mobile Center Brand Logo (Only for Mobile View: StyleX_Logo_Txt) */}
+          <button
+            onClick={() => handleNavClick('hero-top', 'home', '/')}
+            className="sm:hidden absolute left-1/2 -translate-x-1/2 flex items-center select-none focus:outline-none group cursor-pointer"
+            aria-label="StyleX Home"
+          >
+            <img
+              alt="StyleX"
+              className="h-6 w-auto object-contain transition-transform duration-200 active:scale-95"
+              src="/logo_txt.png"
+            />
+          </button>
+
+          {/* Desktop Nav Items (Slim & Modern - Strictly Home, Booking, Services Menu, Contact Us) */}
+          <nav className="hidden md:flex items-center gap-1 sm:gap-1.5">
+            {navLinks.map((link) => {
+              const isActive = activeScreen === link.screen;
+              return (
+                <button
+                  key={link.label}
+                  onClick={() => handleNavClick(link.sectionId, link.screen, link.path)}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium tracking-wide transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#0d3f31] text-white shadow-inner border border-[#1b614d]'
+                      : 'text-[#caead5]/80 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Right Action */}
-          <div className="flex items-center gap-3">
+          {/* Right Action: Slim CTA Button (Desktop only; hidden on mobile) */}
+          <div className="flex items-center gap-2">
             <button
               onClick={onOpenBooking}
-              className="inline-flex items-center justify-center px-5 sm:px-6 py-2.5 rounded-full bg-[#9b4521] text-white font-label-md text-[13px] font-semibold shadow-[0_4px_16px_-2px_rgba(155,69,33,0.35)] hover:bg-[#fe9167] hover:text-[#752906] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+              className="hidden md:inline-flex items-center gap-1 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-[#fe753c] hover:bg-[#e8652d] text-white text-[11px] sm:text-[11.5px] font-bold shadow-[0_2px_10px_rgba(254,117,60,0.3)] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer whitespace-nowrap"
             >
-              Book Appointment
+              <span>Book Appointment</span>
+              <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
             </button>
 
-            {/* Mobile Hamburger */}
+            {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="xl:hidden w-10 h-10 rounded-full flex items-center justify-center bg-white/80 border border-black/10 text-[#112e20]"
+              className="md:hidden w-7 h-7 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/15 text-white transition-colors cursor-pointer"
               aria-label="Toggle Navigation Menu"
             >
-              <span className="material-symbols-outlined text-[24px]">
+              <span className="material-symbols-outlined text-[16px]">
                 {mobileMenuOpen ? 'close' : 'menu'}
               </span>
             </button>
@@ -154,63 +171,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenBooking, activeScreen = 'h
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer (Slim & Focused) */}
       {mobileMenuOpen && (
-        <div className="xl:hidden w-full bg-[#f6faf7] border-b border-[#112e20]/10 px-6 py-6 space-y-4 shadow-2xl">
-          <div className="flex flex-col gap-3 text-[15px] font-medium text-[#112e20]">
-            <button
-              onClick={() => handleNavClick('hero-top', 'home')}
-              className="text-left py-2 border-b border-[#112e20]/5 hover:text-[#9b4521]"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => handleNavClick('promotions-carousel')}
-              className="text-left py-2 border-b border-[#112e20]/5 hover:text-[#9b4521]"
-            >
-              Special Privileges & Offers
-            </button>
-            <button
-              onClick={() => handleNavClick('booking-engine', 'booking')}
-              className="text-left py-2 border-b border-[#112e20]/5 hover:text-[#9b4521]"
-            >
-              Reserve Signature Appointment
-            </button>
-            <button
-              onClick={() => handleNavClick('services-curation', 'services')}
-              className="text-left py-2 border-b border-[#112e20]/5 hover:text-[#9b4521]"
-            >
-              Curated Services Menu
-            </button>
-            <button
-              onClick={() => handleNavClick('atelier-reels')}
-              className="text-left py-2 border-b border-[#112e20]/5 hover:text-[#9b4521]"
-            >
-              Atelier In Motion (Reels & Artistry)
-            </button>
-            <button
-              onClick={() => handleNavClick('client-reviews')}
-              className="text-left py-2 border-b border-[#112e20]/5 hover:text-[#9b4521]"
-            >
-              Client Reviews & Stories
-            </button>
-            <button
-              onClick={() => handleNavClick('contact-location')}
-              className="text-left py-2 hover:text-[#9b4521]"
-            >
-              Concierge & Location Map
-            </button>
+        <div className="md:hidden w-full bg-[#031b14]/98 backdrop-blur-2xl border-b border-[#185341] px-6 py-5 shadow-2xl animate-fade-in">
+          <div className="flex flex-col gap-2">
+            {navLinks.map((link) => {
+              const isActive = activeScreen === link.screen;
+              return (
+                <button
+                  key={link.label}
+                  onClick={() => handleNavClick(link.sectionId, link.screen, link.path)}
+                  className={`text-left py-2.5 px-4 rounded-xl text-[14px] font-semibold transition-all cursor-pointer flex items-center justify-between ${
+                    isActive
+                      ? 'bg-[#0f4637] text-white border border-[#21735a]'
+                      : 'text-[#caead5] hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span>{link.label}</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#fe753c]">chevron_right</span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-4 mt-3 border-t border-[#185341]/60">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 onOpenBooking();
               }}
-              className="w-full py-3 rounded-full bg-[#fe753c] text-white font-semibold text-center shadow-md"
+              className="w-full py-2.5 rounded-full bg-[#fe753c] hover:bg-[#e8652d] text-white font-bold text-[13px] text-center shadow-md flex items-center justify-center gap-1.5 transition-all"
             >
-              Reserve Session
+              <span>Book Appointment</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
         </div>

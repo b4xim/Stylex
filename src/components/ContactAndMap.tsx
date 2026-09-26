@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
+import { SALON_DATA } from '../data/salonData.ts';
 
-interface ContactAndMapProps {
-  onOpenDirections: () => void;
-}
+const TIRUR_COORDINATES: [number, number] = [10.904776, 75.921187];
 
-export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }) => {
+interface ContactAndMapProps {}
+
+export const ContactAndMap: React.FC<ContactAndMapProps> = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [subject, setSubject] = useState('General Inquiry');
   const [message, setMessage] = useState('');
 
@@ -17,32 +17,27 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }
     setFormSubmitted(true);
     setTimeout(() => {
       setFullName('');
-      setEmail('');
+      setPhone('');
       setMessage('');
-    }, 2000);
+    }, 2500);
   };
 
-  const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 0.2, 1.8));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 0.2, 0.8));
-  };
+  const whatsappInquiryUrl = `https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Tirur Flagship, I would like to inquire about appointments and availability.')}`;
 
   return (
     <section className="w-full bg-[#f0f5f1] py-20 px-4 sm:px-6 lg:px-12 border-t border-[#c2c8c2]/40" id="contact-location">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Section Header */}
         <div className="space-y-3">
-          <span className="font-label-caps text-[11px] uppercase tracking-wider text-[#9b4521] font-bold">
-            Concierge & Destination
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#072f23] text-[#a6d0be] border border-[#144e3d] text-[11px] font-semibold tracking-widest uppercase">
+            <span className="material-symbols-outlined text-[15px] text-[#fe753c]">map</span>
+            <span>Tirur Flagship & Atelier Directory</span>
+          </div>
           <h2 className="font-headline-lg text-[32px] sm:text-[40px] text-[#112e20] leading-tight">
-            Visit Our Atelier & Contact Us
+            Visit Our Tirur Flagship & Get in Touch
           </h2>
           <p className="font-body-lg text-[15px] sm:text-[16px] text-[#424844]">
-            Private valet at your arrival. Walk-ins accommodated based on daily artisan availability.
+            Conveniently situated at One Arcade on KG Padi Road. Walk-ins and pre-booked private appointments are warmly welcomed daily until 1:00 AM.
           </p>
         </div>
 
@@ -56,49 +51,72 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }
                   <span className="material-symbols-outlined text-[16px]">mail</span> Concierge & Enquiries
                 </span>
                 <h3 className="font-headline-sm text-[22px] font-bold text-[#112e20] leading-snug font-display-hero">
-                  Get in Touch
+                  Contact Our Desk
                 </h3>
-                <p className="font-body-md text-[13px] sm:text-[14px] text-[#424844]">
-                  Have a question, media inquiry, or special request? Send us a message and our atelier concierge
-                  team will respond shortly.
+                <p className="font-body-md text-[13px] text-[#424844] leading-relaxed">
+                  Have a question, bridal booking inquiry, or want to consult with a master artisan? Call or send us a message directly.
                 </p>
               </div>
 
               {/* Direct Info Pills */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="bg-[#f0f5f1] p-3 rounded-2xl border border-[#112e20]/5 flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#9b4521]/10 flex items-center justify-center text-[#9b4521] flex-shrink-0">
+                <a
+                  href={`tel:${SALON_DATA.phoneNumberClean}`}
+                  className="bg-[#f0f5f1] hover:bg-[#e4ede6] transition-colors p-3 rounded-2xl border border-[#112e20]/5 flex items-center gap-2.5 group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#9b4521]/10 flex items-center justify-center text-[#9b4521] flex-shrink-0 group-hover:scale-105 transition-transform">
                     <span className="material-symbols-outlined text-[18px]">call</span>
                   </div>
                   <div className="min-w-0">
-                    <p className="font-caption text-[10px] text-[#424844] uppercase font-bold tracking-wider">Direct Line</p>
-                    <p className="font-label-md text-[12px] text-[#112e20] font-semibold truncate">+1 (555) 789-2539</p>
+                    <p className="font-caption text-[10px] text-[#424844] uppercase font-bold tracking-wider">Direct Desk</p>
+                    <p className="font-label-md text-[12px] text-[#112e20] font-semibold truncate">{SALON_DATA.phoneDisplay}</p>
                   </div>
-                </div>
+                </a>
 
-                <div className="bg-[#f0f5f1] p-3 rounded-2xl border border-[#112e20]/5 flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#112e20]/10 flex items-center justify-center text-[#112e20] flex-shrink-0">
-                    <span className="material-symbols-outlined text-[18px]">mail</span>
+                <a
+                  href={whatsappInquiryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#f0f5f1] hover:bg-[#e4ede6] transition-colors p-3 rounded-2xl border border-[#112e20]/5 flex items-center gap-2.5 group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#112e20]/10 flex items-center justify-center text-[#112e20] flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <span className="material-symbols-outlined text-[18px] text-[#fe753c]">chat</span>
                   </div>
                   <div className="min-w-0">
-                    <p className="font-caption text-[10px] text-[#424844] uppercase font-bold tracking-wider">Concierge Email</p>
-                    <p className="font-label-md text-[12px] text-[#112e20] font-semibold truncate">concierge@stylexsalon.com</p>
+                    <p className="font-caption text-[10px] text-[#424844] uppercase font-bold tracking-wider">WhatsApp Chat</p>
+                    <p className="font-label-md text-[12px] text-[#112e20] font-semibold truncate">Online Now</p>
+                  </div>
+                </a>
+              </div>
+
+              {/* Operating Hours Card */}
+              <div className="bg-[#031b14] text-white p-3.5 rounded-2xl flex items-center justify-between border border-[#185341]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#062c21] flex items-center justify-center text-[#fe753c]">
+                    <span className="material-symbols-outlined text-[18px]">schedule</span>
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-bold text-white">{SALON_DATA.hours}</p>
+                    <p className="text-[11px] text-[#a6d0be]">{SALON_DATA.hoursDetail}</p>
                   </div>
                 </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Open Daily
+                </span>
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-3.5 pt-1">
+              <form onSubmit={handleSubmit} className="space-y-3 pt-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="font-label-caps text-[10px] uppercase tracking-wider text-[#424844] block font-bold">
-                      First & Last Name
+                      Full Name
                     </label>
                     <input
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      placeholder="e.g. Vivienne Laurent"
+                      placeholder="Your name"
                       type="text"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-body-md text-[13px] placeholder-[#424844]/60 focus:outline-none hover:border-[#112e20]/40 focus:border-[#112e20] transition-colors"
                     />
@@ -106,14 +124,14 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }
 
                   <div className="space-y-1">
                     <label className="font-label-caps text-[10px] uppercase tracking-wider text-[#424844] block font-bold">
-                      Email Address
+                      Phone Number
                     </label>
                     <input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
                       required
-                      placeholder="vivienne@atelier.com"
-                      type="email"
+                      placeholder="+91 98765 43210"
+                      type="tel"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-body-md text-[13px] placeholder-[#424844]/60 focus:outline-none hover:border-[#112e20]/40 focus:border-[#112e20] transition-colors"
                     />
                   </div>
@@ -129,9 +147,9 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-body-md text-[13px] focus:outline-none hover:border-[#112e20]/40 focus:border-[#112e20] transition-colors cursor-pointer"
                   >
                     <option value="General Inquiry">General Inquiry</option>
-                    <option value="Press & Media">Press & Media</option>
-                    <option value="Bridal & Private Events">Bridal & Private Events</option>
-                    <option value="Artisan & Stylist Careers">Artisan & Stylist Careers</option>
+                    <option value="Hair Artistry Consultation">Hair Artistry Consultation</option>
+                    <option value="VIP Bridal / Groom Booking">VIP Bridal / Groom Booking</option>
+                    <option value="HydraFacial / Skin Treatment">HydraFacial / Skin Treatment</option>
                   </select>
                 </div>
 
@@ -143,24 +161,36 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     required
-                    placeholder="How can our atelier assist you today?"
-                    rows={3}
+                    placeholder="How can our salon concierge assist you today?"
+                    rows={2}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-body-md text-[13px] placeholder-[#424844]/60 focus:outline-none hover:border-[#112e20]/40 focus:border-[#112e20] transition-colors resize-none"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-3.5 px-6 rounded-full bg-[#9b4521] hover:bg-[#fe9167] hover:text-[#752906] text-white font-title-md text-[14px] font-bold shadow-[0_6px_20px_-2px_rgba(155,69,33,0.4)] transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <span>Send Message</span>
-                  <span className="material-symbols-outlined text-[18px]">send</span>
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 px-5 rounded-full bg-[#9b4521] hover:bg-[#fe9167] hover:text-[#752906] text-white font-title-md text-[13px] font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <span>Send Inquiry</span>
+                    <span className="material-symbols-outlined text-[16px]">send</span>
+                  </button>
+
+                  <a
+                    href={whatsappInquiryUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 px-5 rounded-full bg-[#042018] hover:bg-[#0a382b] text-white font-title-md text-[13px] font-semibold border border-[#175240] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-[#fe753c]">chat</span>
+                    <span>Chat on WhatsApp</span>
+                  </a>
+                </div>
 
                 {formSubmitted && (
                   <div className="p-3 bg-[#caead5]/50 border border-[#284435]/20 rounded-xl text-[12px] text-[#112e20] flex items-center gap-2">
                     <span className="material-symbols-outlined text-[16px] text-[#112e20]">check_circle</span>
-                    <span>Thank you! Our concierge team will respond within 2-4 business hours.</span>
+                    <span>Thank you! Our concierge team will connect with you shortly.</span>
                   </div>
                 )}
               </form>
@@ -168,90 +198,91 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = ({ onOpenDirections }
 
             <div className="pt-3 border-t border-[#c2c8c2]/40 flex items-center justify-between text-[11px] text-[#424844]">
               <span className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-[#9b4521]">schedule</span>
-                We usually respond within 2-4 business hours.
+                <span className="material-symbols-outlined text-[16px] text-[#9b4521]">verified</span>
+                Direct Desk Response
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#185341]" />
-                Atelier Concierge Active
+                Concierge Active
               </span>
             </div>
           </div>
 
-          {/* Right Column: Styled Interactive Dark Emerald Map Canvas (7 cols) */}
-          <div className="lg:col-span-7 h-full min-h-[460px] flex flex-col space-y-4">
-            <div className="relative w-full rounded-3xl overflow-hidden shadow-xl bg-[#284435] border border-[#112e20]/20 h-full min-h-[460px]">
-              {/* Map Canvas Background */}
-              <div
-                className="absolute inset-0 bg-[#14231b] flex items-center justify-center overflow-hidden transition-transform duration-300"
-                style={{ transform: `scale(${zoomLevel})` }}
-              >
-                {/* SVG Vector Map Grid */}
-                <svg className="w-full h-full opacity-25" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
-                  {/* Grid Lines */}
-                  <path d="M0 120 L800 120 M0 280 L800 280 M0 450 L800 450" fill="none" stroke="#caead5" strokeWidth="6" />
-                  <path d="M180 0 L180 600 M380 0 L380 600 M590 0 L590 600" fill="none" stroke="#caead5" strokeWidth="5" />
-                  {/* Diagonal Arterial Avenue */}
-                  <path d="M50 0 L750 600" fill="none" stroke="#fe9167" strokeDasharray="10 6" strokeWidth="4" />
-                  <circle cx="380" cy="280" fill="#284435" opacity="0.3" r="160" />
-                </svg>
+          {/* Right Column: StyleX Luxury Brand Map Overview Snapshot (7 cols) */}
+          <div className="lg:col-span-7 h-full min-h-[520px] flex flex-col space-y-4">
+            <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-[#031b14] border border-[#185341] h-full min-h-[520px] flex flex-col group select-none">
+              
+              {/* Static High-Res Brand Cartography Map Image */}
+              <div className="absolute inset-0 w-full h-full overflow-hidden">
+                <img
+                  src="/images/tirur_map_snapshot.jpg"
+                  alt="StyleX Signature Salon Tirur Location Map"
+                  className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+                  loading="lazy"
+                />
+                {/* Subtle Luxury Vignette & Brand Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#021811]/90 via-[#021811]/25 to-[#021811]/70 pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(2,24,17,0.6)_100%)] pointer-events-none" />
+              </div>
 
-                {/* Central Stylized Pin */}
-                <div className="absolute flex flex-col items-center z-20" style={{ transform: 'translate(0, -20px)' }}>
-                  <div className="bg-[#9b4521] text-white px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 border border-[#ffdbcf]">
-                    <span className="material-symbols-outlined text-[20px]">content_cut</span>
-                    <span className="font-title-md text-[14px] font-bold">StyleX Atelier</span>
-                  </div>
-                  <div className="w-4 h-4 bg-[#9b4521] rotate-45 -mt-2" />
-                  <div className="w-8 h-2.5 bg-black/50 rounded-full mt-2 blur-xs" />
+              {/* Top Bar: Address & Verified Flagship Badge */}
+              <div className="relative z-10 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+                <div className="bg-[#031b14]/90 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border border-[#185341] flex items-center gap-2 text-white font-label-md text-[12px] sm:text-[13px] font-semibold">
+                  <span className="material-symbols-outlined text-[#fe753c] text-[18px]">location_on</span>
+                  <span className="truncate">{SALON_DATA.addressLine1}, {SALON_DATA.addressLine2}, Tirur</span>
                 </div>
 
-                {/* Surrounding Landmarks */}
-                <div className="absolute top-24 left-16 bg-[#112e20]/90 backdrop-blur px-3 py-1.5 rounded-lg text-[#caead5] text-[11px] border border-[#caead5]/20 shadow-md">
-                  Mayfair Gardens
-                </div>
-                <div className="absolute bottom-28 right-24 bg-[#112e20]/90 backdrop-blur px-3 py-1.5 rounded-lg text-[#caead5] text-[11px] border border-[#caead5]/20 shadow-md">
-                  Midtown Valet Pavilion
+                <div className="bg-[#042018]/90 text-[#a6d0be] backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#185341] shadow-xl text-[11px] font-bold tracking-wide flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#fe753c] animate-pulse" />
+                  <span>Flagship Sanctuary • Map Overview</span>
                 </div>
               </div>
 
-              {/* Top Left Floating Address Pill */}
-              <div className="absolute top-6 left-6 flex flex-col gap-2 z-20">
-                <div className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-[#112e20]/10 flex items-center gap-2 text-[#112e20] font-label-md text-[13px] font-semibold">
-                  <span className="material-symbols-outlined text-[#9b4521] text-[18px]">explore</span>
-                  <span>482 Mayfair Boulevard, Suite 100</span>
-                </div>
-              </div>
-
-              {/* Bottom Actions Bar */}
-              <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between z-20">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleZoomIn}
-                    aria-label="Zoom In"
-                    className="w-10 h-10 rounded-full bg-white text-[#112e20] shadow-lg flex items-center justify-center hover:bg-[#f0f5f1] transition-colors cursor-pointer"
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">add</span>
-                  </button>
-                  <button
-                    onClick={handleZoomOut}
-                    aria-label="Zoom Out"
-                    className="w-10 h-10 rounded-full bg-white text-[#112e20] shadow-lg flex items-center justify-center hover:bg-[#f0f5f1] transition-colors cursor-pointer"
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">remove</span>
-                  </button>
-                </div>
-
-                <button
-                  onClick={onOpenDirections}
-                  className="px-5 py-2.5 rounded-full bg-[#9b4521] text-white font-label-md text-[13px] font-semibold shadow-xl hover:bg-[#fe9167] hover:text-[#752906] transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                  type="button"
+              {/* Center Floating Salon Atelier Interactive Card (links to Maps) */}
+              <div className="relative z-10 my-auto mx-auto px-4 pointer-events-auto">
+                <a
+                  href={SALON_DATA.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 sm:p-5 rounded-2xl bg-[#031b14]/90 backdrop-blur-xl border border-[#185341] shadow-[0_12px_40px_rgba(0,0,0,0.7)] text-center max-w-[280px] sm:max-w-[320px] transition-all transform hover:-translate-y-1 hover:border-[#fe753c] hover:shadow-[0_16px_45px_rgba(254,117,60,0.25)] group/card"
                 >
-                  <span className="material-symbols-outlined text-[18px]">near_me</span>
-                  <span>Get Directions</span>
-                </button>
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-[#fe753c]/20 border border-[#fe753c]/40 flex items-center justify-center text-[#fe753c] group-hover/card:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-[20px]">storefront</span>
+                  </div>
+                  <h4 className="font-bold text-white text-[15px] sm:text-[16px]">StyleX Signature Salon</h4>
+                  <p className="text-[#a6d0be] text-[12px] mt-0.5">One Arcade, Near Lenskart, KG Padi Rd</p>
+                  <p className="text-[#7ea696] text-[11px] mt-1 font-medium">🕒 Open Daily 10:00 AM – 1:00 AM</p>
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fe753c] text-white text-[11px] font-bold shadow-md">
+                    <span>Open in Google Maps</span>
+                    <span className="material-symbols-outlined text-[13px]">arrow_outward</span>
+                  </div>
+                </a>
+              </div>
+
+              {/* Bottom Actions & Transit Information */}
+              <div className="relative z-10 p-4 sm:p-5 mt-auto flex flex-col sm:flex-row items-center justify-between gap-3 pointer-events-auto">
+                {/* Transit Distance Badges */}
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#caead5]/90">
+                  <div className="bg-[#031b14]/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Tirur Rly Stn: ~1.2 km</span>
+                  </div>
+                  <div className="bg-[#031b14]/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Bus Stand: ~900 m</span>
+                  </div>
+                </div>
+
+                {/* Direct Directions Action */}
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${TIRUR_COORDINATES[0]},${TIRUR_COORDINATES[1]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#fe753c] hover:bg-[#e8652d] text-white font-label-md text-[12.5px] font-bold shadow-[0_4px_16px_rgba(254,117,60,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[17px]">directions</span>
+                  <span>Get Driving Directions</span>
+                </a>
               </div>
             </div>
           </div>

@@ -128,3 +128,32 @@
 .border-primary-container { border-color: var(--color-primary-container); }
 .border-secondary { border-color: var(--color-secondary); }
 .border-outline-variant { border-color: var(--color-outline-variant); }
+
+/* Custom Leaflet Map styling */
+.leaflet-popup-content-wrapper {
+  background: #031b14 !important;
+  color: #ffffff !important;
+  border-radius: 1.25rem !important;
+  border: 1px solid #185341 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+  padding: 6px !important;
+}
+
+.leaflet-popup-tip {
+  background: #031b14 !important;
+  border: 1px solid #185341 !important;
+}
+
+.leaflet-container {
+  font-family: inherit !important;
+  background: #031b14 !important;
+}
+
+/* StyleX Signature Luxury Brand Emerald Map Tiles */
+.stylex-brand-tile-layer {
+  filter: brightness(0.9) contrast(1.2) hue-rotate(85deg) saturate(2.5) !important;
+}
+
+.stylex-standard-tile-layer {
+  filter: saturate(1.05) contrast(1.02) !important;
+}

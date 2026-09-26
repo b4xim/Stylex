@@ -1,5 +1,5 @@
 import React from 'react';
-import { HERO_IMAGE } from '../data/salonData.ts';
+import { HERO_IMAGE, SALON_DATA } from '../data/salonData.ts';
 
 interface HeroSectionProps {
   onReserveClick: () => void;
@@ -7,6 +7,8 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExploreMenuClick }) => {
+  const whatsappLink = `https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Signature Salon Tirur, I would like to inquire about booking an appointment.')}`;
+
   return (
     <section
       id="hero-top"
@@ -17,32 +19,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
       <div className="absolute top-1/3 -right-24 w-[600px] h-[600px] rounded-full bg-[#1e614d]/20 blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Top Ticker Row */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-1 pb-8 border-b border-white/10 text-[13px] font-medium text-white/80 leading-normal">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0d3429]/80 border border-[#1b5040] shadow-inner text-[11px] font-bold tracking-wider text-[#d4ebe1] uppercase">
-            <span className="w-2 h-2 rounded-full bg-[#fe753c] animate-pulse flex-shrink-0" />
-            <span>Mayfair Atelier • Private Suites Open</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[13px] text-[#c2cec6]">
-            <span className="inline-flex items-center gap-1.5 leading-none">
-              <span className="text-[#fe753c] text-[15px] leading-none">★</span>
-              <span className="text-white font-medium">Vogue Beauty Award Finalist</span>
-            </span>
-            <span className="hidden sm:inline text-white/30">•</span>
-            <span className="inline-flex items-center gap-1.5 leading-none">
-              <span className="material-symbols-outlined text-[16px] text-white/90 leading-none">check_circle</span>
-              <span className="text-white font-medium">100% Organic Botanical Line</span>
-            </span>
-          </div>
-        </div>
-
         {/* Hero Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center pt-4 sm:pt-6">
           {/* Left Editorial Copy */}
           <div className="lg:col-span-7 space-y-7">
             <p className="text-[#fe753c] font-bold text-[12px] tracking-[0.25em] uppercase font-label-caps">
-              Haute Coiffure & Botanical Science
+              HAIR · SKIN · BRIDAL & GROOM
             </p>
 
             <h1 className="text-white font-display-hero text-[42px] sm:text-[54px] lg:text-[62px] leading-[1.08] tracking-tight">
@@ -52,25 +34,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
             </h1>
 
             <p className="text-[#c2cec6] text-[15px] sm:text-[16px] max-w-xl leading-relaxed font-normal">
-              Precision hair design meets scalp wellness rituals. Experience customized multi-dimensional color,
-              sculptural dry cutting, and certified biodynamic care tailored to your individual silhouette.
+              Step inside Tirur’s premier signature salon at One Arcade, KG Padi Road. Experience customized Keratin silk infusions, French balayage, HydraFacial MD rituals, and complete VIP bridal suites.
             </p>
 
             {/* CTAs */}
-            <div className="pt-2 flex flex-wrap items-center gap-4">
+            <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4">
               <button
                 onClick={onReserveClick}
-                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white font-semibold text-[15px] shadow-[0_8px_24px_-4px_rgba(254,117,60,0.45)] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-2.5 px-6 sm:px-7 py-3.5 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white font-semibold text-[14px] sm:text-[15px] shadow-[0_8px_24px_-4px_rgba(254,117,60,0.45)] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
               >
                 <span>Reserve Your Session</span>
                 <span className="material-symbols-outlined text-[18px]">calendar_today</span>
               </button>
 
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3.5 rounded-full bg-[#073327] hover:bg-[#0c4737] text-white font-semibold text-[14px] sm:text-[15px] border border-[#1b5040] shadow-md transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px] text-[#fe753c]">chat</span>
+                <span>WhatsApp Desk</span>
+              </a>
+
               <button
                 onClick={onExploreMenuClick}
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#164234]/80 hover:bg-[#1c5241] text-white font-medium text-[15px] border border-[#276451] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-[#164234]/60 hover:bg-[#1c5241] text-white font-medium text-[14px] border border-[#276451] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
               >
-                <span>Explore Service Menu</span>
+                <span>Explore Menu</span>
                 <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
               </button>
             </div>

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { REELS, PORTFOLIO_WORKS } from '../data/salonData.ts';
+import { REELS, PORTFOLIO_WORKS, SALON_DATA } from '../data/salonData.ts';
 import { ReelItem } from '../types.ts';
 
 interface AtelierReelsProps {
@@ -66,7 +66,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
             </div>
 
             <a
-              href="https://instagram.com"
+              href={SALON_DATA.instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-[#c2c8c2]/60 text-[#112e20] font-label-md text-[13px] font-medium hover:border-[#112e20]/40 hover:shadow-md transition-all shadow-sm group"
@@ -74,7 +74,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
               <span className="material-symbols-outlined text-[18px] text-[#9b4521] group-hover:scale-110 transition-transform">
                 photo_camera
               </span>
-              <span>Follow @StyleXAtelier</span>
+              <span>Follow {SALON_DATA.instagramHandle}</span>
             </a>
           </div>
         </div>
