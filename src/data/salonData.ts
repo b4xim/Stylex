@@ -521,147 +521,157 @@ export const SERVICES: ServiceItem[] = [
 
 export const REELS: ReelItem[] = [
   {
-    id: 'reel-1',
-    title: 'Signature Keratin Silk Infusion & Mirror Gloss',
-    tag: '@stylex.signature.salon.tirur',
-    views: '38.4k views',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1WFuMHYWlxC3RMgx8F_NlOfakvGdJXwptrApfhozV-9cMtF253R3OTTgeHOxW7gV67e3czvdTmHn5MQt4cP3enYjY3rqmrdm_KpnpZSFcW37nWMh7RdW1W6bqdS4MFVh8ahyAGGLLgcDgajIsPL1tdAMTLmxLcaF4Ohp8jAXO5yMzXoO_R5f9oNYP4L7R-TRMT8ZhuFN_Vo2dtu3fYTbNkqgITUqT5hsiQZRDFwovPd3VewMvqDD9WSluZD',
-    audioTrack: 'StyleX Atelier Ambient Soundscape',
-    stylistHandle: 'Senior Stylist • Tirur',
-    category: 'Hair Artistry',
-    description: 'Frizz-free mirror shine therapy delivered at our Tirur flagship styling station.'
+    id: 'reel-smoothening',
+    title: 'Hair Smoothening & Gloss',
+    tag: 'Smoothening',
+    views: '42.5k views',
+    imageUrl: '/videos/thumbnails/smoothening.jpg',
+    audioTrack: 'Original Audio • StyleX',
+    stylistHandle: 'Texture Specialist • Tirur',
+    category: 'Hair Texture',
+    description: 'Silky, frizz-free hair smoothening with lasting radiant shine.',
+    instagramUrl: 'https://www.instagram.com/p/Ddltn-BNrSL/',
+    videoUrl: '/videos/reels/Smoothening.mp4'
   },
   {
-    id: 'reel-2',
-    title: 'Moroccan Argan Scalp Spa & Ozone Mist',
-    tag: 'Deep Scalp Wellness',
-    views: '29.1k views',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1WUsLrN6rrb7JVBsgZE9sXx_FRbdIaLuX-DI9HT8ljezhICMVTBx_oQnUXciTgWQi26piRw-EubqjlG7WFNCszmxLDi5YsbZFfunHYxbR-Ak36pIIChV-Dp7k3vxsfSLGlV1FutUJB0acQrRGuZUG86dmaiGtEVSBKw9QLuqbUgowq3-dmsngXy99mHkESEL-860dXX132Jr0GAI34BLTPnioHmmFDaoPCSuMjZA4Tk1958jBmG_uoWWjw',
-    audioTrack: 'Serene Sanctuary Rain & Mist',
-    stylistHandle: 'Trichology Specialist',
-    category: 'Scalp Ritual',
-    description: 'Therapeutic organic argan oil infusion with soothing acupressure head massage.'
-  },
-  {
-    id: 'reel-3',
-    title: 'Couture Precision Cut & Velvet Blowout',
-    tag: 'Tirur Flagship',
-    views: '45.2k views',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1XVbc9Bzp69rsOp8b2K0EXyCd81fPV8Gqc0VLSsajN_t7wUJdDtks74DkpEV0hjc2S52BuOsK_jzxx2P9P6CbR2HOrhXmTXnQylrmkv8L4VUTHKyBIYjEAiLbW_c5TRkbGDvVXjfiJ1ZrWqy16CUqxNdB7pfumWX0S3CLgEBsAO5H9tZfC_bF4SAuFIoP5NlE1NZsqYP1ELAP-JDRP9E3mctbNrk5UsVFIVpqXjWLJLuNq2tI-pG1xTPDhc',
-    audioTrack: 'Signature Luxe Beats',
-    stylistHandle: 'Creative Director',
-    category: 'Precision Cut',
-    description: 'Architectural layers tailored to facial structure with flawless lightweight bounce.'
-  },
-  {
-    id: 'reel-4',
-    title: 'French Balayage & Honey Caramel Dimension',
-    tag: 'Color Atelier',
-    views: '51.8k views',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBBi2NQZI8Ox9PgosQJUe7V6vnlutLlVFiKtwF3ph_kYIHMif1V2SSLMQOZR5STQC7LVxoMjneYFd5Gsf-p_iOdL6LntlR6aRyON66dszLchgZqeGAB8i7Qa5095MzssXj54SzBeF087q8YRECvWMSW8cCTSQqYyAZRmpHk-qDyjVT6LACqQ92gCVuF9AnM7Y8AKJfgro-SJcz94_F_gZdq_OJotFzAaXoeJ0r3ryhD6M-wtmpJefYW3Q',
-    audioTrack: 'Warm Acoustic Harmony',
-    stylistHandle: 'Master Colorist',
-    category: 'Balayage & Color',
-    description: 'Freehand sun-kissed painting protected by Olaplex bond repair for lasting radiance.'
-  },
-  {
-    id: 'reel-5',
-    title: 'VIP Bridal Suite Hairdo & Saree Draping',
-    tag: 'Bridal Sanctuary',
-    views: '62.0k views',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAVTa1LSxCFaQ3uRRwVDiXjXe-7AHtHBABYSiKlwI87uuib9OPr6cXSEsstXBJwRXyg9iE6dk0ih4j_JmlwRek32R2E5fx3jvloESsl5-V8jUSyzC_uRttx5h7vlnbxr-1IgDEyEocWJtqvhRIaJ3MWm_5Rs-NGD2liOkajzyJiHzc4f0b6bOXaAZeoo6lQRUrrAjgE9Gr6mafqB4ALY-iSbPNw0BKTF0UHueUXhHw-z8AMLCzmMwwLdQ',
+    id: 'reel-bridal',
+    title: 'Bridal Makeover & Styling',
+    tag: 'Bridal Makeover',
+    views: '68.2k views',
+    imageUrl: '/videos/thumbnails/bridal.jpg',
     audioTrack: 'Traditional Melodies',
-    stylistHandle: 'Bridal Artisan Team',
-    category: 'Bridal Atelier',
-    description: 'Complete high-definition waterproof bridal look and precision silk saree draping in our private suite.'
+    stylistHandle: 'Bridal Team • Tirur',
+    category: 'Bridal & Makeup',
+    description: 'Complete bridal makeover with luminous HD makeup and saree draping.',
+    instagramUrl: 'https://www.instagram.com/p/Ddd36yCozBQ/',
+    videoUrl: '/videos/reels/Bridal.mp4'
   },
   {
-    id: 'reel-6',
-    title: 'Medical HydraFacial MD & Glow Reveal',
-    tag: 'Skin Clinic',
-    views: '33.9k views',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1WFuMHYWlxC3RMgx8F_NlOfakvGdJXwptrApfhozV-9cMtF253R3OTTgeHOxW7gV67e3czvdTmHn5MQt4cP3enYjY3rqmrdm_KpnpZSFcW37nWMh7RdW1W6bqdS4MFVh8ahyAGGLLgcDgajIsPL1tdAMTLmxLcaF4Ohp8jAXO5yMzXoO_R5f9oNYP4L7R-TRMT8ZhuFN_Vo2dtu3fYTbNkqgITUqT5hsiQZRDFwovPd3VewMvqDD9WSluZD',
-    audioTrack: 'Deep Serenity Waves',
-    stylistHandle: 'Aesthetic Skin Lead',
-    category: 'Advanced Skin',
-    description: '4-step vortex deep cleanse with hyaluronic plumping and instant porcelain clarity.'
+    id: 'reel-kids',
+    title: 'Kids Hair Cut & Makeover',
+    tag: 'Kids Makeover',
+    views: '31.4k views',
+    imageUrl: '/videos/thumbnails/kids.jpg',
+    audioTrack: 'Playful Beats • StyleX',
+    stylistHandle: 'Styling Specialist • Tirur',
+    category: 'Kids Hair Cut',
+    description: 'Fun, gentle, and stylish haircut session crafted for the little ones.',
+    instagramUrl: 'https://www.instagram.com/p/DdRPZOJIOEm/',
+    videoUrl: '/videos/reels/Kids.mp4'
+  },
+  {
+    id: 'reel-coloring',
+    title: 'Hair Coloring & Highlights',
+    tag: 'Hair Coloring',
+    views: '54.1k views',
+    imageUrl: '/videos/thumbnails/Coloring.jpg',
+    audioTrack: 'Acoustic Harmony',
+    stylistHandle: 'Color Specialist • Tirur',
+    category: 'Hair Color',
+    description: 'Vibrant hair coloring and seamless highlights with deep conditioning gloss.',
+    instagramUrl: 'https://www.instagram.com/p/DcV6tyAyCaK/',
+    videoUrl: '/videos/reels/coloring.mp4'
   }
 ];
 
 export const PORTFOLIO_WORKS = [
   {
     id: 'port-1',
-    title: 'Honey Caramel Dimensional Balayage',
-    category: 'Hair Artistry',
-    artisan: 'Senior Color Director',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1UL46Nokb_3g440zJVm3ujYD8Jxr_VtZAZ_PcjmmdXEglpx6Py_gT5HokSqorYP4hMgCeF_l5skEWyVtBtWHiBiT_0L9uhA_oRkc6VSptLllVXkTZfKlJdoSSlfsKmCjNj5POMAYKJ7J0izpc86mtuCRNtMJFMXRC1W-4fOGiMPhFNOBS9BcqSF5S-1F7L5B24eT8zUjknxpMtlnqac-36i6Y_xH4MOY2o9FaLs25wU17RfeuYq3F7LrsBL'
+    title: 'Hair Smoothening & Gloss Transformation',
+    category: 'Smoothening',
+    artisan: 'Texture Specialist',
+    imageUrl: '/images/photos/smoothening.jpg'
   },
   {
     id: 'port-2',
-    title: 'Sculptured Modern Texture Bob',
-    category: 'Precision Cut',
-    artisan: 'Master Stylist',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1X7w-Suy073o1_3Iid1bmpZ5kvPOjwopM5gwF5NR0NmejMQLK20Lc25lZKb0ac1-hxejOTNZO1t4hfhLnKTJGF1tO4-Gav8tdxNLEsgoBsK_BQAPewiU415XePk9CxK-eXorFdr924q7VM7T8yle_0-HJQBHemS3kcMMohIcpOsnVVdjVhsez_ttCH4YM7HKrwgiTkQohDQjm7gy1D6vBNMNsvhU8VwvL7J4LyY8DBK6GPtW8I3089q6YO7'
+    title: 'Bridal Makeover & Styling',
+    category: 'Bridal Makeover',
+    artisan: 'Lead Bridal Stylist',
+    imageUrl: '/images/photos/bridal.jpg'
   },
   {
     id: 'port-3',
-    title: 'Keratin Gloss & Cuticle Realignment',
-    category: 'Smoothing Therapy',
-    artisan: 'Texture Specialist',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1VHqMLaPkCB2ok709TdSRuzYEyv1i6cyzyr5HYD0GCSGYJw3Lt5VXGoYa928cd-DK35rF--xMeMdbNzCVGR7oWcPWsgnlYjZqL-FuwkzOSM0g3UcXbykjBovLrrflE1dQpG5Ni6BWfHflQJw2cXE6LBpgyEV9ToztIke_LhTVIDtbvlYPgdsl_ygiznJJ0A6Z8t1WVZPZ_ecmDfGvYQKCRcjd9FK3vQf9_HY_qMJJgkVBB0FGePagh_qjw'
+    title: 'Kids Hair Cut & Makeover',
+    category: 'Kids Hair Cut',
+    artisan: 'Styling Specialist',
+    imageUrl: '/images/photos/kids.jpg'
   },
   {
     id: 'port-4',
-    title: 'Bridal Styling & Updo',
-    category: 'Bridal Styling',
-    artisan: 'Lead Bridal Stylist',
-    imageUrl: 'https://lh3.googleusercontent.com/aida/AEtjO1WBtFG-0bwyDXOgHDTU6BaZjhMuf_lxWATRUztXXm4P8nCrfI-LGM7eh4DPe1_LQ4XD4dxhO7sVnvsYmb9mDh6kA4O0Uv-lMx5-jnWGFy-dBkAFH73dnfz1ldidAPLLGR3u-Gy02fz_v37n2lOcKXM8ntCmVp1TWOv9NC08y3naXBp_O3B8JdjCJkPgDTrId9m-sz0k6Dpuv30Q7wu_Qb9gm1iKrXkWnP20rNTYlBJ-fV_NL-Kc9YbISVOr'
+    title: 'Hair Coloring & Highlights',
+    category: 'Hair Coloring',
+    artisan: 'Color Specialist',
+    imageUrl: '/images/photos/coloring.jpg'
   },
   {
     id: 'port-5',
-    title: 'Groom Executive Beard & Hair Sculpt',
-    category: 'Gentlemen Styling',
-    artisan: 'Executive Groom Master',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBqJl4D-dVIDw4nJwn1oFECP2c2oQPpO7BqWpi-_pniKgfQNP5o5eaMO-tZ2A8JIKavh1PqXKVTcEOa4GLMU2tJjEU0y2v4KNzSke6NX_VRiESPWr8C15p9wOa-dR9czWP1yxIYp_qSXzjbdRds_ySGudzyUWzqNWON81w17KGYNUjDE92D0t6Pmmwgk9ro3H76jzrVut-DYYM9QZIYrhPIq4_ZXBqajpytsANI7ckaaL2QUwSOQ1Leaw'
+    title: 'Layered Cut & Blowout Styling',
+    category: 'Hair Styling',
+    artisan: 'Senior Hair Stylist',
+    imageUrl: '/images/photos/5.jpg'
   }
 ];
 
 export const REVIEWS: ReviewItem[] = [
   {
-    id: 'rev-1',
-    author: 'Fathima R.',
-    initials: 'FR',
-    role: 'Tirur Resident',
+    id: 'rev-google-1',
+    author: 'Athira P',
+    initials: 'AP',
+    role: 'Google Review',
     rating: 5.0,
-    quote: 'Finally a world-class luxury salon right in Tirur! The Keratin Silk treatment and hair spa were sensational. The ambiance at One Arcade is truly opulent.',
-    highlightText: 'Frizz-Free Silk Smoothness',
-    tag: 'Verified Guest',
-    artisan: 'Senior Stylist',
-    category: 'hair'
+    quote: 'The service was excellent, and the parlour had a pleasant atmosphere. The staff were friendly, polite, and professional. Special thanks to Niya for providing such wonderful service and making me feel comfortable and confident. She is very professional and smart. Highly recommending! I’m very happy with the results and the overall experience. This is definitely one of the best beauty parlours I’ve visited, and I will certainly return!',
+    highlightText: 'Pleasant Atmosphere & Attentive Service',
+    tag: 'Google Review',
+    artisan: 'Niya',
+    category: 'cut'
   },
   {
-    id: 'rev-2',
-    author: 'Dr. Rahul Menon',
-    initials: 'RM',
-    role: 'Medical Professional',
+    id: 'rev-google-2',
+    author: 'Ruby Khan',
+    initials: 'RK',
+    role: 'Google Review',
     rating: 5.0,
-    quote: 'The HydraFacial MD and Moroccan Scalp Spa are top-notch. Cleanliness, private consultation suites, and the fact that they stay open until 1:00 AM is a game changer.',
-    highlightText: 'Deep Scalp Detox & Glow',
-    tag: 'Regular Guest',
-    artisan: 'Skin Specialist',
-    category: 'skin'
+    quote: 'Sunita was great, she is so hardworking and her work is so good! I am very satisfied—great pedicure and hair spa was so relaxing, eyebrow also.',
+    highlightText: 'Relaxing Hair Spa & Pedicure',
+    tag: 'Google Review',
+    artisan: 'Sunita',
+    category: 'spa'
   },
   {
-    id: 'rev-3',
-    author: 'Anjali Nair',
-    initials: 'AN',
-    role: 'Bridal Guest',
+    id: 'rev-google-3',
+    author: 'Shalima Shamsudeen',
+    initials: 'SS',
+    role: 'Local Guide',
     rating: 5.0,
-    quote: 'Booked my wedding reception makeup and hair styling here. The VIP Bridal Suite made me and my family feel like royalty. Flawless HD makeup that lasted all night.',
-    highlightText: 'Flawless HD Airbrush',
-    tag: 'VIP Bridal',
-    artisan: 'Lead Bridal Artisan',
-    category: 'bridal'
+    quote: 'Awesome experience at StyleX! The staffs are warm and welcoming. Abhirami, Niya, and Neha are the best.',
+    highlightText: 'Warm & Welcoming Hospitality',
+    tag: 'Local Guide',
+    artisan: 'Abhirami, Niya & Neha',
+    category: 'cut'
+  },
+  {
+    id: 'rev-google-4',
+    author: 'Benazir TP',
+    initials: 'BT',
+    role: 'Google Review',
+    rating: 5.0,
+    quote: 'I had a wonderful experience at Salon Style X. The service provided by Abhirami was excellent, and Vismaya did a great job with my manicure and pedicure. Both were very professional, attentive, and made the experience really pleasant. Highly recommended!',
+    highlightText: 'Professional Manicure & Pedicure',
+    tag: 'Google Review',
+    artisan: 'Abhirami & Vismaya',
+    category: 'spa'
+  },
+  {
+    id: 'rev-google-5',
+    author: 'Hiba Rafeeque',
+    initials: 'HR',
+    role: 'Google Review',
+    rating: 5.0,
+    quote: 'Had a really great experience at this salon! The service was excellent, the staff were very friendly and professional, and I absolutely loved the final result. Everything was done with great care and attention to detail, and also worth the price for all services. A really heartfelt thanks especially to Abhirami—she is sweet and her hospitality is amazing! Thank you for your services.',
+    highlightText: 'Attention to Detail & Great Value',
+    tag: 'Google Review',
+    artisan: 'Abhirami',
+    category: 'cut'
   }
 ];
 

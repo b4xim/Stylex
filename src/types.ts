@@ -68,6 +68,8 @@ export interface ReelItem {
   stylistHandle: string;
   category: string;
   description?: string;
+  instagramUrl?: string;
+  videoUrl?: string;
 }
 
 export interface ReviewItem {
@@ -95,5 +97,8 @@ export interface BookingState {
   notes: string;
   beverage: string;
   gender?: 'gents' | 'ladies';
+  phoneCountryCode?: string;
+  phone?: string;
+  email?: string;
 }
 

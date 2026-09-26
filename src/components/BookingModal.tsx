@@ -80,6 +80,27 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             </div>
           </div>
 
+          {/* Guest Contact Details */}
+          {(booking.phone || booking.email) && (
+            <div className="bg-[#0f2d22] border border-white/10 rounded-2xl p-3.5 space-y-1.5 text-[12px]">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-[#9eb6aa]">Guest Contact</p>
+              <div className="flex flex-wrap items-center gap-4 text-[#d4ebe1]">
+                {booking.phone && (
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className="material-symbols-outlined text-[14px] text-[#fe753c]">call</span>
+                    <span>{booking.phoneCountryCode || '+91'} {booking.phone}</span>
+                  </span>
+                )}
+                {booking.email && (
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className="material-symbols-outlined text-[14px] text-[#fe753c]">mail</span>
+                    <span>{booking.email}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Hospitality Pass Details */}
           <div className="bg-[#082017] rounded-xl p-3 border border-white/5 space-y-1.5 text-[12px]">
             <div className="flex justify-between text-[#9eb6aa]">

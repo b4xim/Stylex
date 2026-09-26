@@ -163,7 +163,7 @@ export const Footer: React.FC = () => {
                 <a href="#atelier-reels">Client Transformations</a>
               </li>
               <li className="hover:text-white transition-colors">
-                <a href="#client-reviews">Guest Stories</a>
+                <a href="#client-reviews">Customer Reviews</a>
               </li>
             </ul>
           </div>

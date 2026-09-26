@@ -32,16 +32,16 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#112e20]/10 text-[#112e20] font-label-caps text-[11px] uppercase tracking-wider font-bold">
-              <span className="material-symbols-outlined text-[15px] text-[#9b4521]">play_circle</span>
-              <span>Social Dispatch & Reels</span>
+              <svg className="w-3.5 h-3.5 fill-[#fe753c]" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+              <span>Featured Reels</span>
             </div>
-            <h2 className="font-headline-lg text-[32px] sm:text-[40px] text-[#112e20] leading-tight">
-              Atelier in Motion:<br />
-              <span className="italic font-normal">Real Transformations & Salon Rituals</span>
+            <h2 className="font-headline-lg text-[30px] sm:text-[38px] text-[#112e20] leading-tight font-display-hero font-bold">
+              Real Transformations &amp; Salon Rituals
             </h2>
             <p className="font-body-lg text-[15px] sm:text-[16px] text-[#424844] max-w-xl">
-              Step inside our sanctuary through genuine client moments, soothing scalp therapies, and breathtaking
-              hair transformations captured daily.
+              Watch genuine client makeovers, soothing hair spas, and daily styling rituals captured live at our salon.
             </p>
           </div>
 
@@ -71,9 +71,9 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-[#c2c8c2]/60 text-[#112e20] font-label-md text-[13px] font-medium hover:border-[#112e20]/40 hover:shadow-md transition-all shadow-sm group"
             >
-              <span className="material-symbols-outlined text-[18px] text-[#9b4521] group-hover:scale-110 transition-transform">
-                photo_camera
-              </span>
+              <svg className="w-[18px] h-[18px] fill-[#e1306c] group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
               <span>Follow {SALON_DATA.instagramHandle}</span>
             </a>
           </div>
@@ -100,13 +100,27 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
 
               {/* Top Meta */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold">
-                  <span className="material-symbols-outlined text-[14px] text-[#ffdbcf]">visibility</span>
-                  {reel.views}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold tracking-wide shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#fe753c] animate-pulse" />
+                  <span>StyleX Reel</span>
                 </span>
-                <span className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white">
-                  <span className="material-symbols-outlined text-[16px]">bookmark</span>
-                </span>
+
+                {reel.instagramUrl ? (
+                  <a
+                    href={reel.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="View on Instagram"
+                    title="View on Instagram"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 hover:bg-[#fe753c] backdrop-blur-md border border-white/20 text-white text-[11px] font-medium transition-all group/ig shadow-sm"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-currentColor text-[#fe753c] group-hover/ig:text-white transition-colors" viewBox="0 0 24 24">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                    <span className="text-[11px] font-semibold text-white/90 group-hover/ig:text-white">Instagram</span>
+                  </a>
+                ) : null}
               </div>
 
               {/* Center Play Button */}
@@ -126,11 +140,6 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
                     {reel.title}
                   </h3>
                 </div>
-
-                <div className="flex items-center gap-1.5 text-[11px] text-[#c2cec6] pt-1 border-t border-white/15">
-                  <span className="material-symbols-outlined text-[13px] text-[#ffdbcf]">music_note</span>
-                  <span className="truncate">{reel.audioTrack}</span>
-                </div>
               </div>
             </div>
           ))}
@@ -142,7 +151,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#9b4521]" />
               <h3 className="text-[14px] sm:text-[15px] font-bold tracking-wider uppercase text-[#112e20] font-label-caps">
-                Atelier Finished Artistry
+                Client Transformations &amp; Artistry
               </h3>
               <span className="text-[#424844]/40 hidden sm:inline">•</span>
               <span className="text-[12px] text-[#424844]/70 font-normal hidden sm:inline">

@@ -8,6 +8,23 @@ interface BookingEngineProps {
   showHeader?: boolean;
 }
 
+export const COUNTRY_CODES = [
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: '+974', country: 'Qatar', flag: '🇶🇦' },
+  { code: '+968', country: 'Oman', flag: '🇴🇲' },
+  { code: '+965', country: 'Kuwait', flag: '🇰🇼' },
+  { code: '+973', country: 'Bahrain', flag: '🇧🇭' },
+  { code: '+44', country: 'UK', flag: '🇬🇧' },
+  { code: '+1', country: 'USA / Canada', flag: '🇺🇸' },
+  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  { code: '+49', country: 'Germany', flag: '🇩🇪' },
+  { code: '+33', country: 'France', flag: '🇫🇷' },
+];
+
 export const BookingEngine: React.FC<BookingEngineProps> = ({
   onConfirmBooking,
   initialServiceId,
@@ -92,6 +109,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [showCalendarOnMobile, setShowCalendarOnMobile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Guest Contact Information (Mobile compulsory, Email optional without "optional" label)
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [emailError, setEmailError] = useState('');
+
   // Month names
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -139,6 +163,26 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const dateString = `${dayName}, ${monthNames[currentMonthIndex].slice(0, 3)} ${selectedDay}, ${currentYear}`;
 
   const handleSubmit = () => {
+    // Mobile number is strictly compulsory
+    const cleanPhone = phoneNumber.trim();
+    if (!cleanPhone) {
+      setPhoneError('Please enter your mobile number');
+      return;
+    }
+    const digitsOnly = cleanPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      setPhoneError('Please enter a valid mobile number');
+      return;
+    }
+    setPhoneError('');
+
+    // Email is optional, but if entered it must be valid format
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    setEmailError('');
+
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
@@ -154,6 +198,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         notes: notes,
         beverage: 'Complimentary Artisanal Herbal Drink',
         gender: selectedGender,
+        phoneCountryCode: phoneCountryCode,
+        phone: cleanPhone,
+        email: email.trim(),
       });
     }, 600);
   };
@@ -566,8 +613,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                 </div>
               </div>
 
-              {/* 3. Special Requests & Notes (Collapsible on Mobile) */}
-              <div className="space-y-2 pt-1 border-t border-[#c2c8c2]/30">
+              {/* Special Requests & Notes (Collapsible) */}
+              <div className="space-y-2 pt-2 border-t border-[#c2c8c2]/30">
                 <button
                   type="button"
                   onClick={() => setShowNotes(!showNotes)}
@@ -601,11 +648,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
               <div className="space-y-3.5 sm:space-y-5">
                 {/* Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <span className="text-[#fe753c] text-[11px] font-bold uppercase tracking-[0.18em] font-label-caps">
-                    Reservation Summary
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-[#18392d]/80 text-[10px] font-bold tracking-wider text-[#9eb6aa] uppercase border border-white/10">
-                    Live Total
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#fe753c] text-white flex items-center justify-center text-[10px] font-bold">
+                      3
+                    </span>
+                    <span className="text-[#fe753c] text-[11px] font-bold uppercase tracking-[0.18em] font-label-caps">
+                      Confirm Appointment
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#18392d]/80 text-[10px] font-bold tracking-wider text-[#9eb6aa] uppercase border border-white/10">
+                    Summary & Pass
                   </span>
                 </div>
 
@@ -675,6 +727,81 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       <p className="text-[12px] text-white/95 truncate">"{notes}"</p>
                     </div>
                   )}
+                </div>
+
+                {/* Guest Contact Details */}
+                <div className="space-y-2.5 pt-3 border-t border-white/10">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#9eb6aa] font-label-caps block">
+                      Guest Contact Details
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Mobile Number with Extension Selector (Compulsory) */}
+                    <div className="space-y-1">
+                      <div className={`flex items-center rounded-xl bg-[#0f2d22] border ${
+                        phoneError ? 'border-red-400 ring-1 ring-red-400' : 'border-white/15'
+                      } focus-within:border-[#fe753c] focus-within:bg-[#0b241a] transition-all overflow-hidden`}>
+                        <select
+                          value={phoneCountryCode}
+                          onChange={(e) => setPhoneCountryCode(e.target.value)}
+                          className="py-2.5 pl-2.5 pr-1 bg-[#0f2d22] text-white font-semibold text-[12.5px] focus:outline-none cursor-pointer border-r border-white/10"
+                          aria-label="Country Extension"
+                        >
+                          {COUNTRY_CODES.map((c) => (
+                            <option key={c.code + c.country} value={c.code} className="bg-[#071a14] text-white">
+                              {c.flag} {c.code}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            setPhoneNumber(e.target.value);
+                            if (phoneError) setPhoneError('');
+                          }}
+                          placeholder="Mobile Number *"
+                          required
+                          className="w-full px-3 py-2 bg-transparent text-white text-[12.5px] placeholder-[#9eb6aa]/50 focus:outline-none font-medium"
+                        />
+                      </div>
+                      {phoneError && (
+                        <p className="text-[10.5px] text-red-400 font-medium flex items-center gap-1 pt-0.5">
+                          <span className="material-symbols-outlined text-[12px]">error</span>
+                          {phoneError}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Email Address Input (Optional, NO 'optional' label!) */}
+                    <div className="space-y-1">
+                      <div className={`flex items-center rounded-xl bg-[#0f2d22] border ${
+                        emailError ? 'border-red-400 ring-1 ring-red-400' : 'border-white/15'
+                      } focus-within:border-[#fe753c] focus-within:bg-[#0b241a] transition-all overflow-hidden`}>
+                        <span className="pl-2.5 text-[#9eb6aa] flex items-center">
+                          <span className="material-symbols-outlined text-[15px]">mail</span>
+                        </span>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            if (emailError) setEmailError('');
+                          }}
+                          placeholder="Email Address"
+                          className="w-full px-2.5 py-2 bg-transparent text-white text-[12.5px] placeholder-[#9eb6aa]/50 focus:outline-none font-medium"
+                        />
+                      </div>
+                      {emailError && (
+                        <p className="text-[10.5px] text-red-400 font-medium flex items-center gap-1 pt-0.5">
+                          <span className="material-symbols-outlined text-[12px]">error</span>
+                          {emailError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Reservation Status & Zero Prepayment */}
