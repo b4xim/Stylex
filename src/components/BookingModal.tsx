@@ -43,25 +43,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
         <div className="p-6 space-y-5">
           {/* Service & Artisan */}
           <div className="bg-[#0f2d22] border border-white/10 rounded-2xl p-4 space-y-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-[#9eb6aa]">Service</p>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#18392d] text-[#fe753c] font-semibold border border-[#fe753c]/30">
-                    {booking.gender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'}
-                  </span>
-                </div>
-                <h4 className="text-[18px] font-semibold text-white font-display-hero">{booking.serviceName}</h4>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-[#9eb6aa]">Service</p>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#18392d] text-[#fe753c] font-semibold border border-[#fe753c]/30">
+                  {booking.gender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'}
+                </span>
               </div>
-              <span className="text-[18px] font-bold text-[#fe753c]">
-                ₹{booking.price.toLocaleString('en-IN')}
-              </span>
+              <h4 className="text-[18px] font-semibold text-white font-display-hero mt-1">{booking.serviceName}</h4>
             </div>
 
             <div className="flex justify-between items-center text-[12px] pt-1 border-t border-white/10 text-[#d4ebe1]">
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[15px] text-[#fe753c]">person</span>
-                Artisan: {booking.stylist === 'Any Artisan' ? 'Any Available Artisan' : booking.stylist}
+                Stylist: {booking.stylist}
               </span>
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[15px] text-[#fe753c]">timelapse</span>
@@ -85,15 +80,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             </div>
           </div>
 
-          {/* Financials & Concierge Hospitality */}
+          {/* Hospitality Pass Details */}
           <div className="bg-[#082017] rounded-xl p-3 border border-white/5 space-y-1.5 text-[12px]">
             <div className="flex justify-between text-[#9eb6aa]">
-              <span>Total Service Amount:</span>
-              <span className="text-[#fe753c] font-bold text-[14px]">₹{booking.price.toLocaleString('en-IN')}</span>
+              <span>Reservation Status:</span>
+              <span className="text-emerald-400 font-semibold">Priority Confirmed</span>
             </div>
             <div className="flex justify-between text-[#9eb6aa]">
               <span>Prepayment Required:</span>
-              <span className="text-emerald-400 font-semibold">₹0 (Zero Prepayment)</span>
+              <span className="text-white font-medium">None (Zero Prepayment)</span>
             </div>
             <div className="flex justify-between text-[#9eb6aa]">
               <span>Settlement:</span>

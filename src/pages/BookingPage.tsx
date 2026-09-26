@@ -247,7 +247,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
                 <h4>Payment at Salon Checkout</h4>
               </div>
               <p className="text-[13px] text-[#424844] leading-relaxed">
-                All prices are in Indian Rupees (₹) inclusive of GST. Pay conveniently upon service completion using UPI (GPay/PhonePe), Credit/Debit Cards, or Cash.
+                Pay conveniently upon service completion at our Tirur desk using UPI (GPay/PhonePe), Credit/Debit Cards, or Cash. No advance prepayment required.
               </p>
             </div>
 

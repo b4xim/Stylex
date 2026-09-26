@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SERVICES, MASTER_ARTISANS, TIME_SLOTS, SALON_DATA } from '../data/salonData.ts';
+import { BOOKING_HEADINGS, SERVICES, MASTER_ARTISANS, TIME_SLOTS, SALON_DATA } from '../data/salonData.ts';
 import { BookingState } from '../types.ts';
 
 interface BookingEngineProps {
@@ -14,59 +14,64 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   showHeader = true,
 }) => {
   // Gender / Department selection (Gents vs Ladies)
-  const initialService = SERVICES.find((s) => s.id === initialServiceId);
-  const initialGender: 'gents' | 'ladies' = initialService?.gender === 'gents' ? 'gents' : 'ladies';
+  const initialFound = BOOKING_HEADINGS.find((h) => h.id === initialServiceId) 
+    || SERVICES.find((s) => s.id === initialServiceId);
+  const initialGender: 'gents' | 'ladies' = initialFound?.gender === 'ladies' ? 'ladies' : 'gents';
 
   const [selectedGender, setSelectedGender] = useState<'gents' | 'ladies'>(initialGender);
 
-  // Available services filtered by selected gender
-  const availableServices = SERVICES.filter(
-    (s) => s.gender === selectedGender || s.gender === 'both'
+  // Available headings filtered by selected gender
+  const availableHeadings = BOOKING_HEADINGS.filter(
+    (h) => h.gender === selectedGender
   );
 
-  // Default service for selected gender
-  const defaultService =
-    (initialService && (initialService.gender === selectedGender || initialService.gender === 'both'))
-      ? initialService
-      : availableServices[0];
+  // Default heading for selected gender
+  const defaultHeading = (initialFound && initialFound.gender === selectedGender)
+    ? (BOOKING_HEADINGS.find((h) => h.id === initialFound.id || (h.category === initialFound.category && h.gender === selectedGender)) || availableHeadings[0])
+    : availableHeadings[0];
 
-  const [selectedService, setSelectedService] = useState(defaultService);
+  const [selectedService, setSelectedService] = useState(defaultHeading);
 
   // Available artisans filtered by selected gender
   const availableArtisans = MASTER_ARTISANS.filter(
     (a) => a.gender === selectedGender || a.gender === 'both'
   );
 
-  const [selectedArtisan, setSelectedArtisan] = useState('Any Artisan');
+  const [selectedArtisan, setSelectedArtisan] = useState('Any Stylist');
 
-  // When gender changes, automatically update services and stylists
+  // When gender changes, automatically update headings and stylists
   const handleGenderChange = (newGender: 'gents' | 'ladies') => {
     if (newGender === selectedGender) return;
     setSelectedGender(newGender);
 
-    const newServices = SERVICES.filter((s) => s.gender === newGender || s.gender === 'both');
-    if (newServices.length > 0) {
-      setSelectedService(newServices[0]);
+    const newHeadings = BOOKING_HEADINGS.filter((h) => h.gender === newGender);
+    if (newHeadings.length > 0) {
+      setSelectedService(newHeadings[0]);
     }
 
     const newArtisans = MASTER_ARTISANS.filter((a) => a.gender === newGender || a.gender === 'both');
-    // If an artisan was selected that is specific to the old gender, reset to 'Any Artisan'
-    if (selectedArtisan !== 'Any Artisan' && !newArtisans.some((a) => a.name === selectedArtisan)) {
-      setSelectedArtisan('Any Artisan');
+    // If a stylist was selected that is specific to the old gender, reset to 'Any Stylist'
+    if (selectedArtisan !== 'Any Stylist' && !newArtisans.some((a) => a.name === selectedArtisan)) {
+      setSelectedArtisan('Any Stylist');
     }
   };
 
   // Sync if initialServiceId changes externally
   useEffect(() => {
     if (!initialServiceId) return;
-    const found = SERVICES.find((s) => s.id === initialServiceId);
+    const found = BOOKING_HEADINGS.find((h) => h.id === initialServiceId) 
+      || SERVICES.find((s) => s.id === initialServiceId);
     if (found) {
-      const g = found.gender === 'gents' ? 'gents' : 'ladies';
+      const g = found.gender === 'ladies' ? 'ladies' : 'gents';
       setSelectedGender(g);
-      setSelectedService(found);
+      const matchingHeading = BOOKING_HEADINGS.find((h) => h.id === found.id || (h.category === found.category && h.gender === g))
+        || BOOKING_HEADINGS.filter((h) => h.gender === g)[0];
+      if (matchingHeading) {
+        setSelectedService(matchingHeading);
+      }
       const filteredArtisans = MASTER_ARTISANS.filter((a) => a.gender === g || a.gender === 'both');
-      if (selectedArtisan !== 'Any Artisan' && !filteredArtisans.some((a) => a.name === selectedArtisan)) {
-        setSelectedArtisan('Any Artisan');
+      if (selectedArtisan !== 'Any Stylist' && !filteredArtisans.some((a) => a.name === selectedArtisan)) {
+        setSelectedArtisan('Any Stylist');
       }
     }
   }, [initialServiceId]);
@@ -124,15 +129,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     }
   };
 
-  const handleServiceChange = (serviceId: string) => {
-    const s = availableServices.find((item) => item.id === serviceId);
+  const handleServiceChange = (headingId: string) => {
+    const s = availableHeadings.find((item) => item.id === headingId);
     if (s) setSelectedService(s);
   };
-
-  // Calculations
-  const servicePrice = selectedService.price;
-  const deposit = Math.round(servicePrice * 0.25);
-  const balance = servicePrice - deposit;
 
   const dateObj = new Date(currentYear, currentMonthIndex, selectedDay);
   const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()];
@@ -318,9 +318,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       onChange={(e) => handleServiceChange(e.target.value)}
                       className="w-full px-3.5 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-title-md text-[13.5px] sm:text-[15px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors shadow-sm"
                     >
-                      {availableServices.map((srv) => (
-                        <option key={srv.id} value={srv.id}>
-                          {srv.name} — ₹{srv.price.toLocaleString('en-IN')} ({srv.duration} min)
+                      {availableHeadings.map((heading) => (
+                        <option key={heading.id} value={heading.id}>
+                          {heading.name}
                         </option>
                       ))}
                     </select>
@@ -331,12 +331,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps whitespace-nowrap">
                       Popular:
                     </span>
-                    {availableServices.slice(0, 5).map((srv) => {
-                      const isSelected = selectedService.id === srv.id;
+                    {availableHeadings.slice(0, 5).map((heading) => {
+                      const isSelected = selectedService.id === heading.id;
                       return (
                         <button
-                          key={srv.id}
-                          onClick={() => setSelectedService(srv)}
+                          key={heading.id}
+                          onClick={() => setSelectedService(heading)}
                           className={`px-3 py-1 rounded-full text-[11.5px] sm:text-[12px] font-medium whitespace-nowrap transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-[#112e20] text-white font-semibold shadow-sm'
@@ -344,7 +344,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           }`}
                           type="button"
                         >
-                          {srv.name.split(' ')[0]} {srv.name.split(' ')[1] || ''}
+                          {heading.name}
                         </button>
                       );
                     })}
@@ -554,7 +554,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         onChange={(e) => setSelectedArtisan(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] font-body-md text-[13px] focus:outline-none focus:border-[#112e20] cursor-pointer"
                       >
-                        <option value="Any Artisan">Any Artisan (First Available Specialist)</option>
+                        <option value="Any Stylist">Any Stylist</option>
                         {availableArtisans.map((a) => (
                           <option key={a.id} value={a.name}>
                             {a.name} ({a.specialty})
@@ -617,18 +617,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       <span>{selectedGender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'}</span>
                     </span>
                   </div>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-0.5">
-                      <h3 className="text-white font-headline-sm text-[18px] sm:text-[22px] font-semibold tracking-normal font-display-hero">
-                        {selectedService.name}
-                      </h3>
-                      <p className="text-[12px] text-[#9eb6aa]">
-                        {selectedService.categoryLabel} • {selectedArtisan === 'Any Artisan' ? 'Any Available Artisan' : selectedArtisan}
-                      </p>
-                    </div>
-                    <span className="text-[19px] sm:text-[20px] font-bold text-[#fe753c] tracking-tight">
-                      ₹{selectedService.price.toLocaleString('en-IN')}
-                    </span>
+                  <div>
+                    <h3 className="text-white font-headline-sm text-[18px] sm:text-[22px] font-semibold tracking-normal font-display-hero">
+                      {selectedService.name}
+                    </h3>
+                    <p className="text-[12px] text-[#9eb6aa] mt-0.5">
+                      {selectedService.categoryLabel} • {selectedArtisan}
+                    </p>
                   </div>
                 </div>
 
@@ -667,13 +662,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                   </div>
                 </div>
 
-                {/* Price Breakdown */}
-                <div className="pt-2 border-t border-white/10 space-y-1.5">
-                  <div className="flex items-center justify-between text-white font-bold text-[14.5px] sm:text-[15.5px]">
-                    <span>Total Service Amount</span>
-                    <span className="text-[#fe753c] text-[18px] sm:text-[20px]">₹{selectedService.price.toLocaleString('en-IN')}</span>
+                {/* Reservation Status & Zero Prepayment */}
+                <div className="pt-2.5 border-t border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-white font-medium text-[13px]">
+                    <span className="text-[#9eb6aa]">Reservation Status</span>
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Priority Guaranteed
+                    </span>
                   </div>
-                  <p className="text-[10.5px] text-[#9eb6aa] flex items-center gap-1.5">
+                  <p className="text-[11px] text-[#9eb6aa] flex items-center gap-1.5 pt-0.5">
                     <span className="material-symbols-outlined text-[14px] text-emerald-400">verified</span>
                     <span>Zero prepayment required • Pay upon completion at Tirur desk</span>
                   </p>

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -58,7 +64,8 @@
 .font-headline-lg,
 .font-headline-md,
 .font-headline-sm {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .font-body-lg,
@@ -67,7 +74,7 @@
 .font-label-caps,
 .font-label-md,
 .font-caption {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
 /* Color Theme Utility mappings */
