@@ -144,20 +144,20 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Curation Links (2 cols) */}
+          {/* Services Links (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
             <h4 className="font-label-caps text-[11px] uppercase text-white font-bold tracking-wider">
-              Curation
+              Services
             </h4>
             <ul className="space-y-2.5 font-body-md text-[13px] text-[#9eb6aa]">
               <li className="hover:text-white transition-colors">
-                <a href="#services-curation">Hair Artistry & Color</a>
+                <a href="#services-curation">Hair Styling & Color</a>
               </li>
               <li className="hover:text-white transition-colors">
-                <a href="#services-curation">HydraFacial MD & Skin</a>
+                <a href="#services-curation">Hydra Facial & Skin Care</a>
               </li>
               <li className="hover:text-white transition-colors">
-                <a href="#services-curation">VIP Bridal & Groom Atelier</a>
+                <a href="#services-curation">Bridal & Grooming</a>
               </li>
               <li className="hover:text-white transition-colors">
                 <a href="#atelier-reels">Client Transformations</a>

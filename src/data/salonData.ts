@@ -672,6 +672,18 @@ export const REVIEWS: ReviewItem[] = [
     tag: 'Google Review',
     artisan: 'Abhirami',
     category: 'cut'
+  },
+  {
+    id: 'rev-google-6',
+    author: 'Afna Fathima',
+    initials: 'AF',
+    role: 'Google Review',
+    rating: 5.0,
+    quote: 'Abhirami was my manager, and the service was amazing. My hairdresser was Saneesh and he was incredible.',
+    highlightText: 'Incredible Hairdressing & Manager Care',
+    tag: 'Google Review',
+    artisan: 'Abhirami & Saneesh',
+    category: 'cut'
   }
 ];
 
