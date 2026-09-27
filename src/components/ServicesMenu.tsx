@@ -49,13 +49,13 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBoo
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="w-full md:max-w-md lg:max-w-lg flex-shrink-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#112e20]/10 text-[#112e20] font-label-caps text-[11px] uppercase tracking-wider font-bold mb-3">
-              <span>Bespoke Tirur Flagship Menu</span>
+              <span>Bespoke Tirur Outlet Menu</span>
             </div>
             <h2 className="font-headline-lg text-[32px] sm:text-[40px] text-[#112e20] leading-tight">
               Curated Signature Services
             </h2>
             <p className="font-body-lg text-[15px] sm:text-[16px] text-[#424844]">
-              Curated directly from our Tirur flagship salon menu. Master hair styling, scalp therapies, and luxury VIP suites.
+              Curated directly from our Tirur outlet salon menu. Master hair styling, scalp therapies, and luxury VIP suites.
             </p>
           </div>
 

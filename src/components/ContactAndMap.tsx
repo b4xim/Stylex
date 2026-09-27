@@ -22,7 +22,7 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = () => {
     }, 2500);
   };
 
-  const whatsappInquiryUrl = `https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Tirur Flagship, I would like to inquire about appointments and availability.')}`;
+  const whatsappInquiryUrl = `https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Tirur Outlet, I would like to inquire about appointments and availability.')}`;
 
   return (
     <section className="w-full bg-[#f0f5f1] py-20 px-4 sm:px-6 lg:px-12 border-t border-[#c2c8c2]/40" id="contact-location">
@@ -31,10 +31,10 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = () => {
         <div className="space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#072f23] text-[#a6d0be] border border-[#144e3d] text-[11px] font-semibold tracking-widest uppercase">
             <span className="material-symbols-outlined text-[15px] text-[#fe753c]">map</span>
-            <span>Tirur Flagship & Atelier Directory</span>
+            <span>Tirur Outlet Directory</span>
           </div>
           <h2 className="font-headline-lg text-[32px] sm:text-[40px] text-[#112e20] leading-tight">
-            Visit Our Tirur Flagship & Get in Touch
+            Visit Our Tirur Outlet & Get in Touch
           </h2>
           <p className="font-body-lg text-[15px] sm:text-[16px] text-[#424844]">
             Conveniently situated at One Arcade on KG Padi Road. Walk-ins and pre-booked private appointments are warmly welcomed daily until 1:00 AM.
@@ -234,7 +234,7 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = () => {
 
                 <div className="bg-[#042018]/90 text-[#a6d0be] backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#185341] shadow-xl text-[11px] font-bold tracking-wide flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-[#fe753c] animate-pulse" />
-                  <span>Flagship Sanctuary • Map Overview</span>
+                  <span>Tirur Outlet • Map Overview</span>
                 </div>
               </div>
 

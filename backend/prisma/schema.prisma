@@ -1,0 +1,198 @@
+// Prisma Schema for StyleX Signature Salon Flagship Backend
+// Production-grade PostgreSQL schema optimized for single-instance OCI deployment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String?   @unique
+  passwordHash String
+  name         String
+  role         String    @default("MANAGER") // "ADMIN", "DEVELOPER", "MANAGER", "NORMAL_USER"
+  isActive     Boolean   @default(true)
+  isSecret     Boolean   @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("admin_users")
+}
+
+model Customer {
+  id          String    @id @default(uuid())
+  name        String
+  phone       String
+  countryCode String    @default("+91")
+  email       String?
+  notes       String?
+  totalVisits Int       @default(0)
+  totalSpent  Float     @default(0.0)
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([countryCode, phone])
+  @@index([phone])
+  @@index([email])
+  @@map("customers")
+}
+
+model Service {
+  id            String    @id // Slug like 'signature-haircut-gents'
+  name          String
+  category      String    // 'Hair & Styling', 'Beard & Shave', 'Facial & Glow', etc.
+  gender        String    // 'gents', 'ladies', 'unisex'
+  durationMins  Int
+  price         Float
+  originalPrice Float?
+  description   String?
+  benefits      String?   // JSON encoded string array
+  isPopular     Boolean   @default(false)
+  isTrending    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  orderIndex    Int       @default(0)
+  bookings      Booking[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([category])
+  @@index([gender])
+  @@map("services")
+}
+
+model Stylist {
+  id           String        @id // Slug like 'niya-mathew'
+  name         String
+  role         String        // 'Master Hair Artisan', 'Bridal Specialist'
+  gender       String        // 'female', 'male', 'any'
+  specialty    String
+  bio          String?
+  imageUrl     String
+  rating       Float         @default(4.9)
+  reviewCount  Int           @default(0)
+  experience   String?       // '8+ Years'
+  isActive     Boolean       @default(true)
+  orderIndex   Int           @default(0)
+  bookings     Booking[]
+  blockedSlots BlockedSlot[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("stylists")
+}
+
+model Booking {
+  id                 String    @id @default(uuid())
+  bookingRef         String    @unique // e.g. 'SX-8492'
+  customerId         String
+  customer           Customer  @relation(fields: [customerId], references: [id])
+  stylistId          String?
+  stylist            Stylist?  @relation(fields: [stylistId], references: [id])
+  serviceId          String
+  service            Service   @relation(fields: [serviceId], references: [id])
+  secondaryServiceId String?
+  secondaryService   String?
+  secondaryPrice     Float?
+  date               String    // ISO YYYY-MM-DD
+  timeSlot           String    // e.g. '10:30 AM'
+  status             String    @default("CONFIRMED") // 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'
+  notes              String?
+  subtotal           Float
+  discount           Float     @default(0.0)
+  total              Float
+  paymentStatus      String    @default("PENDING") // 'PENDING', 'PAID', 'PAY_AT_SALON', 'UPI'
+  whatsappStatus     String    @default("NOT_SENT") // 'NOT_SENT', 'SENT', 'FAILED'
+  emailStatus        String    @default("NOT_SENT") // 'NOT_SENT', 'SENT', 'FAILED'
+  source             String    @default("WEBSITE") // 'WEBSITE', 'ADMIN_DASHBOARD', 'WALK_IN'
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([date, timeSlot])
+  @@index([status])
+  @@index([customerId])
+  @@index([stylistId])
+  @@map("bookings")
+}
+
+model BlockedSlot {
+  id        String   @id @default(uuid())
+  date      String   // ISO YYYY-MM-DD
+  timeSlot  String   // e.g. '04:30 PM' or 'ALL_DAY'
+  stylistId String?
+  stylist   Stylist? @relation(fields: [stylistId], references: [id])
+  reason    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([date, timeSlot, stylistId])
+  @@index([date])
+  @@map("blocked_slots")
+}
+
+model CarouselBanner {
+  id         String   @id @default(uuid())
+  title      String
+  subtitle   String?
+  badge      String?
+  ctaText    String?
+  link       String?
+  imageUrl   String
+  orderIndex Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("carousel_banners")
+}
+
+model ReelItem {
+  id            String   @id @default(uuid())
+  title         String
+  tag           String
+  category      String
+  views         String?
+  imageUrl      String
+  audioTrack    String?
+  stylistHandle String?
+  description   String?
+  instagramUrl  String?
+  videoUrl      String?
+  orderIndex    Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("reels")
+}
+
+model PortfolioWork {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  artisan     String
+  imageUrl    String
+  description String?
+  orderIndex  Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("portfolio_works")
+}
+
+model SalonSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   // Plain text or stringified JSON
+  updatedAt DateTime @updatedAt
+
+  @@map("salon_settings")
+}

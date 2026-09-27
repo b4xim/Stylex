@@ -1,15 +1,61 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { REELS, PORTFOLIO_WORKS, SALON_DATA } from '../data/salonData.ts';
-import { ReelItem } from '../types.ts';
+import { ReelItem, PortfolioWork } from '../types.ts';
 
 interface AtelierReelsProps {
   onOpenReel: (reel: ReelItem) => void;
-  onOpenPortfolio: (item: (typeof PORTFOLIO_WORKS)[0]) => void;
+  onOpenPortfolio: (item: PortfolioWork) => void;
 }
 
 export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPortfolio }) => {
   const reelsTrackRef = useRef<HTMLDivElement>(null);
   const portfolioTrackRef = useRef<HTMLDivElement>(null);
+
+  const [reels, setReels] = useState<ReelItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('stylex_tirur_v6_reels');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const active = parsed.filter((r: any) => r.isActive !== false);
+        if (active.length > 0) return active;
+      }
+    } catch {}
+    return REELS;
+  });
+
+  const [portfolioWorks, setPortfolioWorks] = useState<PortfolioWork[]>(() => {
+    try {
+      const saved = localStorage.getItem('stylex_tirur_v6_portfolio');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const active = parsed.filter((p: any) => p.isActive !== false);
+        if (active.length > 0) return active;
+      }
+    } catch {}
+    return PORTFOLIO_WORKS;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const savedReels = localStorage.getItem('stylex_tirur_v6_reels');
+        if (savedReels) {
+          const parsed = JSON.parse(savedReels);
+          const active = parsed.filter((r: any) => r.isActive !== false);
+          if (active.length > 0) setReels(active);
+        }
+        const savedPortfolio = localStorage.getItem('stylex_tirur_v6_portfolio');
+        if (savedPortfolio) {
+          const parsed = JSON.parse(savedPortfolio);
+          const active = parsed.filter((p: any) => p.isActive !== false);
+          if (active.length > 0) setPortfolioWorks(active);
+        }
+      } catch {}
+    };
+
+    window.addEventListener('storage', handleSync);
+    return () => window.removeEventListener('storage', handleSync);
+  }, []);
 
   const scrollReels = (direction: 'left' | 'right') => {
     if (reelsTrackRef.current) {
@@ -85,7 +131,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
           className="flex items-center gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none' }}
         >
-          {REELS.map((reel) => (
+          {reels.map((reel) => (
             <div
               key={reel.id}
               onClick={() => onOpenReel(reel)}
@@ -184,7 +230,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
             className="w-full flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto sm:overflow-visible py-1"
             style={{ scrollbarWidth: 'none' }}
           >
-            {PORTFOLIO_WORKS.map((work) => (
+            {portfolioWorks.map((work) => (
               <div
                 key={work.id}
                 onClick={() => onOpenPortfolio(work)}

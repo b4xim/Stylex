@@ -1,0 +1,6 @@
+{
+  "name": "StyleX Signature Atelier",
+  "description": "High-end salon atelier operations, appointment reception, schedule control, service menu, and guest management portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

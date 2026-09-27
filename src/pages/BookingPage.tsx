@@ -33,7 +33,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
               Curate your look with our master stylists. Select your signature service, preferred stylist, and reservation slot with instantaneous WhatsApp confirmation.
             </p>
             <p className="sm:hidden text-[12px] text-[#caead5]/80 font-medium">
-              Tirur Flagship • Open Daily 10:00 AM – 1:00 AM • Pay at Salon
+              Tirur Outlet • Open Daily 10:00 AM – 1:00 AM • Pay at Salon
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
             The StyleX Standard
           </span>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#112e20] font-headline-lg">
-            Why Reserve at StyleX Tirur Flagship?
+            Why Reserve at StyleX Tirur Outlet?
           </h2>
         </div>
 

@@ -162,6 +162,89 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()];
   const dateString = `${dayName}, ${monthNames[currentMonthIndex].slice(0, 3)} ${selectedDay}, ${currentYear}`;
 
+  // Check if an artisan has a scheduled leave for the selected date & time
+  const getStylistLeaveStatus = (artisanName: string) => {
+    const yyyy = currentYear;
+    const mm = String(currentMonthIndex + 1).padStart(2, '0');
+    const dd = String(selectedDay).padStart(2, '0');
+    const targetDateStr = `${yyyy}-${mm}-${dd}`;
+
+    let leaves: any[] = [];
+    try {
+      const raw = localStorage.getItem('stylex_stylist_leaves') || localStorage.getItem('stylex_tirur_v6_stylist_leaves');
+      if (raw) leaves = JSON.parse(raw);
+    } catch (e) {}
+
+    const match = leaves.find(
+      (l) => l.stylistName?.toLowerCase() === artisanName.toLowerCase() && l.date === targetDateStr
+    );
+    if (!match) return { isUnavailable: false, notice: '' };
+
+    if (match.duration === 'FULL_DAY') {
+      return { isUnavailable: true, notice: 'On Leave (Full Day)' };
+    }
+
+    const hourMatch = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    let hour24 = 12;
+    if (hourMatch) {
+      let h = parseInt(hourMatch[1], 10);
+      const ampm = hourMatch[3].toUpperCase();
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      hour24 = h;
+    }
+
+    const isMorning = hour24 < 16.5;
+
+    if (match.duration === 'FIRST_HALF' && isMorning) {
+      return { isUnavailable: true, notice: 'Morning Leave (Available after 4:30 PM)' };
+    }
+    if (match.duration === 'SECOND_HALF' && !isMorning) {
+      return { isUnavailable: true, notice: 'Evening Leave (Available until 4:30 PM)' };
+    }
+
+    return { isUnavailable: false, notice: '' };
+  };
+
+  // Check Blackout Dates and Blocked Time Slots from Schedule Control
+  const getBlackoutStatus = (dayNum?: number) => {
+    const yyyy = currentYear;
+    const mm = String(currentMonthIndex + 1).padStart(2, '0');
+    const dd = String(dayNum || selectedDay).padStart(2, '0');
+    const targetDateStr = `${yyyy}-${mm}-${dd}`;
+
+    let blackouts: any[] = [];
+    try {
+      const raw = localStorage.getItem('stylex_tirur_v6_blackouts');
+      if (raw) blackouts = JSON.parse(raw);
+    } catch (e) {}
+
+    const matching = blackouts.filter((b) => {
+      if (b.dateStr !== targetDateStr) return false;
+      const st = (b.station || '').toLowerCase();
+      if (st && !st.includes('all')) {
+        if (st.includes('ladies') && selectedGender !== 'ladies') return false;
+        if (st.includes('gents') && selectedGender !== 'gents') return false;
+      }
+      return true;
+    });
+
+    const fullDay = matching.find((b) => b.blockType === 'FULL_DAY');
+    const blockedSlots: string[] = [];
+    matching.forEach((b) => {
+      if (b.blockType === 'TIME_SLOTS' && b.slots) {
+        blockedSlots.push(...b.slots);
+      }
+    });
+
+    return {
+      isFullDayClosed: !!fullDay,
+      fullDayTitle: fullDay?.title || '',
+      blockedSlots,
+      station: fullDay?.station || 'All',
+    };
+  };
+
   const handleSubmit = () => {
     // Mobile number is strictly compulsory
     const cleanPhone = phoneNumber.trim();
@@ -182,6 +265,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       return;
     }
     setEmailError('');
+
+    const currentBlackout = getBlackoutStatus();
+    if (currentBlackout.isFullDayClosed) {
+      alert(`Sorry, reservations are closed on this date. Please choose another date.`);
+      return;
+    }
+    if (currentBlackout.blockedSlots.includes(selectedTime)) {
+      alert(`The selected time slot (${selectedTime}) is blocked. Please select another slot.`);
+      return;
+    }
 
     setIsSubmitting(true);
     setTimeout(() => {
@@ -517,18 +610,26 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       {Array.from({ length: daysInMonth }).map((_, i) => {
                         const dayNum = i + 1;
                         const isSelected = selectedDay === dayNum;
+                        const dayBlackout = getBlackoutStatus(dayNum);
+                        const isDayClosed = dayBlackout.isFullDayClosed;
                         return (
                           <button
                             key={dayNum}
                             onClick={() => setSelectedDay(dayNum)}
-                            className={`h-8 rounded-lg flex items-center justify-center font-medium transition-colors cursor-pointer ${
+                            title={isDayClosed ? 'Salon Closed' : undefined}
+                            className={`h-8 rounded-lg flex items-center justify-center font-medium transition-colors cursor-pointer relative ${
                               isSelected
                                 ? 'bg-[#112e20] text-white font-bold shadow-sm ring-2 ring-[#112e20]'
+                                : isDayClosed
+                                ? 'text-red-500 bg-red-50/70 font-semibold border border-red-200/50'
                                 : 'text-[#181d1b] hover:bg-[#eaefeb]'
                             }`}
                             type="button"
                           >
                             {dayNum}
+                            {isDayClosed && (
+                              <span className="w-1 h-1 rounded-full bg-red-500 absolute bottom-1" />
+                            )}
                           </button>
                         );
                       })}
@@ -542,7 +643,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#fe753c]" />
-                        <span>Open 10 AM – 1 AM</span>
+                        <span>Open 10 AM – 12 AM</span>
                       </div>
                     </div>
                   </div>
@@ -552,33 +653,61 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844] font-label-caps block">
-                          Select Time Slot
+                          Select Time Slot (1-Hour)
                         </label>
                         <span className="text-[11px] text-[#fe753c] font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">schedule</span> 10 AM – 1 AM
+                          <span className="material-symbols-outlined text-[13px]">schedule</span> 10 AM – 12 AM
                         </span>
                       </div>
 
-                      {/* Touch-Friendly Grid of All Available Slots (3 cols: 5 neat rows of hourly slots) */}
-                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                        {timeSlots.map((slot) => {
-                          const isSelected = selectedTime === slot;
+                      {/* Touch-Friendly Grid of All Available Slots */}
+                      {(() => {
+                        const currentBlackout = getBlackoutStatus();
+                        if (currentBlackout.isFullDayClosed) {
                           return (
-                            <button
-                              key={slot}
-                              onClick={() => setSelectedTime(slot)}
-                              className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-semibold transition-all text-center cursor-pointer ${
-                                isSelected
-                                  ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40'
-                                  : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb]'
-                              }`}
-                              type="button"
-                            >
-                              {slot}
-                            </button>
+                            <div className="p-4 bg-red-50/90 border border-red-200 rounded-2xl text-center">
+                              <span className="material-symbols-outlined text-[24px] text-red-600 mb-1">block</span>
+                              <p className="text-[12.5px] font-bold text-red-900">
+                                Date Closed
+                              </p>
+                              <p className="text-[11px] text-red-700 mt-0.5">
+                                Salon reservations are closed on this date ({currentBlackout.station || 'Entire Salon'}). Please choose an alternative date.
+                              </p>
+                            </div>
                           );
-                        })}
-                      </div>
+                        }
+
+                        return (
+                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                            {timeSlots.map((slot) => {
+                              const isSelected = selectedTime === slot;
+                              const isSlotBlocked = currentBlackout.blockedSlots.includes(slot);
+                              return (
+                                <button
+                                  key={slot}
+                                  disabled={isSlotBlocked}
+                                  onClick={() => setSelectedTime(slot)}
+                                  className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-semibold transition-all text-center relative ${
+                                    isSlotBlocked
+                                      ? 'bg-red-50 text-red-400 line-through cursor-not-allowed border border-red-200/70 opacity-60'
+                                      : isSelected
+                                      ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 cursor-pointer'
+                                      : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb] cursor-pointer'
+                                  }`}
+                                  type="button"
+                                >
+                                  <span>{slot}</span>
+                                  {isSlotBlocked && (
+                                    <span className="block text-[8px] font-bold text-red-600 no-underline uppercase tracking-tight">
+                                      Blocked
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Master Artisan Choice */}
@@ -596,13 +725,39 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         onChange={(e) => setSelectedArtisan(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[#181d1b] font-body-md text-[13px] focus:outline-none focus:border-[#112e20] cursor-pointer"
                       >
-                        <option value="Any Stylist">Any Stylist</option>
-                        {availableArtisans.map((a) => (
-                          <option key={a.id} value={a.name}>
-                            {a.name} ({a.specialty})
-                          </option>
-                        ))}
+                        <option value="Any Stylist">Any Stylist (Recommended)</option>
+                        {availableArtisans.map((a) => {
+                          const leaveStatus = getStylistLeaveStatus(a.name);
+                          return (
+                            <option
+                              key={a.id}
+                              value={a.name}
+                              disabled={leaveStatus.isUnavailable}
+                              className={leaveStatus.isUnavailable ? 'text-gray-400 bg-gray-100 italic' : ''}
+                            >
+                              {a.name} ({a.specialty}){leaveStatus.isUnavailable ? ` • ⚠️ [${leaveStatus.notice}]` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
+
+                      {/* Advisory if currently selected stylist is on leave for this slot */}
+                      {(() => {
+                        if (selectedArtisan === 'Any Stylist') return null;
+                        const leaveStatus = getStylistLeaveStatus(selectedArtisan);
+                        if (!leaveStatus.isUnavailable) return null;
+                        return (
+                          <div className="mt-1.5 p-2.5 bg-[#ffe088]/30 border border-[#ffe088] rounded-xl flex items-start gap-2 text-xs text-[#735c00]">
+                            <span className="material-symbols-outlined text-[16px] mt-0.5 shrink-0">
+                              info
+                            </span>
+                            <span>
+                              <strong>{selectedArtisan}</strong> is {leaveStatus.notice.toLowerCase()} on this date and time.
+                              Please select another time or choose <em>"Any Stylist"</em>.
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PROMO_SLIDES } from '../data/salonData.ts';
 
 interface PromotionsCarouselProps {
@@ -6,17 +6,76 @@ interface PromotionsCarouselProps {
 }
 
 export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelectPromo }) => {
+  const [slides, setSlides] = useState(() => {
+    try {
+      const saved = localStorage.getItem('stylex_tirur_v6_banners');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const active = parsed.filter((b: any) => b.isActive !== false);
+        if (active.length > 0) {
+          return active.map((b: any, idx: number) => ({
+            id: b.id || `promo-${idx + 1}`,
+            title: b.title,
+            subtitle: b.validity,
+            tag: b.tag || 'Special Offer',
+            imageUrl: b.imageUrl,
+            offerText: b.validity,
+            primaryService: b.title,
+            primaryPrice: 'Signature Privilege',
+            secondaryService: 'Consultation',
+            secondaryPrice: 'Included',
+          }));
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return PROMO_SLIDES;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const saved = localStorage.getItem('stylex_tirur_v6_banners');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const active = parsed.filter((b: any) => b.isActive !== false);
+          if (active.length > 0) {
+            setSlides(
+              active.map((b: any, idx: number) => ({
+                id: b.id || `promo-${idx + 1}`,
+                title: b.title,
+                subtitle: b.validity,
+                tag: b.tag || 'Special Offer',
+                imageUrl: b.imageUrl,
+                offerText: b.validity,
+                primaryService: b.title,
+                primaryPrice: 'Signature Privilege',
+                secondaryService: 'Consultation',
+                secondaryPrice: 'Included',
+              }))
+            );
+          }
+        }
+      } catch {
+        // fallback
+      }
+    };
+    window.addEventListener('storage', handleSync);
+    return () => window.removeEventListener('storage', handleSync);
+  }, []);
+
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   const prevSlide = () => {
-    setCurrentSlideIndex((prev) => (prev === 0 ? PROMO_SLIDES.length - 1 : prev - 1));
+    setCurrentSlideIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   const nextSlide = () => {
-    setCurrentSlideIndex((prev) => (prev === PROMO_SLIDES.length - 1 ? 0 : prev + 1));
+    setCurrentSlideIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   };
 
-  const currentSlide = PROMO_SLIDES[currentSlideIndex];
+  const currentSlide = slides[currentSlideIndex] || slides[0];
 
   return (
     <section className="w-full bg-[#f6faf7] py-8 sm:py-10 px-4 sm:px-6 lg:px-12 relative" id="promotions-carousel">
@@ -45,7 +104,7 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
           <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 hidden sm:block">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-label-caps text-[11px] uppercase tracking-wider font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-[#fe753c] animate-pulse" />
-              <span>Slide {currentSlideIndex + 1} of {PROMO_SLIDES.length} • Seasonal Curation</span>
+              <span>Slide {currentSlideIndex + 1} of {slides.length} • Seasonal Curation</span>
             </div>
           </div>
 
@@ -77,7 +136,7 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
 
           {/* Bottom Dots Indicator Bar */}
           <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20">
-            {PROMO_SLIDES.map((_, idx) => (
+            {slides.map((_: any, idx: number) => (
               <button
                 key={idx}
                 onClick={(e) => {

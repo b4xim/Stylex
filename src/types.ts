@@ -62,7 +62,7 @@ export interface ReelItem {
   id: string;
   title: string;
   tag: string;
-  views: string;
+  views?: string;
   imageUrl: string;
   audioTrack: string;
   stylistHandle: string;
@@ -70,7 +70,19 @@ export interface ReelItem {
   description?: string;
   instagramUrl?: string;
   videoUrl?: string;
+  isActive?: boolean;
 }
+
+export interface PortfolioWork {
+  id: string;
+  title: string;
+  category: string;
+  artisan: string;
+  imageUrl: string;
+  description?: string;
+  isActive?: boolean;
+}
+
 
 export interface ReviewItem {
   id: string;

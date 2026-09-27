@@ -31,7 +31,7 @@ export const Footer: React.FC = () => {
               StyleX Signature Salon
             </h3>
             <p className="text-[11.5px] text-[#9eb6aa]">
-              Tirur Flagship • Open Daily 10:00 AM – 1:00 AM
+              Tirur Outlet • Open Daily 10:00 AM – 1:00 AM
             </p>
           </div>
 
@@ -168,10 +168,10 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Flagship Timings & Address (3 cols) */}
+          {/* Outlet Timings & Address (3 cols) */}
           <div className="lg:col-span-3 space-y-4">
             <h4 className="font-label-caps text-[11px] uppercase text-white font-bold tracking-wider">
-              Tirur Flagship Hours
+              Tirur Outlet Hours
             </h4>
             <div className="space-y-2 font-body-md text-[13px] text-[#9eb6aa]">
               <div className="p-3 rounded-xl bg-[#0e372b]/60 border border-[#1d5644] space-y-1">
@@ -179,7 +179,7 @@ export const Footer: React.FC = () => {
                   <span>Open Daily</span>
                   <span className="text-[#fe753c]">10:00 AM – 1:00 AM</span>
                 </div>
-                <p className="text-[11px] text-[#a6d0be]">Monday through Sunday without break</p>
+                <p className="text-[11px] text-[#a6d0be]">Monday through Sunday</p>
               </div>
 
               <div className="pt-2 text-[12px] space-y-1">
@@ -230,7 +230,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Copyright (Desktop) */}
         <div className="hidden md:flex pt-6 border-t border-[#1b4335] flex-col md:flex-row items-center justify-between gap-4 font-caption text-[12px] text-[#9eb6aa]">
-          <p>© {new Date().getFullYear()} StyleX Signature Salon • Tirur Flagship, Kerala. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} StyleX Signature Salon • Tirur Outlet, Kerala. All rights reserved.</p>
 
           <div className="flex items-center gap-4 text-xs">
             <a

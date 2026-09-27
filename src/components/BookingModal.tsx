@@ -29,7 +29,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             <span className="material-symbols-outlined text-[28px]">check</span>
           </div>
           <span className="text-[#fe753c] text-[11px] font-bold uppercase tracking-[0.2em] font-label-caps">
-            Reservation Secured • {booking.gender === 'gents' ? 'Gents Atelier' : 'Ladies Atelier'} • Tirur Flagship
+            Reservation Secured • {booking.gender === 'gents' ? 'Gents Section' : 'Ladies Section'} • Tirur Outlet
           </span>
           <h3 className="text-[24px] font-bold text-white font-display-hero">
             StyleX Signature Salon Pass

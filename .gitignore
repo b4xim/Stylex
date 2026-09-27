@@ -1,17 +1,126 @@
+# ==============================================================================
+# StyleX - Master Monorepo Root .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Dependencies & Package Managers
+# ------------------------------------------------------------------------------
 node_modules/
-build/
+**/node_modules/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+
+# ------------------------------------------------------------------------------
+# Build, Distribution & Production Outputs
+# ------------------------------------------------------------------------------
 dist/
-coverage/
-.DS_Store
-*.log
+**/dist/
+build/
+**/build/
+.output/
+out/
+
+# ------------------------------------------------------------------------------
+# Bundler, Dev Server & Tooling Caches
+# ------------------------------------------------------------------------------
+.vite/
+**/.vite/
+.cache/
+**/.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# ------------------------------------------------------------------------------
+# Environment Variables & Secrets
+# ------------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.local
+**/.env.*.local
 .env*
 !.env.example
+!**/.env.example
+
+# ------------------------------------------------------------------------------
+# Logs & Diagnostic Files
+# ------------------------------------------------------------------------------
+*.log
+logs/
+**/logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------------------------------------------
+# Operating System Artifacts
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ------------------------------------------------------------------------------
+# Editor & IDE Directories
+# ------------------------------------------------------------------------------
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ------------------------------------------------------------------------------
+# Database & Prisma Local Storage
+# ------------------------------------------------------------------------------
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite3-journal
+*.db
+*.db-journal
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# ------------------------------------------------------------------------------
+# Testing & Code Coverage
+# ------------------------------------------------------------------------------
+coverage/
+**/coverage/
+.nyc_output/
+
+# ------------------------------------------------------------------------------
+# Media, Heavy Assets & Project Specific Overrides
+# ------------------------------------------------------------------------------
 videos/
+/public/videos/
+/public/images/
 *.pdf
+!StyleX_Backend_Architecture_Guide.pdf
+
+# ------------------------------------------------------------------------------
+# Scratch Scripts & Integration Docs
+# ------------------------------------------------------------------------------
 StyleX_Backend_Architecture_Guide.html
 StyleX_Mens_Menu.md
-StyleX_Backend_Architecture_Guide.html
 generate_architecture_pdf.py
-/public/images/
-/public/videos
 WHATSAPP_EMAIL_INTEGRATION_GUIDE.md

@@ -1,8 +1,8 @@
 import React from 'react';
-import { PORTFOLIO_WORKS } from '../data/salonData.ts';
+import { PortfolioWork } from '../types.ts';
 
 interface PortfolioModalProps {
-  item: (typeof PORTFOLIO_WORKS)[0] | null;
+  item: PortfolioWork | null;
   onClose: () => void;
   onBookArtisan: (artisan: string) => void;
 }

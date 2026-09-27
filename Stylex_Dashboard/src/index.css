@@ -1,0 +1,537 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #112e20;
+  --color-primary-container: #284435;
+  --color-on-primary: #ffffff;
+  --color-primary-fixed: #caead5;
+  --color-primary-fixed-dim: #aeceba;
+  --color-on-primary-fixed: #042014;
+
+  --color-secondary: #9b4521;
+  --color-secondary-container: #fe9167;
+  --color-on-secondary: #ffffff;
+  --color-secondary-fixed: #ffdbcf;
+  --color-secondary-fixed-dim: #ffb59a;
+  --color-on-secondary-fixed: #380d00;
+  --color-on-secondary-container: #752906;
+
+  --color-tertiary: #735c00;
+  --color-tertiary-container: #cca730;
+  --color-tertiary-fixed: #ffe088;
+  --color-tertiary-fixed-dim: #e9c349;
+  --color-on-tertiary-fixed: #241a00;
+
+  --color-surface: #f6faf7;
+  --color-surface-bright: #f6faf7;
+  --color-surface-dim: #d7dbd8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f5f1;
+  --color-surface-container: #eaefeb;
+  --color-surface-container-high: #e5e9e6;
+  --color-surface-container-highest: #dfe4e0;
+  --color-surface-variant: #dfe4e0;
+
+  --color-on-surface: #181d1b;
+  --color-on-surface-variant: #424844;
+  --color-outline: #727973;
+  --color-outline-variant: #c2c8c2;
+
+  --color-inverse-surface: #2c312f;
+  --color-inverse-on-surface: #edf2ee;
+
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+
+  --color-background: #f6faf7;
+  --color-on-background: #181d1b;
+
+  --font-serif: "Satoshi", sans-serif;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-headline: "Satoshi", sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: "Satoshi", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: #f6faf7;
+    color: #181d1b;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.font-headline-lg {
+  font-family: "Satoshi", sans-serif;
+  font-size: 2.5rem;
+  line-height: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-headline-md {
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.font-headline-sm {
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.font-title-md {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+  font-weight: 600;
+}
+
+.font-body-md {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  font-weight: 400;
+}
+
+.font-label-caps {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.font-label-md {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+}
+
+.font-caption {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 400;
+}
+
+/* Material Symbols Outlined font-icon styling */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide scrollbar */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==========================================================================
+   StyleX Admin Dashboard Dark Theme Architecture
+   ========================================================================== */
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #141414 !important;
+  color: #e8e8e8 !important;
+}
+
+/* Backgrounds */
+html.dark main,
+html.dark .bg-\[\#f6faf7\] {
+  background-color: #141414 !important;
+}
+
+html.dark header {
+  background-color: rgba(20, 20, 20, 0.97) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Panels and Cards in Dark Mode */
+html.dark div.bg-white,
+html.dark section.bg-white,
+html.dark article.bg-white,
+html.dark aside.bg-white,
+html.dark .bg-white.rounded-xl,
+html.dark .bg-white.rounded-2xl {
+  background-color: #1e1e1e !important;
+  color: #e8e8e8;
+}
+
+html.dark .bg-\[\#f0f5f1\],
+html.dark .bg-\[\#eaefeb\],
+html.dark .bg-\[\#e6ede7\] {
+  background-color: #252525 !important;
+}
+
+html.dark .bg-\[\#f8faf8\] {
+  background-color: #212121 !important;
+}
+
+/* Text Colors */
+html.dark .text-\[\#112e20\],
+html.dark .text-\[\#181d1b\] {
+  color: #edf5f0 !important;
+}
+
+html.dark .text-\[\#424844\],
+html.dark .text-\[\#727973\] {
+  color: #9cb2a5 !important;
+}
+
+/* Borders and Separators */
+html.dark .border-\[\#c2c8c2\]\/30,
+html.dark .border-\[\#c2c8c2\]\/40,
+html.dark .border-\[\#c2c8c2\]\/50,
+html.dark .border-\[\#c2c8c2\],
+html.dark .border-\[\#dfe4e0\]\/60,
+html.dark .border-\[\#eaefeb\] {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+html.dark .divide-\[\#eaefeb\] > * {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Table rows */
+html.dark tr.bg-\[\#f0f5f1\] {
+  background-color: #252525 !important;
+}
+
+html.dark tr:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Div row hover highlights (Schedule, ServiceMenu, etc.) */
+html.dark .hover\:bg-\[\#f0f5f1\]\/50:hover,
+html.dark .hover\:bg-\[\#f0f5f1\]\/40:hover,
+html.dark .hover\:bg-\[\#f0f5f1\]:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Form Controls & Inputs */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: #252525 !important;
+  color: #e8e8e8 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #888888 !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  background-color: #2a2a2a !important;
+  border-color: #4ade80 !important;
+}
+
+/* ==========================================================================
+   Toggle Switches in Dark Mode (Clean Minimalist iOS-style Design)
+   ========================================================================== */
+
+/* Active Toggle Track (Turned ON) */
+html.dark button.justify-end,
+html.dark button[class*="justify-end"] {
+  background-color: #16a34a !important; /* Premium balanced iOS emerald green */
+  border: none !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Inactive Toggle Track (Turned OFF) */
+html.dark button.justify-start,
+html.dark button[class*="justify-start"] {
+  background-color: #2d3f35 !important; /* Clean muted slate track */
+  border: none !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Toggle Knob: Clean Pure White Circular Disc */
+html.dark button.justify-end span,
+html.dark button.justify-start span,
+html.dark button[class*="justify-end"] span,
+html.dark button[class*="justify-start"] span {
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ==========================================================================
+   Status Badges in Dark Mode (High Contrast & Clear Typography)
+   ========================================================================== */
+
+/* BOOKED Status Badge */
+html.dark .bg-\[\#caead5\] {
+  background-color: rgba(20, 83, 45, 0.5) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(74, 222, 128, 0.4) !important;
+}
+html.dark .bg-\[\#caead5\] span.bg-\[\#112e20\],
+html.dark .bg-\[\#caead5\] .bg-\[\#112e20\] {
+  background-color: #4ade80 !important;
+  box-shadow: 0 0 6px #4ade80 !important;
+}
+
+/* COMPLETED Status Badge (Fixes white-on-white text) */
+html.dark .bg-\[\#e5e9e6\],
+html.dark span.bg-\[\#eaefeb\].text-\[\#112e20\] {
+  background-color: rgba(30, 58, 43, 0.8) !important;
+  color: #caead5 !important;
+  border: 1px solid rgba(202, 234, 213, 0.3) !important;
+}
+html.dark .bg-\[\#e5e9e6\] span.bg-\[\#112e20\],
+html.dark .bg-\[\#e5e9e6\] .bg-\[\#112e20\] {
+  background-color: #caead5 !important;
+  box-shadow: 0 0 4px #caead5 !important;
+}
+
+/* IN_PROGRESS Status Badge */
+html.dark .bg-\[\#9b4521\] {
+  background-color: rgba(194, 65, 12, 0.45) !important;
+  color: #ffedd5 !important;
+  border: 1px solid rgba(251, 146, 60, 0.5) !important;
+}
+html.dark .bg-\[\#9b4521\] span.bg-white {
+  background-color: #ffffff !important;
+}
+
+/* CANCELLED Status Badge */
+html.dark .bg-\[\#ffdad6\] {
+  background-color: rgba(153, 27, 27, 0.4) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(248, 113, 113, 0.45) !important;
+}
+html.dark .bg-\[\#ffdad6\] span.bg-\[\#ba1a1a\],
+html.dark .bg-\[\#ffdad6\] .bg-\[\#ba1a1a\] {
+  background-color: #ef4444 !important;
+  box-shadow: 0 0 6px #ef4444 !important;
+}
+
+/* Client Tier Badges */
+html.dark .bg-\[\#ffe088\] {
+  background-color: rgba(202, 138, 4, 0.3) !important;
+  color: #fde047 !important;
+  border: 1px solid rgba(250, 204, 21, 0.4) !important;
+}
+html.dark .bg-\[\#ffdbcf\] {
+  background-color: rgba(194, 65, 12, 0.3) !important;
+  color: #fdba74 !important;
+  border: 1px solid rgba(251, 146, 60, 0.4) !important;
+}
+html.dark .bg-\[\#284435\] {
+  background-color: rgba(40, 68, 53, 0.85) !important;
+  color: #caead5 !important;
+  border: 1px solid rgba(202, 234, 213, 0.35) !important;
+}
+
+/* ==========================================================================
+   Action & Filter Buttons in Dark Mode
+   ========================================================================== */
+
+/* Primary Action Buttons (Check In, Complete, + New Booking) */
+html.dark button.bg-\[\#112e20\]:not([class*="justify-end"]):not([class*="justify-start"]) {
+  background-color: #1e5539 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(134, 239, 172, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+html.dark button.bg-\[\#112e20\]:not([class*="justify-end"]):not([class*="justify-start"]):hover {
+  background-color: #276d49 !important;
+  border-color: rgba(134, 239, 172, 0.6) !important;
+}
+
+/* Filter Pills in Appointments & Clients View */
+html.dark .bg-\[\#112e20\].text-white.shadow-xs {
+  background-color: #22c55e !important;
+  color: #042014 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4) !important;
+}
+html.dark .bg-\[\#eaefeb\].text-\[\#181d1b\] {
+  background-color: #142e21 !important;
+  color: #9cb2a5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark .bg-\[\#eaefeb\].text-\[\#181d1b\]:hover {
+  background-color: #1a3c2b !important;
+  color: #ffffff !important;
+}
+
+/* Secondary Buttons with bg-white in Dark Mode (e.g. Run Sheet (PDF), Discard, etc.) */
+html.dark button.bg-white:not(.btn-delete-action):not([class*="btn-delete"]):not([class*="hover:bg-red"]),
+html.dark button[class*="bg-white"]:not(.btn-delete-action):not([class*="btn-delete"]):not([class*="hover:bg-red"]):not([class*="justify-end"]):not([class*="justify-start"]),
+html.dark a.bg-white:not(.btn-delete-action):not([class*="btn-delete"]):not([class*="hover:bg-red"]) {
+  background-color: #2a2a2a !important;
+  color: #e8e8e8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark button.bg-white:not(.btn-delete-action):not([class*="btn-delete"]):not([class*="hover:bg-red"]):hover,
+html.dark button[class*="bg-white"]:not(.btn-delete-action):not([class*="btn-delete"]):not([class*="hover:bg-red"]):not([class*="justify-end"]):not([class*="justify-start"]):hover {
+  background-color: #333333 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+html.dark button.bg-white:not(.btn-delete-action):not([class*="btn-delete"]) span,
+html.dark button.bg-white:not(.btn-delete-action):not([class*="btn-delete"]) .material-symbols-outlined,
+html.dark button[class*="bg-white"]:not(.btn-delete-action):not([class*="btn-delete"]) span:not([class*="rounded-full"]) {
+  color: #edf5f0 !important;
+}
+
+/* Dialogs and Modals */
+html.dark .bg-white.rounded-2xl,
+html.dark .bg-white.rounded-xl {
+  background-color: #1e1e1e !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ==========================================================================
+   ArtisansView / Leaves Dark Mode Fixes
+   ========================================================================== */
+
+/* Rating badge (bg-[#ffe088]/40) - gold on gold → muted amber */
+html.dark .bg-\[\#ffe088\]\/40 {
+  background-color: rgba(202, 138, 4, 0.18) !important;
+}
+
+/* Half-day duration badge: getDurationBadge uses bg-[#ffe088]/60 */
+html.dark .bg-\[\#ffe088\]\/60 {
+  background-color: rgba(202, 138, 4, 0.2) !important;
+}
+
+/* Half-day upcoming time-off chip: bg-[#ffe088]/30 */
+html.dark .bg-\[\#ffe088\]\/30 {
+  background-color: rgba(202, 138, 4, 0.18) !important;
+}
+
+/* All amber text */
+html.dark .text-\[\#735c00\] {
+  color: #f59e0b !important;
+}
+
+/* All amber borders */
+html.dark .border-\[\#ffe088\] {
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+/* Full-day duration badge: getDurationBadge uses bg-[#ffdad6] (no opacity) */
+html.dark .bg-\[\#ffdad6\] {
+  background-color: rgba(153, 27, 27, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+/* Full-day upcoming time-off chip: bg-[#ffdad6]/60 */
+html.dark .bg-\[\#ffdad6\]\/60 {
+  background-color: rgba(153, 27, 27, 0.3) !important;
+}
+
+/* All red borders */
+html.dark .border-\[\#ffdad6\] {
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+/* All red text → soft rose */
+html.dark .text-\[\#ba1a1a\] {
+  color: #fca5a5 !important;
+}
+
+/* Action Delete Buttons (Consistent across Stylists, Services, Schedule, Settings, Promotions, Modals) */
+.btn-delete-action,
+button.btn-delete-action,
+html.dark .btn-delete-action,
+html.dark button.btn-delete-action {
+  transition: all 0.15s ease-in-out !important;
+}
+
+.btn-delete-action:hover,
+html.dark .btn-delete-action:hover,
+button.btn-delete-action:hover,
+html.dark button.btn-delete-action:hover,
+html.dark button[class*="btn-delete-action"]:hover,
+html.dark button[class*="btn-delete"]:hover {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.btn-delete-action:hover *,
+html.dark .btn-delete-action:hover *,
+button.btn-delete-action:hover *,
+html.dark button.btn-delete-action:hover *,
+html.dark button[class*="btn-delete-action"]:hover *,
+html.dark button[class*="btn-delete"]:hover * {
+  color: #ffffff !important;
+}
+
+/* Count badge next to panel title (span with bg-[#eaefeb]) */
+html.dark span.bg-\[\#eaefeb\] {
+  background-color: #333333 !important;
+  color: #e8e8e8 !important;
+}
+
+/* Leave filter pill container */
+html.dark .bg-\[\#f0f5f1\].rounded-xl {
+  background-color: #252525 !important;
+}
+
+/* Leave filter active pill (bg-white inside the filter container) */
+html.dark .bg-\[\#f0f5f1\].rounded-xl button.bg-white {
+  background-color: #3a3a3a !important;
+  color: #e8e8e8 !important;
+}
+
+/* "Upcoming Time-Off:" section label */
+html.dark .text-\[\#ba1a1a\].uppercase {
+  color: #fca5a5 !important;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.015);
+  }
+}

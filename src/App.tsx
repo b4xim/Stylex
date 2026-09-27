@@ -17,8 +17,7 @@ import { BookingModal } from './components/BookingModal.tsx';
 import { ReelModal } from './components/ReelModal.tsx';
 import { PortfolioModal } from './components/PortfolioModal.tsx';
 import { BookingPage } from './pages/BookingPage.tsx';
-import { BookingState, ReelItem, ServiceItem } from './types.ts';
-import { PORTFOLIO_WORKS } from './data/salonData.ts';
+import { BookingState, ReelItem, ServiceItem, PortfolioWork } from './types.ts';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
@@ -27,7 +26,7 @@ export default function App() {
   // Modals state
   const [confirmedBooking, setConfirmedBooking] = useState<BookingState | null>(null);
   const [activeReel, setActiveReel] = useState<ReelItem | null>(null);
-  const [activePortfolioItem, setActivePortfolioItem] = useState<(typeof PORTFOLIO_WORKS)[0] | null>(null);
+  const [activePortfolioItem, setActivePortfolioItem] = useState<PortfolioWork | null>(null);
 
   const [activeSection, setActiveSection] = useState<string>('home');
 

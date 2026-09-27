@@ -3,7 +3,7 @@ import { SalonDetails, ServiceItem, PromoSlide, ReelItem, ReviewItem, MasterArti
 export const SALON_DATA: SalonDetails = {
   brandName: 'STYLEX',
   subBrand: 'SIGNATURE SALON',
-  flagshipLocation: 'TIRUR FLAGSHIP',
+  flagshipLocation: 'TIRUR OUTLET',
   phoneDisplay: '+91 96561 11149',
   phoneNumberClean: '+919656111149',
   whatsappNumber: '919656111149',
@@ -13,7 +13,7 @@ export const SALON_DATA: SalonDetails = {
   city: 'Tirur, Malappuram, Kerala',
   pincode: '676101',
   hours: 'Open Daily: 10:00 AM – 1:00 AM',
-  hoursDetail: 'Monday through Sunday without break',
+  hoursDetail: 'Monday through Sunday (10:00 AM – 1:00 AM)',
   instagramHandle: '@stylex.signature.salon.tirur',
   instagramUrl: 'https://www.instagram.com/stylex.signature.salon.tirur/',
   mapsUrl: 'https://www.google.com/maps/search/?api=1&query=StyleX+Signature+Salon+One+Arcade+Near+Lenskart+KG+Padi+Rd+Tirur',
@@ -45,7 +45,7 @@ export const PROMO_SLIDES: PromoSlide[] = [
   {
     id: 'promo-1',
     title: 'Signature Hair Spa & Anti-Dandruff Ritual',
-    subtitle: 'Seasonal Limited Privilege at StyleX Tirur Flagship',
+    subtitle: 'Seasonal Limited Privilege at StyleX Tirur Outlet',
     tag: 'Limited Privilege',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCc52MBbTkUI1t61AB7vAKuSfCibl5IWOaC9N4kneZwjsJWo9t_GuI4xU1e3BcCOW9NMd7PVTSB3VKpOk1vaaBBw6q2VfcBvLWyxym848HfMVPHzPeQcJaOpYqFATSIXYXh3QEsMHFH90oDCA-wMC8n_pf5V_GNQ-hYHvUcyOmlNlq6FKnG3MfCfuED3Ht1NRDddWSrhud1fkq2pP0pjW-_bRUcOCJQiFvHyzLApeNZToSoo6Gg3lLpFA',
     offerText: 'Comprehensive Hair Spa Intensive with Targeted Anti-Dandruff Scalp Treatment',

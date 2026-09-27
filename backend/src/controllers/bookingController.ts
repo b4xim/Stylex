@@ -1,0 +1,338 @@
+import { Request, Response, NextFunction } from 'express';
+import { prisma } from '../config/db';
+import { AppError } from '../middleware/errorHandler';
+import { SlotService } from '../services/slotService';
+import { WhatsAppService } from '../services/whatsappService';
+import { EmailService } from '../services/emailService';
+
+export class BookingController {
+  /**
+   * Public: Query available time slots for a given date
+   */
+  public static async getAvailableSlots(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { date, stylistId } = req.query;
+
+      if (!date || typeof date !== 'string') {
+        throw new AppError('Date query parameter (YYYY-MM-DD) is required', 400);
+      }
+
+      const slots = await SlotService.getSlotsForDate(
+        date,
+        typeof stylistId === 'string' ? stylistId : undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        data: slots,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Public: Create a new appointment booking
+   * Automatically executes CRM capture, slot concurrency lock, and triggers WhatsApp/Email notifications
+   */
+  public static async createBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {
+        customerName,
+        customerPhone,
+        countryCode = '+91',
+        customerEmail,
+        serviceId,
+        secondaryServiceId,
+        stylistId,
+        date,
+        timeSlot,
+        notes,
+        source = 'WEBSITE',
+      } = req.body;
+
+      if (!customerName || !customerPhone || !serviceId || !date || !timeSlot) {
+        throw new AppError('Name, phone, service, date, and time slot are required', 400);
+      }
+
+      // 1. Fetch primary service details
+      const primaryService = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
+      if (!primaryService || !primaryService.isActive) {
+        throw new AppError('Selected service is unavailable', 404);
+      }
+
+      // Optional secondary service
+      let secondaryService = null;
+      let secondaryPrice = 0;
+      if (secondaryServiceId) {
+        secondaryService = await prisma.service.findUnique({
+          where: { id: secondaryServiceId },
+        });
+        if (secondaryService) {
+          secondaryPrice = secondaryService.price;
+        }
+      }
+
+      // Optional stylist
+      let stylist = null;
+      if (stylistId) {
+        stylist = await prisma.stylist.findUnique({
+          where: { id: stylistId },
+        });
+      }
+
+      const subtotal = primaryService.price + secondaryPrice;
+      const total = subtotal;
+
+      // 2. Concurrency Guard: Verify slot availability
+      await SlotService.assertSlotAvailable(date, timeSlot, stylistId);
+
+      // 3. Generate unique Reference
+      const bookingRef = await SlotService.generateBookingRef();
+
+      // 4. Database Transaction: Upsert Customer & Create Booking
+      const result = await prisma.$transaction(async (tx) => {
+        // Upsert customer in CRM
+        const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
+        const customer = await tx.customer.upsert({
+          where: {
+            countryCode_phone: {
+              countryCode,
+              phone: cleanPhone,
+            },
+          },
+          update: {
+            name: customerName,
+            ...(customerEmail ? { email: customerEmail.trim().toLowerCase() } : {}),
+            totalVisits: { increment: 1 },
+            totalSpent: { increment: total },
+          },
+          create: {
+            name: customerName,
+            phone: cleanPhone,
+            countryCode,
+            email: customerEmail ? customerEmail.trim().toLowerCase() : null,
+            totalVisits: 1,
+            totalSpent: total,
+          },
+        });
+
+        // Create booking
+        const booking = await tx.booking.create({
+          data: {
+            bookingRef,
+            customerId: customer.id,
+            serviceId: primaryService.id,
+            secondaryServiceId: secondaryService?.id,
+            secondaryService: secondaryService?.name,
+            secondaryPrice: secondaryService ? secondaryPrice : null,
+            stylistId: stylist?.id,
+            date,
+            timeSlot,
+            status: 'CONFIRMED',
+            subtotal,
+            total,
+            notes,
+            source,
+            paymentStatus: 'PENDING',
+          },
+          include: {
+            customer: true,
+            service: true,
+            stylist: true,
+          },
+        });
+
+        return booking;
+      });
+
+      // 5. Trigger Asynchronous Notifications (Non-blocking)
+      const fullPhone = `${countryCode}${customerPhone.replace(/[^0-9]/g, '')}`;
+      WhatsAppService.sendBookingConfirmation({
+        bookingRef: result.bookingRef,
+        customerName: result.customer.name,
+        customerPhone: fullPhone,
+        serviceName: result.service.name,
+        date: result.date,
+        timeSlot: result.timeSlot,
+        total: result.total,
+        stylistName: result.stylist?.name,
+      }).then(async (res) => {
+        if (res.success) {
+          await prisma.booking.update({
+            where: { id: result.id },
+            data: { whatsappStatus: 'SENT' },
+          });
+        }
+      }).catch((e) => console.error('Failed to send WhatsApp confirmation:', e));
+
+      if (result.customer.email) {
+        EmailService.sendBookingConfirmation({
+          toEmail: result.customer.email,
+          customerName: result.customer.name,
+          bookingRef: result.bookingRef,
+          serviceName: result.service.name,
+          date: result.date,
+          timeSlot: result.timeSlot,
+          total: result.total,
+          stylistName: result.stylist?.name,
+        }).then(async (res) => {
+          if (res.success) {
+            await prisma.booking.update({
+              where: { id: result.id },
+              data: { emailStatus: 'SENT' },
+            });
+          }
+        }).catch((e) => console.error('Failed to send Email confirmation:', e));
+      }
+
+      // Generate direct WhatsApp chat URL for client confirmation
+      const directWhatsAppUrl = WhatsAppService.generateDirectChatUrl(
+        fullPhone,
+        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${result.service.name} on ${result.date} at ${result.timeSlot}.`
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Appointment booked successfully!',
+        data: {
+          booking: result,
+          directWhatsAppUrl,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Admin: List bookings with filters (date, status, search)
+   */
+  public static async listBookings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { date, status, search, limit = '100', offset = '0' } = req.query;
+
+      const whereClause: any = {};
+
+      if (date && typeof date === 'string') {
+        whereClause.date = date;
+      }
+
+      if (status && typeof status === 'string' && status !== 'ALL') {
+        whereClause.status = status;
+      }
+
+      if (search && typeof search === 'string') {
+        whereClause.OR = [
+          { bookingRef: { contains: search, mode: 'insensitive' } },
+          { customer: { name: { contains: search, mode: 'insensitive' } } },
+          { customer: { phone: { contains: search } } },
+        ];
+      }
+
+      const [bookings, totalCount] = await Promise.all([
+        prisma.booking.findMany({
+          where: whereClause,
+          include: {
+            customer: true,
+            service: true,
+            stylist: true,
+          },
+          orderBy: [{ date: 'desc' }, { timeSlot: 'asc' }],
+          take: parseInt(limit as string, 10),
+          skip: parseInt(offset as string, 10),
+        }),
+        prisma.booking.count({ where: whereClause }),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: bookings,
+        total: totalCount,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Admin: Update booking status (e.g. COMPLETED, CANCELLED)
+   */
+  public static async updateBookingStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const { status, paymentStatus, notes } = req.body;
+
+      const validStatuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+      if (status && !validStatuses.includes(status)) {
+        throw new AppError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400);
+      }
+
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: {
+          ...(status ? { status } : {}),
+          ...(paymentStatus ? { paymentStatus } : {}),
+          ...(notes !== undefined ? { notes } : {}),
+        },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Booking updated to ${status || 'new state'}`,
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Admin: Resend WhatsApp notification voucher
+   */
+  public static async resendWhatsApp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const booking = await prisma.booking.findUnique({
+        where: { id },
+        include: { customer: true, service: true, stylist: true },
+      });
+
+      if (!booking) {
+        throw new AppError('Booking not found', 404);
+      }
+
+      const fullPhone = `${booking.customer.countryCode}${booking.customer.phone}`;
+      const result = await WhatsAppService.sendBookingConfirmation({
+        bookingRef: booking.bookingRef,
+        customerName: booking.customer.name,
+        customerPhone: fullPhone,
+        serviceName: booking.service.name,
+        date: booking.date,
+        timeSlot: booking.timeSlot,
+        total: booking.total,
+        stylistName: booking.stylist?.name,
+      });
+
+      await prisma.booking.update({
+        where: { id },
+        data: { whatsappStatus: result.success ? 'SENT' : 'FAILED' },
+      });
+
+      res.status(200).json({
+        success: result.success,
+        message: result.success ? 'WhatsApp notification sent!' : 'Failed to send WhatsApp message',
+        error: result.error,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
