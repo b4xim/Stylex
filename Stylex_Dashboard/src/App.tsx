@@ -874,11 +874,8 @@ export default function App() {
 
   const handleDeleteService = async (id: string) => {
     const target = services.find((s) => s.id === id);
-    if (!window.confirm(`Are you sure you want to remove "${target?.name}" from the service menu?`)) {
-      return;
-    }
     setServices((prev) => prev.filter((s) => s.id !== id));
-    addToast('info', 'Service Removed', `"${target?.name}" removed from catalog.`);
+    addToast('info', 'Service Removed', `"${target?.name || 'Service'}" removed from catalog.`);
 
     try {
       await DashboardApi.deleteService(id);
@@ -1283,12 +1280,6 @@ export default function App() {
     }
     if (target.id === currentUser.id) {
       addToast('error', 'Action Denied', 'You cannot delete your own active account.');
-      return;
-    }
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete the user account for "${target.name}" (${target.username ? '@' + target.username : target.email})?\n\nThis action cannot be undone.`
-    );
-    if (!confirmed) {
       return;
     }
     setUsers((prev) => prev.filter((u) => u.id !== userId));

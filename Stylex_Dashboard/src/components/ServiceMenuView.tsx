@@ -23,6 +23,7 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
   const isViewOnly = currentUser?.role === 'Staff' || currentUser?.role === 'Normal User';
   const [activeCategory, setActiveCategory] = useState<'all' | 'hair' | 'skin' | 'spa' | 'groom' | 'bridal'>('all');
   const [localSearch, setLocalSearch] = useState('');
+  const [serviceToDelete, setServiceToDelete] = useState<ServiceItem | null>(null);
 
   const effectiveSearch = (globalSearchQuery || localSearch).toLowerCase().trim();
 
@@ -180,7 +181,7 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDeleteService(svc.id)}
+                        onClick={() => setServiceToDelete(svc)}
                         className="w-8 h-8 rounded-xl border border-[#c2c8c2]/50 dark:border-white/10 bg-white dark:bg-white/5 text-[#424844] dark:text-neutral-300 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 flex items-center justify-center transition-all shadow-2xs cursor-pointer btn-delete-action"
                         title="Delete Service"
                       >
@@ -198,6 +199,52 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* In-UI Confirmation Dialog for Service Deletion */}
+      {serviceToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl w-full max-w-md border border-[#c2c8c2]/40 dark:border-white/10 p-6 overflow-hidden animate-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[26px]">delete_forever</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-[#112e20] dark:text-white leading-tight">
+                  Remove Service?
+                </h3>
+                <p className="text-xs text-[#526058] dark:text-[#a0aca4] mt-2 leading-relaxed">
+                  Are you sure you want to remove <span className="font-bold text-[#112e20] dark:text-white">{serviceToDelete.name}</span> from the salon service menu?
+                </p>
+                <div className="flex items-center gap-2.5 mt-5 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setServiceToDelete(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#424844] dark:text-[#a0aca4] hover:bg-[#eaefeb] dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = serviceToDelete.id;
+                      setServiceToDelete(null);
+                      onDeleteService(id);
+                    }}
+                    className="px-5 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                    <span>Yes, Remove</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

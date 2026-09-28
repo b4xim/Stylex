@@ -33,6 +33,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const [formData, setFormData] = useState<SalonSettings>({ ...settings });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null);
 
   // Synchronize formData when external settings change (e.g. initial load or after save)
   useEffect(() => {
@@ -531,7 +532,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     {!isDefaultAdmin && !isCurrent && permissions.canDeleteUsers && (
                       <button
                         type="button"
-                        onClick={() => onDeleteUser(u.id)}
+                        onClick={() => setUserToDelete(u)}
                         className="w-8 h-8 rounded-xl border border-[#c2c8c2]/50 dark:border-white/10 bg-white dark:bg-white/5 text-[#424844] dark:text-neutral-300 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 flex items-center justify-center transition-all shadow-2xs cursor-pointer btn-delete-action"
                         title="Delete User Account"
                       >
@@ -696,6 +697,57 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* In-UI Confirmation Dialog for User Deletion */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl w-full max-w-md border border-[#c2c8c2]/40 dark:border-white/10 p-6 overflow-hidden animate-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[26px]">person_remove</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-[#112e20] dark:text-white leading-tight">
+                  Delete User Account?
+                </h3>
+                <p className="text-xs text-[#526058] dark:text-[#a0aca4] mt-2 leading-relaxed">
+                  Are you sure you want to permanently delete the user account for <span className="font-bold text-[#112e20] dark:text-white">{userToDelete.name}</span> ({userToDelete.username ? '@' + userToDelete.username : userToDelete.email})?
+                </p>
+                <div className="mt-2.5 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] shrink-0 text-rose-600 dark:text-rose-400">warning</span>
+                  <span>This action cannot be undone and will revoke all access for this user immediately.</span>
+                </div>
+
+                <div className="flex items-center gap-2.5 mt-5 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setUserToDelete(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#424844] dark:text-[#a0aca4] hover:bg-[#eaefeb] dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = userToDelete.id;
+                      setUserToDelete(null);
+                      onDeleteUser(id);
+                    }}
+                    className="px-5 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                    <span>Yes, Delete User</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

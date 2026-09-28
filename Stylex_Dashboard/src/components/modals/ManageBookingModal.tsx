@@ -28,6 +28,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
   const [selectedStylistId, setSelectedStylistId] = useState('');
   const [notes, setNotes] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (appointment) {
@@ -37,6 +38,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
       setSelectedStylistId(foundStylist ? foundStylist.id : stylists[0]?.id || '');
       setNotes(appointment.notes || '');
       setCancellationReason('');
+      setShowDeleteConfirm(false);
     }
   }, [appointment, isOpen, stylists]);
 
@@ -66,11 +68,14 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
     onClose();
   };
 
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to permanently delete the reservation for ${appointment.clientName}?`)) {
-      onDeleteBooking(appointment.id);
-      onClose();
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDeleteBooking(appointment.id);
+    onClose();
   };
 
   return (
@@ -295,7 +300,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
           <div className="flex items-center justify-between pt-3 border-t border-[#eaefeb] dark:border-white/10">
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               className="h-9 px-3.5 rounded-xl border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer btn-delete-action"
             >
               <span className="material-symbols-outlined text-[16px] text-current">delete</span>
@@ -320,6 +325,53 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* In-UI Confirmation Dialog for Booking Deletion */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl w-full max-w-md border border-[#c2c8c2]/40 dark:border-white/10 p-6 overflow-hidden animate-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[26px]">delete_forever</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-[#112e20] dark:text-white leading-tight">
+                  Permanently Delete Reservation?
+                </h3>
+                <p className="text-xs text-[#526058] dark:text-[#a0aca4] mt-2 leading-relaxed">
+                  Are you sure you want to permanently delete the reservation for <span className="font-bold text-[#112e20] dark:text-white">{appointment.clientName}</span>?
+                </p>
+                <div className="mt-2.5 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] shrink-0 text-rose-600 dark:text-rose-400">warning</span>
+                  <span>This action cannot be undone and will permanently remove this record from salon registry.</span>
+                </div>
+
+                <div className="flex items-center gap-2.5 mt-5 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-xs font-semibold text-[#424844] dark:text-[#a0aca4] hover:bg-[#eaefeb] dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    className="px-5 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                    <span>Yes, Delete</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
