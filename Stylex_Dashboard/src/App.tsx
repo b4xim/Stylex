@@ -387,6 +387,59 @@ export default function App() {
         }
       } catch {}
 
+      // 6. Fetch live blocked slots
+      try {
+        const liveBlocked = await DashboardApi.getBlockedSlots();
+        if (Array.isArray(liveBlocked) && liveBlocked.length > 0) {
+          const grouped: Record<string, { id: string; dateStr: string; slots: string[]; reason: string }> = {};
+          liveBlocked.forEach((b: any) => {
+            const dateStr = b.date ? String(b.date).split('T')[0] : '';
+            const tagMatch = (b.reason || '').match(/\[(block-[^\]]+)\]/);
+            const groupKey = tagMatch ? tagMatch[1] : `${dateStr}_${b.reason || 'block'}`;
+            if (!grouped[groupKey]) {
+              grouped[groupKey] = {
+                id: tagMatch ? tagMatch[1] : b.id,
+                dateStr,
+                slots: [],
+                reason: (b.reason || '').replace(/\[block-[^\]]+\]/, '').trim(),
+              };
+            }
+            if (b.timeSlot && b.timeSlot !== 'ALL_DAY') {
+              grouped[groupKey].slots.push(b.timeSlot);
+            }
+          });
+
+          const mappedBlackouts: BlackoutDate[] = Object.values(grouped).map((g) => {
+            const dObj = new Date(g.dateStr + 'T00:00:00');
+            const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const month = !isNaN(dObj.getTime()) ? monthNames[dObj.getMonth()] : 'OCT';
+            const day = !isNaN(dObj.getTime()) ? String(dObj.getDate()).padStart(2, '0') : '01';
+            const isFullDay = g.slots.length === 0;
+            return {
+              id: g.id,
+              month,
+              day,
+              dateStr: g.dateStr,
+              title: isFullDay ? 'Full Day Closure' : 'Blocked Time Slots',
+              timeRange: isFullDay ? 'All Day' : g.slots.join(', '),
+              blockType: isFullDay ? 'FULL_DAY' : 'TIME_SLOTS',
+              slots: isFullDay ? undefined : g.slots,
+              station: 'All',
+              description: g.reason || (isFullDay ? 'Full day closure' : `${g.slots.length} slot(s) blocked`),
+            };
+          });
+
+          if (mappedBlackouts.length > 0) {
+            setBlackoutDates((prev) => {
+              const prevIds = new Set(prev.map((p) => p.id));
+              const newItems = mappedBlackouts.filter((m) => !prevIds.has(m.id));
+              return [...newItems, ...prev];
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Live blocked slots fetch:', e);
+      }
     } catch (err) {
       console.warn('Live data sync encountered an error:', err);
     }
@@ -835,7 +888,7 @@ export default function App() {
   };
 
   // Blackout Date Handlers
-  const handleAddBlackout = (item: BlackoutDate) => {
+  const handleAddBlackout = async (item: BlackoutDate) => {
     setBlackoutDates((prev) => [item, ...prev]);
     const isSlots = item.blockType === 'TIME_SLOTS' && item.slots && item.slots.length > 0;
     addToast(
@@ -845,11 +898,30 @@ export default function App() {
         ? `${item.slots!.length} 1-hour slot(s) blocked on ${item.month} ${item.day}`
         : `Full day closure registered on ${item.month} ${item.day}`
     );
+
+    try {
+      const dateStr = item.dateStr || new Date().toISOString().split('T')[0];
+      const slotsToBlock = isSlots ? item.slots! : ['ALL_DAY'];
+      await DashboardApi.createBlockedSlot({
+        date: dateStr,
+        timeSlots: slotsToBlock,
+        reason: item.description || item.title || 'Administrative blackout',
+        id: item.id,
+      });
+    } catch (err) {
+      console.warn('Could not persist blocked slot to backend:', err);
+    }
   };
 
-  const handleDeleteBlackout = (id: string) => {
+  const handleDeleteBlackout = async (id: string) => {
     setBlackoutDates((prev) => prev.filter((b) => b.id !== id));
     addToast('info', 'Blackout Removed', 'Outlet schedule returned to standard hours.');
+
+    try {
+      await DashboardApi.deleteBlockedSlot(id);
+    } catch (err) {
+      console.warn('Could not delete blocked slot from backend:', err);
+    }
   };
 
   // Promotions Handlers

@@ -420,6 +420,34 @@ export class DashboardApi {
       body: JSON.stringify(settings),
     });
   }
+
+  // ============================================================================
+  // Blocked Slots / Blackout Dates
+  // ============================================================================
+  public static async getBlockedSlots(): Promise<any[]> {
+    const res = await this.request('/blocked-slots');
+    return res?.data || [];
+  }
+
+  public static async createBlockedSlot(data: {
+    date: string;
+    timeSlot?: string;
+    timeSlots?: string[];
+    stylistId?: string | null;
+    reason?: string;
+    id?: string;
+  }) {
+    return this.request('/blocked-slots', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async deleteBlockedSlot(id: string) {
+    return this.request(`/blocked-slots/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // ============================================================================

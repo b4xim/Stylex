@@ -42,38 +42,49 @@ export class BlockedSlotController {
 
   public static async blockSlot(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { date, timeSlot, stylistId, reason } = req.body;
+      const { date, timeSlot, timeSlots, stylistId, reason, id } = req.body;
 
-      if (!date || !timeSlot) {
-        throw new AppError('Date and time slot are required', 400);
+      const slots: string[] = Array.isArray(timeSlots) && timeSlots.length > 0 
+        ? timeSlots 
+        : timeSlot ? [timeSlot] : [];
+
+      if (!date || slots.length === 0) {
+        throw new AppError('Date and time slot(s) are required', 400);
       }
 
-      const existing = await prisma.blockedSlot.findFirst({
-        where: {
-          date,
-          timeSlot,
-          stylistId: stylistId || null,
-        },
-      });
+      const slotReason = id ? `${reason || 'Administrative slot hold'} [${id}]` : (reason || 'Administrative slot hold');
+      const createdBy = req.user?.name || 'Admin';
 
-      if (existing) {
-        throw new AppError('This slot is already blocked', 409);
+      const createdList = [];
+      for (const s of slots) {
+        const existing = await prisma.blockedSlot.findFirst({
+          where: {
+            date,
+            timeSlot: s,
+            stylistId: stylistId || null,
+          },
+        });
+
+        if (!existing) {
+          const blocked = await prisma.blockedSlot.create({
+            data: {
+              date,
+              timeSlot: s,
+              stylistId: stylistId || null,
+              reason: slotReason,
+              createdBy,
+            },
+          });
+          createdList.push(blocked);
+        } else {
+          createdList.push(existing);
+        }
       }
-
-      const blocked = await prisma.blockedSlot.create({
-        data: {
-          date,
-          timeSlot,
-          stylistId: stylistId || null,
-          reason: reason || 'Administrative slot hold',
-          createdBy: req.user?.name || 'Admin',
-        },
-      });
 
       res.status(201).json({
         success: true,
-        message: `Slot ${timeSlot} on ${date} blocked successfully`,
-        data: blocked,
+        message: `Blocked ${createdList.length} slot(s) on ${date}`,
+        data: createdList,
       });
     } catch (error) {
       next(error);
@@ -84,13 +95,19 @@ export class BlockedSlotController {
     try {
       const id = req.params.id as string;
 
-      await prisma.blockedSlot.delete({
-        where: { id },
+      const deleted = await prisma.blockedSlot.deleteMany({
+        where: {
+          OR: [
+            { id },
+            { reason: { contains: `[${id}]` } },
+          ],
+        },
       });
 
       res.status(200).json({
         success: true,
-        message: 'Slot unblocked successfully',
+        message: 'Slot(s) unblocked successfully',
+        count: deleted.count,
       });
     } catch (error) {
       next(error);

@@ -441,13 +441,27 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       return true;
     });
 
-    const fullDay = matching.find((b) => b.blockType === 'FULL_DAY');
+    let fullDay = matching.find((b) => b.blockType === 'FULL_DAY');
     const blockedSlots: string[] = [];
     matching.forEach((b) => {
       if (b.blockType === 'TIME_SLOTS' && b.slots) {
         blockedSlots.push(...b.slots);
       }
     });
+
+    // Incorporate live blocked slots from PostgreSQL backend
+    if (Array.isArray(liveBlockedSlots)) {
+      liveBlockedSlots.forEach((slotRecord: any) => {
+        const slotDate = slotRecord.date ? String(slotRecord.date).split('T')[0] : '';
+        if (slotDate === targetDateStr) {
+          if (slotRecord.timeSlot === 'ALL_DAY') {
+            fullDay = { title: slotRecord.reason || 'Salon Closed', station: 'Entire Salon' };
+          } else if (slotRecord.timeSlot && !blockedSlots.includes(slotRecord.timeSlot)) {
+            blockedSlots.push(slotRecord.timeSlot);
+          }
+        }
+      });
+    }
 
     return {
       isFullDayClosed: !!fullDay,
@@ -524,6 +538,22 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     };
   }, [selectedDay, currentMonthIndex, currentYear, selectedGender, selectedArtisan]);
 
+  // Re-fetch live blocked slots when selected date changes
+  useEffect(() => {
+    let isCancelled = false;
+    fetch('/api/blocked-slots')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!isCancelled && json?.success && Array.isArray(json.data)) {
+          setLiveBlockedSlots(json.data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedDay, currentMonthIndex, currentYear]);
+
   // Ensure selectedTime automatically switches away from past/blocked/full slot whenever date changes
   useEffect(() => {
     const isPast = isSlotInPast(selectedTime, selectedDay, currentMonthIndex, currentYear);
@@ -543,7 +573,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         setSelectedTime(nextAvailable);
       }
     }
-  }, [selectedDay, currentMonthIndex, currentYear]);
+  }, [selectedDay, currentMonthIndex, currentYear, liveBlockedSlots]);
 
   const handleSubmit = async () => {
     // Full Name is compulsory
@@ -1142,19 +1172,19 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                                     disabled={isDisabled}
                                     onClick={() => setSelectedTime(slot)}
                                     title={
-                                      isPast
+                                      isFull
+                                        ? isSlotBlocked ? 'Slot Blocked' : 'Fully Booked'
+                                        : isPast
                                         ? 'Time Passed (Cannot book past slots)'
-                                        : isFull
-                                        ? 'Fully Booked'
                                         : isFillingFast
                                         ? 'Filling Fast'
                                         : 'Available'
                                     }
                                     className={`py-2.5 px-1 rounded-xl text-[12px] font-semibold transition-all duration-150 text-center relative select-none ${
-                                      isPast
-                                        ? 'bg-neutral-100 text-neutral-400 border-2 border-neutral-200/80 cursor-not-allowed opacity-50 line-through'
-                                        : isFull
+                                      isFull
                                         ? 'bg-red-50/70 text-red-500/80 border-2 border-red-200/80 cursor-not-allowed opacity-70'
+                                        : isPast
+                                        ? 'bg-neutral-100 text-neutral-400 border-2 border-neutral-200/80 cursor-not-allowed opacity-50 line-through'
                                         : isFillingFast
                                         ? isSelected
                                           ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 border-2 border-[#fe753c] cursor-pointer'
@@ -1184,10 +1214,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                               <div className="flex items-center gap-1.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
                                 <span className="text-red-700 font-semibold">Full</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-neutral-300 border border-neutral-400" />
-                                <span className="text-neutral-500 font-semibold">Past Slot</span>
                               </div>
                             </div>
                           </div>
