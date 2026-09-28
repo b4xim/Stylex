@@ -117,6 +117,12 @@ fi
 
 mkdir -p certbot/conf certbot/www
 
+# Check if SSL certificate already exists on system
+if [ -f "certbot/conf/live/stylexsalon.in/fullchain.pem" ]; then
+  echo -e "${GREEN}Existing Let's Encrypt SSL certificate detected. Preserving HTTPS config...${NC}"
+  cp nginx/conf.d/ssl.conf.template nginx/conf.d/default.conf
+fi
+
 # 6. Launch Docker Containers (Postgres, API, Nginx)
 echo -e "${YELLOW}[6/7] Launching StyleX container stack...${NC}"
 $DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true

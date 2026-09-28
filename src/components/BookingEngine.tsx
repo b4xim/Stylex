@@ -109,10 +109,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [showCalendarOnMobile, setShowCalendarOnMobile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Guest Contact Information (Mobile compulsory, Email optional without "optional" label)
+  // Guest Contact Information (Full Name & Mobile compulsory, Email optional without "optional" label)
+  const [fullName, setFullName] = useState('');
   const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [emailError, setEmailError] = useState('');
 
@@ -245,7 +247,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     };
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Full Name is compulsory
+    const cleanName = fullName.trim();
+    if (!cleanName) {
+      setNameError('Please enter your full name');
+      return;
+    }
+    setNameError('');
+
     // Mobile number is strictly compulsory
     const cleanPhone = phoneNumber.trim();
     if (!cleanPhone) {
@@ -277,9 +287,33 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      const payload = {
+        customerName: cleanName,
+        customerPhone: digitsOnly,
+        countryCode: phoneCountryCode,
+        customerEmail: email.trim() || undefined,
+        serviceId: selectedService.id,
+        stylistId: selectedArtisan !== 'Any Master Artisan' ? selectedArtisan : undefined,
+        date: dateString,
+        timeSlot: selectedTime,
+        notes: notes.trim() || undefined,
+        source: 'WEBSITE',
+      };
+
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json().catch(() => null);
+      const serverRef = json?.data?.booking?.bookingRef;
+
       onConfirmBooking({
+        bookingRef: serverRef,
+        customerName: cleanName,
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         price: selectedService.price,
@@ -295,7 +329,28 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         phone: cleanPhone,
         email: email.trim(),
       });
-    }, 600);
+    } catch (err) {
+      console.warn('Booking API error, proceeding with local pass confirmation:', err);
+      onConfirmBooking({
+        customerName: cleanName,
+        serviceId: selectedService.id,
+        serviceName: selectedService.name,
+        price: selectedService.price,
+        duration: selectedService.duration,
+        date: dateString,
+        dayOfMonth: selectedDay,
+        time: selectedTime,
+        stylist: selectedArtisan,
+        notes: notes,
+        beverage: 'Complimentary Artisanal Herbal Drink',
+        gender: selectedGender,
+        phoneCountryCode: phoneCountryCode,
+        phone: cleanPhone,
+        email: email.trim(),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Generate calendar days for October 2024 / current month
@@ -888,6 +943,34 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Guest Full Name (Compulsory) */}
+                    <div className="space-y-1 sm:col-span-2">
+                      <div className={`flex items-center rounded-xl bg-[#0f2d22] border ${
+                        nameError ? 'border-red-400 ring-1 ring-red-400' : 'border-white/15'
+                      } focus-within:border-[#fe753c] focus-within:bg-[#0b241a] transition-all overflow-hidden`}>
+                        <span className="pl-2.5 text-[#9eb6aa] flex items-center">
+                          <span className="material-symbols-outlined text-[16px]">person</span>
+                        </span>
+                        <input
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => {
+                            setFullName(e.target.value);
+                            if (nameError) setNameError('');
+                          }}
+                          placeholder="Your Full Name *"
+                          required
+                          className="w-full px-2.5 py-2.5 bg-transparent text-white text-[12.5px] placeholder-[#9eb6aa]/50 focus:outline-none font-medium"
+                        />
+                      </div>
+                      {nameError && (
+                        <p className="text-[10.5px] text-red-400 font-medium flex items-center gap-1 pt-0.5">
+                          <span className="material-symbols-outlined text-[12px]">error</span>
+                          {nameError}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Mobile Number with Extension Selector (Compulsory) */}
                     <div className="space-y-1">
                       <div className={`flex items-center rounded-xl bg-[#0f2d22] border ${

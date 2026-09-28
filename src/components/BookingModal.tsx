@@ -9,7 +9,7 @@ interface BookingModalProps {
 export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) => {
   if (!booking) return null;
 
-  const bookingCode = `SX-${Math.floor(1000 + Math.random() * 9000)}-TIRUR`;
+  const bookingCode = booking.bookingRef || `SX-${Math.floor(1000 + Math.random() * 9000)}-TIRUR`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
@@ -85,6 +85,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             <div className="bg-[#0f2d22] border border-white/10 rounded-2xl p-3.5 space-y-1.5 text-[12px]">
               <p className="text-[10px] uppercase font-bold tracking-wider text-[#9eb6aa]">Guest Contact</p>
               <div className="flex flex-wrap items-center gap-4 text-[#d4ebe1]">
+                {booking.customerName && (
+                  <span className="flex items-center gap-1.5 font-semibold text-white">
+                    <span className="material-symbols-outlined text-[14px] text-[#fe753c]">person</span>
+                    <span>{booking.customerName}</span>
+                  </span>
+                )}
                 {booking.phone && (
                   <span className="flex items-center gap-1.5 font-medium">
                     <span className="material-symbols-outlined text-[14px] text-[#fe753c]">call</span>

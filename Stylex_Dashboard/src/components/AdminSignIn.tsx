@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserAccount } from '../types';
+import { DashboardApi } from '../services/api';
 
 interface AdminSignInProps {
   onSignInSuccess: (user: UserAccount) => void;
@@ -18,34 +19,71 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const clean = identifier.trim().toLowerCase();
-      const matchedUser = users.find(
-        (u) =>
-          (u.username && u.username.toLowerCase() === clean) ||
-          u.email.trim().toLowerCase() === clean
-      );
+    const clean = identifier.trim().toLowerCase();
 
-      if (!matchedUser) {
+    try {
+      // 1. Attempt live API login to acquire production JWT token
+      const res = await DashboardApi.login(clean, password);
+      if (res?.success && res?.data?.user) {
+        const apiUser = res.data.user;
+        const matchedLocal = users.find(
+          (u) =>
+            (u.username && u.username.toLowerCase() === clean) ||
+            u.email.trim().toLowerCase() === clean
+        );
+
+        const authenticatedUser: UserAccount = matchedLocal || {
+          id: apiUser.id,
+          name: apiUser.name,
+          username: apiUser.username || clean,
+          email: apiUser.email,
+          role: (apiUser.role === 'ADMIN' ? 'Admin' : apiUser.role === 'DEVELOPER' ? 'Developer' : 'Manager'),
+          roleTitle: apiUser.role === 'DEVELOPER' ? 'Lead Developer & Tech' : 'Salon Administrator',
+          initials: (apiUser.name || 'AD').split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase(),
+          password,
+          createdAt: new Date().toISOString().split('T')[0],
+        };
+
         setIsLoading(false);
-        setErrorMessage('No staff account found with this username or email.');
+        onSignInSuccess(authenticatedUser);
         return;
       }
-
-      if (matchedUser.password !== password) {
+    } catch (apiErr: any) {
+      console.warn('Backend API login check:', apiErr?.message);
+      // If error specifically says invalid credentials, show error
+      if (apiErr?.message?.includes('Invalid credentials') || apiErr?.message?.includes('401')) {
         setIsLoading(false);
-        setErrorMessage('Incorrect password. Please verify and try again.');
+        setErrorMessage('Invalid username/email or password. Please verify and try again.');
         return;
       }
+    }
 
+    // 2. Offline / Local fallback
+    const matchedUser = users.find(
+      (u) =>
+        (u.username && u.username.toLowerCase() === clean) ||
+        u.email.trim().toLowerCase() === clean
+    );
+
+    if (!matchedUser) {
       setIsLoading(false);
-      onSignInSuccess(matchedUser);
-    }, 350);
+      setErrorMessage('No staff account found with this username or email.');
+      return;
+    }
+
+    if (matchedUser.password !== password) {
+      setIsLoading(false);
+      setErrorMessage('Incorrect password. Please verify and try again.');
+      return;
+    }
+
+    setIsLoading(false);
+    onSignInSuccess(matchedUser);
   };
 
   return (

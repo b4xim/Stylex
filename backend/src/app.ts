@@ -43,7 +43,8 @@ if (env.NODE_ENV !== 'test') {
 const uploadsDir = path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadsDir));
 
-// API Version 1 Gateway
+// API Gateway (supporting both /api and /api/v1)
+app.use('/api', apiRouter);
 app.use('/api/v1', apiRouter);
 
 // Root fallback

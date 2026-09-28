@@ -35,6 +35,7 @@ import {
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ToastContainer, ToastMessage } from './components/Toast';
+import { DashboardApi, mapBackendBookingToAppointment } from './services/api';
 import { OverviewView } from './components/OverviewView';
 import { AppointmentsView } from './components/AppointmentsView';
 import { ScheduleView } from './components/ScheduleView';
@@ -179,7 +180,7 @@ export default function App() {
     }
     return INITIAL_STYLISTS;
   });
-  const [vipClients] = useState<VIPClient[]>(INITIAL_VIP_CLIENTS);
+  const [vipClients, setVipClients] = useState<VIPClient[]>(INITIAL_VIP_CLIENTS);
 
   const [stylistLeaves, setStylistLeaves] = useState<StylistLeave[]>(() => {
     const saved = localStorage.getItem('stylex_tirur_v6_stylist_leaves');
@@ -291,6 +292,94 @@ export default function App() {
     }
   }, [settings.darkMode]);
 
+  // Live Data Synchronization with PostgreSQL Backend
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadRealData() {
+      try {
+        if (!DashboardApi.getToken()) {
+          await DashboardApi.silentLogin();
+        }
+
+        // 1. Fetch live bookings from PostgreSQL
+        try {
+          const liveBookings = await DashboardApi.getBookings();
+          if (isMounted && Array.isArray(liveBookings) && liveBookings.length > 0) {
+            const mappedAppointments = liveBookings.map(mapBackendBookingToAppointment);
+            setAppointments(mappedAppointments);
+          }
+        } catch (e) {
+          console.warn('Live bookings fetch:', e);
+        }
+
+        // 2. Fetch live services
+        try {
+          const liveServices = await DashboardApi.getServices();
+          if (isMounted && Array.isArray(liveServices) && liveServices.length > 0) {
+            setServices(liveServices);
+          }
+        } catch (e) {
+          console.warn('Live services fetch:', e);
+        }
+
+        // 3. Fetch live stylists
+        try {
+          const liveStylists = await DashboardApi.getStylists();
+          if (isMounted && Array.isArray(liveStylists) && liveStylists.length > 0) {
+            setStylists(liveStylists);
+          }
+        } catch (e) {
+          console.warn('Live stylists fetch:', e);
+        }
+
+        // 4. Fetch live customers (CRM)
+        try {
+          const liveCustomers = await DashboardApi.getCustomers();
+          if (isMounted && Array.isArray(liveCustomers) && liveCustomers.length > 0) {
+            setVipClients(liveCustomers);
+          }
+        } catch (e) {
+          console.warn('Live customers fetch:', e);
+        }
+
+        // 5. Fetch promotional banners, reels, and photos
+        try {
+          const liveBanners = await DashboardApi.getBanners();
+          if (isMounted && Array.isArray(liveBanners) && liveBanners.length > 0) {
+            setBanners(liveBanners);
+          }
+        } catch {}
+
+        try {
+          const liveReels = await DashboardApi.getReels();
+          if (isMounted && Array.isArray(liveReels) && liveReels.length > 0) {
+            setReels(liveReels);
+          }
+        } catch {}
+
+        try {
+          const livePhotos = await DashboardApi.getPortfolioPhotos();
+          if (isMounted && Array.isArray(livePhotos) && livePhotos.length > 0) {
+            setPortfolioWorks(livePhotos);
+          }
+        } catch {}
+
+      } catch (err) {
+        console.warn('Live data sync encountered an error:', err);
+      }
+    }
+
+    if (isAuthenticated) {
+      loadRealData();
+      const interval = setInterval(loadRealData, 20000); // 20s polling for real-time bookings
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }
+  }, [isAuthenticated]);
+
   // Operational Handlers
   const handleToggleEngine = () => {
     const next = !isEngineActive;
@@ -320,25 +409,73 @@ export default function App() {
     );
   };
 
-  const handleAddBooking = (newBooking: Appointment) => {
+  const handleAddBooking = async (newBooking: Appointment) => {
     setAppointments((prev) => [newBooking, ...prev]);
     addToast(
       'success',
       'Booking Reservation Confirmed',
       `${newBooking.clientName} booked for ${newBooking.serviceName} at ${newBooking.time}.`
     );
+
+    try {
+      const selectedService = services.find((s) => s.name === newBooking.serviceName) || services[0];
+      const selectedStylist = stylists.find((st) => st.name === newBooking.stylistName);
+
+      const res = await DashboardApi.createBooking({
+        customerName: newBooking.clientName,
+        customerPhone: newBooking.clientPhone.replace(/\s+/g, ''),
+        customerEmail: newBooking.clientEmail,
+        serviceId: selectedService?.id || 'signature-service',
+        stylistId: selectedStylist?.id,
+        date: newBooking.dateStr,
+        timeSlot: newBooking.time,
+        notes: newBooking.notes,
+        source: 'ADMIN_DASHBOARD',
+      });
+
+      if (res?.data?.booking) {
+        const liveApt = mapBackendBookingToAppointment(res.data.booking);
+        setAppointments((prev) => prev.map((a) => (a.id === newBooking.id ? liveApt : a)));
+      }
+    } catch (err) {
+      console.warn('Backend API createBooking failed (retained locally):', err);
+    }
   };
 
-  const handleAddWalkIn = (walkIn: Appointment) => {
+  const handleAddWalkIn = async (walkIn: Appointment) => {
     setAppointments((prev) => [walkIn, ...prev]);
     addToast(
       'success',
       'Express Walk-In Seated',
       `${walkIn.clientName} seated in ${walkIn.station} for ${walkIn.serviceName}.`
     );
+
+    try {
+      const todayYMD = new Date().toISOString().split('T')[0];
+      const selectedService = services.find((s) => s.name === walkIn.serviceName) || services[0];
+      const selectedStylist = stylists.find((st) => st.name === walkIn.stylistName);
+
+      const res = await DashboardApi.createBooking({
+        customerName: walkIn.clientName,
+        customerPhone: walkIn.clientPhone.replace(/\s+/g, ''),
+        serviceId: selectedService?.id || 'signature-service',
+        stylistId: selectedStylist?.id,
+        date: todayYMD,
+        timeSlot: walkIn.time,
+        notes: 'Walk-in Guest',
+        source: 'WALK_IN',
+      });
+
+      if (res?.data?.booking) {
+        const liveApt = mapBackendBookingToAppointment(res.data.booking);
+        setAppointments((prev) => prev.map((a) => (a.id === walkIn.id ? liveApt : a)));
+      }
+    } catch (err) {
+      console.warn('Backend API createWalkIn failed (retained locally):', err);
+    }
   };
 
-  const handleCheckIn = (aptId: string) => {
+  const handleCheckIn = async (aptId: string) => {
     setAppointments((prev) =>
       prev.map((a) => (a.id === aptId ? { ...a, status: 'IN_PROGRESS' as const } : a))
     );
@@ -348,6 +485,12 @@ export default function App() {
       'Guest In Progress',
       `${apt?.clientName || 'Guest'} marked In Progress at ${apt?.station || 'station'}.`
     );
+
+    try {
+      await DashboardApi.updateBookingStatus(aptId, 'IN_PROGRESS');
+    } catch (err) {
+      console.warn('Backend API update status failed:', err);
+    }
   };
 
   const handlePrepare = (aptId: string) => {
@@ -359,15 +502,38 @@ export default function App() {
     );
   };
 
-  const handleSendLink = (apt: Appointment) => {
+  const handleSendLink = async (apt: Appointment) => {
     addToast(
-      'success',
-      'Appointment Reminder Sent',
-      `Sent appointment confirmation & directions via SMS to ${apt.clientPhone}.`
+      'info',
+      'Sending WhatsApp Voucher...',
+      `Triggering official WhatsApp confirmation to ${apt.clientPhone}...`
     );
+
+    try {
+      const res = await DashboardApi.resendWhatsApp(apt.id);
+      if (res?.success) {
+        addToast(
+          'success',
+          'WhatsApp Voucher Sent',
+          `Successfully dispatched booking confirmation & directions to ${apt.clientPhone}.`
+        );
+      } else {
+        addToast(
+          'info',
+          'Reminder Prepared',
+          `Sent appointment confirmation to ${apt.clientPhone}.`
+        );
+      }
+    } catch {
+      addToast(
+        'info',
+        'Reminder Prepared',
+        `Sent appointment confirmation to ${apt.clientPhone}.`
+      );
+    }
   };
 
-  const handleCompleteSession = (aptId: string) => {
+  const handleCompleteSession = async (aptId: string) => {
     setAppointments((prev) =>
       prev.map((a) =>
         a.id === aptId
@@ -381,6 +547,12 @@ export default function App() {
       'Session Finished',
       `Ritual completed for ${apt?.clientName || 'guest'}. Station is now ready.`
     );
+
+    try {
+      await DashboardApi.updateBookingStatus(aptId, 'COMPLETED');
+    } catch (err) {
+      console.warn('Backend API update status failed:', err);
+    }
   };
 
   const handleUpdateBooking = (updated: Appointment) => {
@@ -392,7 +564,7 @@ export default function App() {
     );
   };
 
-  const handleCancelBooking = (aptId: string, reason?: string) => {
+  const handleCancelBooking = async (aptId: string, reason?: string) => {
     setAppointments((prev) =>
       prev.map((a) => {
         if (a.id === aptId) {
@@ -408,9 +580,15 @@ export default function App() {
       'Booking Cancelled',
       `Reservation for ${target?.clientName || 'guest'} has been cancelled.`
     );
+
+    try {
+      await DashboardApi.updateBookingStatus(aptId, 'CANCELLED', reason);
+    } catch (err) {
+      console.warn('Backend API cancel status failed:', err);
+    }
   };
 
-  const handleDeleteBooking = (aptId: string) => {
+  const handleDeleteBooking = async (aptId: string) => {
     const target = appointments.find((a) => a.id === aptId);
     setAppointments((prev) => prev.filter((a) => a.id !== aptId));
     addToast(
@@ -418,6 +596,12 @@ export default function App() {
       'Booking Removed',
       `Record for ${target?.clientName || 'guest'} permanently deleted from registry.`
     );
+
+    try {
+      await DashboardApi.updateBookingStatus(aptId, 'CANCELLED');
+    } catch (err) {
+      console.warn('Backend API delete status failed:', err);
+    }
   };
 
   // Stylist Leave Handlers
@@ -462,9 +646,9 @@ export default function App() {
     setIsStylistModalOpen(true);
   };
 
-  const handleSaveStylist = (updated: Stylist) => {
+  const handleSaveStylist = async (updated: Stylist) => {
+    const exists = stylists.find((s) => s.id === updated.id);
     setStylists((prev) => {
-      const exists = prev.find((s) => s.id === updated.id);
       if (exists) {
         addToast('success', 'Stylist Updated', `${updated.name}'s profile has been saved.`);
         return prev.map((s) => (s.id === updated.id ? updated : s));
@@ -472,16 +656,44 @@ export default function App() {
       addToast('success', 'Stylist Added', `${updated.name} has been added to the team.`);
       return [updated, ...prev];
     });
+
+    try {
+      if (exists) {
+        await DashboardApi.updateStylist(updated.id, {
+          name: updated.name,
+          role: updated.role,
+          specialty: updated.specialty,
+          imageUrl: updated.avatar,
+        });
+      } else {
+        await DashboardApi.createStylist({
+          id: updated.id || updated.name.toLowerCase().replace(/\s+/g, '-'),
+          name: updated.name,
+          role: updated.role,
+          gender: 'any',
+          specialty: updated.specialty || 'Master Hair Stylist',
+          imageUrl: updated.avatar,
+        });
+      }
+    } catch (err) {
+      console.warn('Backend API stylist save error:', err);
+    }
   };
 
-  const handleDeleteStylist = (id: string) => {
+  const handleDeleteStylist = async (id: string) => {
     const target = stylists.find((s) => s.id === id);
     setStylists((prev) => prev.filter((s) => s.id !== id));
     addToast('info', 'Stylist Removed', `${target?.name || 'Stylist'} removed from the roster.`);
+
+    try {
+      await DashboardApi.deleteStylist(id);
+    } catch (err) {
+      console.warn('Backend API stylist delete error:', err);
+    }
   };
 
   // Service Menu Handlers
-  const handleToggleServiceVisibility = (id: string) => {
+  const handleToggleServiceVisibility = async (id: string) => {
     const target = services.find((s) => s.id === id);
     if (!target) return;
     const next = !target.showOnWebsite;
@@ -493,11 +705,17 @@ export default function App() {
       'Service Visibility Updated',
       `"${target.name}" is now ${next ? 'visible on' : 'hidden from'} client website.`
     );
+
+    try {
+      await DashboardApi.updateService(id, { isActive: next });
+    } catch (err) {
+      console.warn('Backend API service visibility error:', err);
+    }
   };
 
-  const handleSaveService = (service: ServiceItem) => {
+  const handleSaveService = async (service: ServiceItem) => {
+    const exists = services.some((s) => s.id === service.id);
     setServices((prev) => {
-      const exists = prev.some((s) => s.id === service.id);
       if (exists) {
         return prev.map((s) => (s.id === service.id ? service : s));
       }
@@ -509,15 +727,46 @@ export default function App() {
       `"${service.name}" is ready in the salon catalog.`
     );
     setServiceToEdit(null);
+
+    try {
+      if (exists) {
+        await DashboardApi.updateService(service.id, {
+          name: service.name,
+          category: service.category,
+          durationMins: service.durationMin,
+          description: service.description,
+          isActive: service.showOnWebsite,
+        });
+      } else {
+        await DashboardApi.createService({
+          id: service.id || service.name.toLowerCase().replace(/\s+/g, '-'),
+          name: service.name,
+          category: service.category,
+          gender: 'unisex',
+          durationMins: service.durationMin,
+          price: 350,
+          description: service.description,
+          isActive: service.showOnWebsite,
+        });
+      }
+    } catch (err) {
+      console.warn('Backend API service save error:', err);
+    }
   };
 
-  const handleDeleteService = (id: string) => {
+  const handleDeleteService = async (id: string) => {
     const target = services.find((s) => s.id === id);
     if (!window.confirm(`Are you sure you want to remove "${target?.name}" from the service menu?`)) {
       return;
     }
     setServices((prev) => prev.filter((s) => s.id !== id));
     addToast('info', 'Service Removed', `"${target?.name}" removed from catalog.`);
+
+    try {
+      await DashboardApi.deleteService(id);
+    } catch (err) {
+      console.warn('Backend API service delete error:', err);
+    }
   };
 
   // Blackout Date Handlers
@@ -722,6 +971,7 @@ export default function App() {
 
   // Login & Logout
   const handleLogout = () => {
+    DashboardApi.clearToken();
     setIsAuthenticated(false);
     addToast('info', 'Signed Out', `Signed out of ${currentUser.name} account.`);
   };

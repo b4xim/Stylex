@@ -112,5 +112,7 @@ export interface BookingState {
   phoneCountryCode?: string;
   phone?: string;
   email?: string;
+  customerName?: string;
+  bookingRef?: string;
 }
 
