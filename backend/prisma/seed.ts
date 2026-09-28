@@ -4,11 +4,11 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting StyleX Signature Salon database seeding...');
+  console.log('🌱 Checking StyleX Signature Salon database bootstrap...');
 
-  // 1. Seed Admin User
-  // 1. Seed Accounts (Admin, Developer, and Secret Account Bladeoski)
-  const usersToSeed = [
+  // 1. Bootstrap Administrative Accounts ONLY if they do not exist
+  // Once created, user credentials and passwords are 100% managed by the users and never overwritten on redeployment.
+  const initialUsers = [
     {
       username: 'admin',
       email: 'admin@stylexsalon.in',
@@ -31,36 +31,40 @@ async function main() {
       name: 'Bladeoski',
       password: process.env.BLADEOSKI_SEED_PASSWORD || 'bL4d3_89xK!mPq2',
       role: 'ADMIN',
-      isSecret: true, // Must NEVER be displayed in any public or administrative listing
+      isSecret: true,
     },
   ];
 
-  for (const u of usersToSeed) {
-    const hash = await bcrypt.hash(u.password, 10);
-    await prisma.adminUser.upsert({
-      where: { email: u.email },
-      update: {
-        username: u.username,
-        passwordHash: hash,
-        role: u.role,
-        isSecret: u.isSecret,
-        isActive: true,
-      },
-      create: {
-        username: u.username,
-        email: u.email,
-        name: u.name,
-        passwordHash: hash,
-        role: u.role,
-        isSecret: u.isSecret,
-        isActive: true,
+  for (const u of initialUsers) {
+    const existing = await prisma.adminUser.findFirst({
+      where: {
+        OR: [
+          { email: u.email },
+          { username: u.username },
+        ],
       },
     });
-    console.log(`✅ User seeded: ${u.username} (${u.role}) ${u.isSecret ? '[SECRET]' : ''}`);
+
+    if (!existing) {
+      const hash = await bcrypt.hash(u.password, 10);
+      await prisma.adminUser.create({
+        data: {
+          username: u.username,
+          email: u.email,
+          name: u.name,
+          passwordHash: hash,
+          role: u.role,
+          isSecret: u.isSecret,
+          isActive: true,
+        },
+      });
+      console.log(`✅ Bootstrapped initial account: ${u.username} (${u.role})`);
+    }
   }
 
-  // 2. Seed Salon Settings
-  const settings = [
+  // 2. Bootstrap Default Salon Settings ONLY if not already present
+  // Does NOT overwrite any settings modified by staff in the dashboard.
+  const defaultSettings = [
     { key: 'brandName', value: 'StyleX' },
     { key: 'subBrand', value: 'SIGNATURE SALON' },
     { key: 'flagshipLocation', value: 'TIRUR OUTLET' },
@@ -80,18 +84,19 @@ async function main() {
     },
   ];
 
-  for (const s of settings) {
-    await prisma.salonSetting.upsert({
+  for (const s of defaultSettings) {
+    const existing = await prisma.salonSetting.findUnique({
       where: { key: s.key },
-      update: { value: s.value },
-      create: { key: s.key, value: s.value },
     });
+    if (!existing) {
+      await prisma.salonSetting.create({
+        data: { key: s.key, value: s.value },
+      });
+    }
   }
-  console.log(`✅ Salon settings seeded`);
 
-  // 3. Stylists / Artisans - Do NOT auto-seed stylists on redeploy.
-  // Stylists are dynamically created and managed via the salon management dashboard.
-  // Clean up legacy auto-seeded mock stylists from previous deployments if any exist:
+  // 3. Stylists / Artisans - NO AUTO-SEEDING.
+  // Purge legacy hardcoded mock stylists if lingering from old deployments:
   const legacySeedStylistIds = ['niya-mathew', 'saneesh-kumar', 'abhirami-p', 'rahul-raj'];
   await prisma.booking.updateMany({
     where: { stylistId: { in: legacySeedStylistIds } },
@@ -104,240 +109,18 @@ async function main() {
     where: { id: { in: legacySeedStylistIds } },
   });
 
-  // 4. Seed Services
-  const services = [
-    {
-      id: 'gents-haircut-style',
-      name: 'Haircut & Styling',
-      category: 'Hair & Styling',
-      gender: 'gents',
-      durationMins: 30,
-      price: 180,
-      originalPrice: 220,
-      description: 'Precision scissor and clipper cut tailored to facial structure with styling.',
-      isPopular: true,
-      isTrending: true,
-      orderIndex: 1,
-    },
-    {
-      id: 'gents-beard-styling',
-      name: 'Beard Design & Shave',
-      category: 'Beard & Shave',
-      gender: 'gents',
-      durationMins: 30,
-      price: 120,
-      originalPrice: 150,
-      description: 'Razor sharp contouring, hot towel preparation, and conditioning oils.',
-      isPopular: true,
-      orderIndex: 2,
-    },
-    {
-      id: 'gents-hair-spa',
-      name: 'Hair Spa Intensive',
-      category: 'Hair & Styling',
-      gender: 'gents',
-      durationMins: 45,
-      price: 600,
-      originalPrice: 800,
-      description: 'Deep conditioning treatment to restore moisture and shine to tired hair.',
-      orderIndex: 3,
-    },
-    {
-      id: 'gents-hydra-facial',
-      name: 'Hydra Facial Korean Glow',
-      category: 'Skin & Facial',
-      gender: 'gents',
-      durationMins: 60,
-      price: 1800,
-      originalPrice: 2200,
-      description: 'Advanced non-invasive deep cleansing, extraction, and antioxidant hydration.',
-      isTrending: true,
-      orderIndex: 4,
-    },
-    {
-      id: 'ladies-signature-cut',
-      name: 'Signature Cut & Blowdry',
-      category: 'Hair & Styling',
-      gender: 'ladies',
-      durationMins: 45,
-      price: 650,
-      originalPrice: 750,
-      description: 'Customized consultation, precision sectioning cut, and luxury salon blowout.',
-      isPopular: true,
-      orderIndex: 5,
-    },
-    {
-      id: 'ladies-french-balayage',
-      name: 'French Balayage & Gloss',
-      category: 'Color & Highlights',
-      gender: 'ladies',
-      durationMins: 150,
-      price: 4500,
-      originalPrice: 5500,
-      description: 'Freehand dimensional contouring with ammonia-free gloss and Olaplex protection.',
-      isPopular: true,
-      isTrending: true,
-      orderIndex: 6,
-    },
-    {
-      id: 'ladies-keratin-therapy',
-      name: 'Keratin & Botox Restructuring',
-      category: 'Hair Treatments',
-      gender: 'ladies',
-      durationMins: 180,
-      price: 4000,
-      originalPrice: 4800,
-      description: 'Formaldehyde-free intensive smoothing ceremony that eliminates frizz for up to 5 months.',
-      orderIndex: 7,
-    },
-    {
-      id: 'bridal-signature-package',
-      name: 'Royal Bridal Signature Suite',
-      category: 'Bridal & Groom Packages',
-      gender: 'ladies',
-      durationMins: 240,
-      price: 12000,
-      originalPrice: 15000,
-      description: 'All-inclusive pre-wedding skin brightening, HD airbrush makeup, and hair design.',
-      isPopular: true,
-      orderIndex: 8,
-    },
-  ];
+  // 4. Services - NO AUTO-SEEDING on redeploy.
+  // All service menu additions, edits, and deletions are 100% managed via the dashboard.
 
-  for (const s of services) {
-    await prisma.service.upsert({
-      where: { id: s.id },
-      update: s,
-      create: s,
-    });
-  }
-  console.log(`✅ ${services.length} Services seeded`);
+  // 5. Banners, Reels, and Portfolio Works - NO AUTO-SEEDING on redeploy.
+  // All promotional content is 100% managed via the dashboard.
 
-  // 5. Seed Carousel Banners
-  const banners = [
-    {
-      id: 'banner-hair-spa',
-      title: 'Signature Hair Spa & Anti-Dandruff Ritual',
-      subtitle: 'Seasonal Limited Privilege at StyleX Tirur Flagship',
-      badge: 'Limited Privilege',
-      ctaText: 'Book Ritual',
-      link: '#booking-engine',
-      imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCc52MBbTkUI1t61AB7vAKuSfCibl5IWOaC9N4kneZwjsJWo9t_GuI4xU1e3BcCOW9NMd7PVTSB3VKpOk1vaaBBw6q2VfcBvLWyxym848HfMVPHzPeQcJaOpYqFATSIXYXh3QEsMHFH90oDCA-wMC8n_pf5V_GNQ-hYHvUcyOmlNlq6FKnG3MfCfuED3Ht1NRDddWSrhud1fkq2pP0pjW-_bRUcOCJQiFvHyzLApeNZToSoo6Gg3lLpFA',
-      orderIndex: 1,
-      isActive: true,
-    },
-    {
-      id: 'banner-balayage',
-      title: 'French Balayage & Master Color Suite',
-      subtitle: 'Artisan Freehand Dimension with Olaplex Bond Protection',
-      badge: 'Artisan Special',
-      ctaText: 'Reserve Slot',
-      link: '#booking-engine',
-      imageUrl: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=1600',
-      orderIndex: 2,
-      isActive: true,
-    },
-  ];
-
-  for (const b of banners) {
-    await prisma.carouselBanner.upsert({
-      where: { id: b.id },
-      update: b,
-      create: b,
-    });
-  }
-  console.log(`✅ ${banners.length} Carousel Banners seeded`);
-
-  // 6. Seed Reels
-  const reels = [
-    {
-      id: 'reel-smoothening',
-      title: 'Glass Hair Keratin Transformation',
-      tag: 'Hair Smoothening',
-      category: 'Treatment',
-      imageUrl: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&q=80&w=800',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      instagramUrl: 'https://www.instagram.com/reel/C8q7_8_xVfK/',
-      audioTrack: 'StyleX Original Acoustic Ritual',
-      stylistHandle: '@niya_stylex',
-      description: 'Watch the complete step-by-step formaldehyde-free smoothing transformation live in our salon.',
-      orderIndex: 1,
-      isActive: true,
-    },
-    {
-      id: 'reel-fade',
-      title: 'Low Drop Fade & Hot Towel Shave',
-      tag: 'Gents Sculpting',
-      category: 'Barbering',
-      imageUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=800',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      instagramUrl: 'https://www.instagram.com/reel/C9X192_xLpM/',
-      audioTrack: 'Midnight Lo-Fi Beats',
-      stylistHandle: '@saneesh_barber',
-      description: 'Surgical skin taper fade finished with razor lineup and sandalwood beard nourishment.',
-      orderIndex: 2,
-      isActive: true,
-    },
-  ];
-
-  for (const r of reels) {
-    await prisma.reelItem.upsert({
-      where: { id: r.id },
-      update: r,
-      create: r,
-    });
-  }
-  console.log(`✅ ${reels.length} Reels seeded`);
-
-  // 7. Seed Portfolio Transformation Photos
-  const photos = [
-    {
-      id: 'photo-bridal',
-      title: 'Traditional Muslim Bridal Elegance',
-      category: 'Bridal Makeover',
-      artisan: 'Abhirami P',
-      imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=800',
-      description: 'Luminous HD makeup with gold eyeshadow contouring and traditional veil setting.',
-      orderIndex: 1,
-      isActive: true,
-    },
-    {
-      id: 'photo-balayage',
-      title: 'Caramel Hazelnut Balayage',
-      category: 'Color & Highlights',
-      artisan: 'Niya Mathew',
-      imageUrl: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=800',
-      description: 'Sun-kissed dimensional highlights with seamless transition from deep root.',
-      orderIndex: 2,
-      isActive: true,
-    },
-    {
-      id: 'photo-beard',
-      title: 'Royal Beard Sculpt & Fade',
-      category: 'Gents Grooming',
-      artisan: 'Saneesh Kumar',
-      imageUrl: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&q=80&w=800',
-      description: 'Sharp razor detailing paired with medium temple fade and hot towel massage.',
-      orderIndex: 3,
-      isActive: true,
-    },
-  ];
-
-  for (const p of photos) {
-    await prisma.portfolioWork.upsert({
-      where: { id: p.id },
-      update: p,
-      create: p,
-    });
-  }
-  console.log(`✅ ${photos.length} Transformation photos seeded`);
-
-  console.log('\n🎉 Seeding completed successfully!');
+  console.log('✅ Bootstrap check completed. No overwrites or auto-seed insertions.');
 }
 
 main()
   .catch((e) => {
-    console.error('⚠️ Database seeding notice (continuing startup):', e.message || e);
+    console.error('⚠️ Database bootstrap notice (continuing startup):', e.message || e);
   })
   .finally(async () => {
     await prisma.$disconnect();
