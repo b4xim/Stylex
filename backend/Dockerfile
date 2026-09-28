@@ -3,6 +3,8 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache openssl libc6-compat
+
 # Install dependencies
 COPY package*.json ./
 RUN npm ci
@@ -20,6 +22,8 @@ RUN npm run build
 FROM node:22-alpine AS runner
 
 WORKDIR /app
+
+RUN apk add --no-cache openssl libc6-compat
 
 ENV NODE_ENV=production
 ENV PORT=5000
@@ -41,4 +45,4 @@ RUN mkdir -p uploads/banners uploads/reels uploads/photos uploads/general
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && (node dist/prisma/seed.js || true) && node dist/src/server.js"]
+CMD ["sh", "-c", "(npx prisma db push --accept-data-loss || true) && (node dist/prisma/seed.js || true) && node dist/src/server.js"]
