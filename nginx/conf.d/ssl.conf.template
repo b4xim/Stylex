@@ -1,20 +1,41 @@
 # ==============================================================================
-# StyleX Signature Salon - Master Nginx Gateway Configuration
-# Domains: stylexsalon.in (Customer Site) & dashboard.stylexsalon.in (Admin SPA)
+# StyleX Signature Salon - Production SSL (HTTPS) Configuration
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# 1. Dashboard Subdomain (dashboard.stylexsalon.in)
+# 1. HTTP Redirect to HTTPS (All Domains)
 # ------------------------------------------------------------------------------
 server {
     listen 80;
-    server_name dashboard.stylexsalon.in;
-    client_max_body_size 50M;
+    server_name stylexsalon.in www.stylexsalon.in dashboard.stylexsalon.in;
 
-    # ACME Challenge for Let's Encrypt SSL Certificates
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ------------------------------------------------------------------------------
+# 2. Dashboard Subdomain (HTTPS - dashboard.stylexsalon.in)
+# ------------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name dashboard.stylexsalon.in;
+    client_max_body_size 50M;
+
+    ssl_certificate /etc/letsencrypt/live/stylexsalon.in/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/stylexsalon.in/privkey.pem;
+
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
 
     # Compression
     gzip on;
@@ -53,17 +74,23 @@ server {
 }
 
 # ------------------------------------------------------------------------------
-# 2. Main Customer Website (stylexsalon.in, www.stylexsalon.in, and IP fallback)
+# 3. Main Customer Website (HTTPS - stylexsalon.in & www.stylexsalon.in)
 # ------------------------------------------------------------------------------
 server {
-    listen 80 default_server;
-    server_name stylexsalon.in www.stylexsalon.in _;
+    listen 443 ssl default_server;
+    http2 on;
+    server_name stylexsalon.in www.stylexsalon.in;
     client_max_body_size 50M;
 
-    # ACME Challenge for Let's Encrypt SSL Certificates
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+    ssl_certificate /etc/letsencrypt/live/stylexsalon.in/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/stylexsalon.in/privkey.pem;
+
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
 
     # Compression
     gzip on;
