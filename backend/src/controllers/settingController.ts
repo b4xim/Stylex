@@ -29,6 +29,14 @@ export class SettingController {
         settingsMap.maintenanceMode = false;
       }
 
+      if (typeof settingsMap.bookingEngineActive === 'undefined') {
+        settingsMap.bookingEngineActive = true;
+      } else if (settingsMap.bookingEngineActive === 'true' || settingsMap.bookingEngineActive === true) {
+        settingsMap.bookingEngineActive = true;
+      } else if (settingsMap.bookingEngineActive === 'false' || settingsMap.bookingEngineActive === false) {
+        settingsMap.bookingEngineActive = false;
+      }
+
       res.status(200).json({ success: true, data: settingsMap });
     } catch (error) {
       next(error);

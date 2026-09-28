@@ -8,12 +8,16 @@ interface BookingPageProps {
   onConfirmBooking: (booking: BookingState) => void;
   onNavigateHome: () => void;
   onScrollToSection: (sectionId: string) => void;
+  isEngineActive?: boolean;
+  onTriggerPausedModal?: () => void;
 }
 
 export const BookingPage: React.FC<BookingPageProps> = ({
   selectedServiceId = 'hair-1',
   onConfirmBooking,
   onNavigateHome: _onNavigateHome,
+  isEngineActive = true,
+  onTriggerPausedModal,
 }) => {
   return (
     <div className="w-full bg-[#f6faf7] min-h-screen">
@@ -65,6 +69,8 @@ export const BookingPage: React.FC<BookingPageProps> = ({
           initialServiceId={selectedServiceId}
           onConfirmBooking={onConfirmBooking}
           showHeader={false}
+          isEngineActive={isEngineActive}
+          onTriggerPausedModal={onTriggerPausedModal}
         />
       </section>
 

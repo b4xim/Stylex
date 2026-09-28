@@ -208,7 +208,10 @@ export default function App() {
     return parsed;
   });
 
-  const [isEngineActive, setIsEngineActive] = useState<boolean>(true);
+  const [isEngineActive, setIsEngineActive] = useState<boolean>(() => {
+    const saved = localStorage.getItem('stylex_booking_engine_active');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
 
   // Modals state
@@ -480,6 +483,18 @@ export default function App() {
       } catch (e) {
         console.warn('Live inquiries fetch:', e);
       }
+
+      // 8. Fetch live salon settings
+      try {
+        const liveSettings: any = await DashboardApi.getSettings();
+        if (liveSettings && typeof liveSettings.bookingEngineActive !== 'undefined') {
+          const isActive = liveSettings.bookingEngineActive === true || liveSettings.bookingEngineActive === 'true';
+          setIsEngineActive(isActive);
+          safeSetItem('stylex_booking_engine_active', String(isActive));
+        }
+      } catch (e) {
+        console.warn('Live settings fetch:', e);
+      }
     } catch (err) {
       console.warn('Live data sync encountered an error:', err);
     }
@@ -519,14 +534,26 @@ export default function App() {
   }, [isAuthenticated]);
 
   // Operational Handlers
-  const handleToggleEngine = () => {
+  const handleToggleEngine = async () => {
     const next = !isEngineActive;
     setIsEngineActive(next);
+    try {
+      localStorage.setItem('stylex_booking_engine_active', String(next));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('stylex_booking_engine_updated'));
+    } catch {}
+
     addToast(
       next ? 'success' : 'info',
       next ? 'Guest Booking Engine Activated' : 'Public Reservations Paused',
       next ? 'Public web portal is now accepting appointments.' : 'Public booking gateway is paused.'
     );
+
+    try {
+      await DashboardApi.updateSettings({ bookingEngineActive: String(next) });
+    } catch (err) {
+      console.warn('Backend API updateSettings bookingEngineActive error:', err);
+    }
   };
 
   const handleToggleDaySchedule = (index: number) => {
@@ -1250,18 +1277,188 @@ export default function App() {
     }
   };
 
+  // Unique Clients grouped strictly by Mobile Number
+  // Each unique mobile number represents a single client displaying their total number of sessions
+  const uniqueClients = useMemo<VIPClient[]>(() => {
+    function normalizeClientPhone(phone?: string): string {
+      if (!phone) return '';
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length === 12 && digits.startsWith('91')) {
+        return digits.slice(2);
+      }
+      if (digits.length === 11 && digits.startsWith('0')) {
+        return digits.slice(1);
+      }
+      return digits;
+    }
+
+    const clientsByPhone = new Map<string, {
+      id: string;
+      name: string;
+      phone: string;
+      email: string;
+      notes: string;
+      preferredStylist?: string;
+      favoriteRitual?: string;
+      lastVisit: string;
+      lastVisitTimestamp: number;
+      sessionsCount: number;
+      totalSpentAmount: number;
+      stylistCounts: Record<string, number>;
+      ritualCounts: Record<string, number>;
+    }>();
+
+    // 1. Process VIP clients loaded from database / CRM
+    (vipClients || []).forEach((c) => {
+      const normPhone = normalizeClientPhone(c.phone);
+      if (!normPhone) return;
+
+      const visits = Number(c.totalVisits || c.visits || 1);
+      const spentNum = parseFloat(String(c.spent || '').replace(/[^0-9.]/g, '')) || 0;
+      const existing = clientsByPhone.get(normPhone);
+
+      if (!existing) {
+        clientsByPhone.set(normPhone, {
+          id: c.id,
+          name: c.name || 'Guest Client',
+          phone: c.phone,
+          email: c.email || '',
+          notes: c.notes || '',
+          preferredStylist: c.preferredStylist || c.favArtisan,
+          favoriteRitual: c.favoriteRitual,
+          lastVisit: c.lastVisit || 'Recent',
+          lastVisitTimestamp: 0,
+          sessionsCount: visits,
+          totalSpentAmount: spentNum,
+          stylistCounts: {},
+          ritualCounts: {},
+        });
+      } else {
+        existing.sessionsCount = Math.max(existing.sessionsCount, visits);
+        existing.totalSpentAmount = Math.max(existing.totalSpentAmount, spentNum);
+        if (!existing.notes && c.notes) existing.notes = c.notes;
+        if (!existing.email && c.email) existing.email = c.email;
+        if (c.name && (!existing.name || existing.name === 'Guest Client')) existing.name = c.name;
+      }
+    });
+
+    // 2. Process all appointments to dynamically count sessions per unique mobile number
+    (appointments || []).forEach((apt) => {
+      const normPhone = normalizeClientPhone(apt.clientPhone);
+      if (!normPhone) return;
+
+      let aptTimestamp = 0;
+      if (apt.dateStr) {
+        const d = new Date(apt.dateStr + (apt.time ? ` ${apt.time}` : ''));
+        if (!isNaN(d.getTime())) aptTimestamp = d.getTime();
+      }
+
+      const existing = clientsByPhone.get(normPhone);
+      const aptPrice = Number(apt.price) || 0;
+
+      if (!existing) {
+        clientsByPhone.set(normPhone, {
+          id: `client-${normPhone}`,
+          name: apt.clientName || 'Guest Client',
+          phone: apt.clientPhone,
+          email: apt.clientEmail || '',
+          notes: apt.notes || '',
+          preferredStylist: apt.stylistName,
+          favoriteRitual: apt.serviceName,
+          lastVisit: apt.dateStr ? `${apt.dateStr} (${apt.time || ''})` : 'Recent',
+          lastVisitTimestamp: aptTimestamp,
+          sessionsCount: 1,
+          totalSpentAmount: aptPrice,
+          stylistCounts: apt.stylistName ? { [apt.stylistName]: 1 } : {},
+          ritualCounts: apt.serviceName ? { [apt.serviceName]: 1 } : {},
+        });
+      } else {
+        existing.sessionsCount += 1;
+        existing.totalSpentAmount += aptPrice;
+
+        if (apt.clientName && apt.clientName.trim().length > existing.name.length) {
+          existing.name = apt.clientName.trim();
+        }
+        if (apt.clientEmail && !existing.email) {
+          existing.email = apt.clientEmail.trim();
+        }
+        if (apt.notes && !existing.notes) {
+          existing.notes = apt.notes;
+        }
+
+        if (apt.stylistName) {
+          existing.stylistCounts[apt.stylistName] = (existing.stylistCounts[apt.stylistName] || 0) + 1;
+        }
+        if (apt.serviceName) {
+          existing.ritualCounts[apt.serviceName] = (existing.ritualCounts[apt.serviceName] || 0) + 1;
+        }
+
+        if (aptTimestamp >= existing.lastVisitTimestamp) {
+          existing.lastVisitTimestamp = aptTimestamp;
+          existing.lastVisit = apt.dateStr ? `${apt.dateStr} (${apt.time || ''})` : existing.lastVisit;
+        }
+      }
+    });
+
+    return Array.from(clientsByPhone.values()).map((c) => {
+      const topStylist = Object.entries(c.stylistCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || c.preferredStylist || 'Master Stylist';
+      const topRitual = Object.entries(c.ritualCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || c.favoriteRitual || 'Signature Service';
+
+      const initials = (c.name || 'GC')
+        .split(' ')
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+
+      return {
+        id: c.id,
+        name: c.name,
+        initials: initials || 'GC',
+        phone: c.phone,
+        email: c.email || 'guest@stylexsalon.in',
+        totalVisits: c.sessionsCount,
+        visits: c.sessionsCount,
+        preferredStylist: topStylist,
+        favArtisan: topStylist,
+        favoriteRitual: topRitual,
+        lastVisit: c.lastVisit,
+        spent: `₹${c.totalSpentAmount.toLocaleString('en-IN')}`,
+        notes: c.notes || 'Client in good standing',
+      };
+    }).sort((a, b) => b.totalVisits - a.totalVisits);
+  }, [vipClients, appointments]);
+
   // Clients Handlers
   const handleDeleteClient = async (id: string) => {
+    function normalizeClientPhone(phone?: string): string {
+      if (!phone) return '';
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length === 12 && digits.startsWith('91')) return digits.slice(2);
+      if (digits.length === 11 && digits.startsWith('0')) return digits.slice(1);
+      return digits;
+    }
+
+    const target = uniqueClients.find((c) => c.id === id);
     const updated = vipClients.filter((c) => c.id !== id);
     setVipClients(updated);
+
+    if (target?.phone) {
+      const norm = normalizeClientPhone(target.phone);
+      setAppointments((prev) => prev.filter((a) => normalizeClientPhone(a.clientPhone) !== norm));
+    }
+
     safeSetItem('stylex_tirur_v6_clients', JSON.stringify(updated));
     window.dispatchEvent(new Event('storage'));
-    addToast('info', 'Client Removed', 'Client profile deleted from directory.');
+    addToast('info', 'Client Removed', `Client profile for "${target?.name || 'Client'}" deleted.`);
 
-    try {
-      await DashboardApi.deleteCustomer(id);
-    } catch (err) {
-      console.warn('Backend customer delete failed:', err);
+    if (id && !id.startsWith('client-')) {
+      try {
+        await DashboardApi.deleteCustomer(id);
+      } catch (err) {
+        console.warn('Backend customer delete failed:', err);
+      }
     }
   };
 
@@ -1690,7 +1887,7 @@ export default function App() {
 
           {currentTab === 'clients-and-vip' && (
             <ClientsView
-              clients={vipClients}
+              clients={uniqueClients}
               onBookClient={(name, phone) => {
                 setIsNewBookingOpen(true);
               }}

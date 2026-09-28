@@ -23,7 +23,10 @@ export class CustomerController {
             bookings: {
               orderBy: { date: 'desc' },
               take: 5,
-              include: { service: true },
+              include: { service: true, stylist: true },
+            },
+            _count: {
+              select: { bookings: true },
             },
           },
           orderBy: { totalSpent: 'desc' },
@@ -33,9 +36,14 @@ export class CustomerController {
         prisma.customer.count({ where: whereClause }),
       ]);
 
+      const mapped = customers.map((c) => ({
+        ...c,
+        totalVisits: Math.max(c._count?.bookings || 0, c.totalVisits || 0, 1),
+      }));
+
       res.status(200).json({
         success: true,
-        data: customers,
+        data: mapped,
         total: totalCount,
       });
     } catch (error) {

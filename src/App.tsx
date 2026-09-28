@@ -14,6 +14,7 @@ import { ClientReviews } from './components/ClientReviews.tsx';
 import { ContactAndMap } from './components/ContactAndMap.tsx';
 import { Footer } from './components/Footer.tsx';
 import { BookingModal } from './components/BookingModal.tsx';
+import { BookingPausedModal } from './components/BookingPausedModal.tsx';
 import { ReelModal } from './components/ReelModal.tsx';
 import { PortfolioModal } from './components/PortfolioModal.tsx';
 import { BookingPage } from './pages/BookingPage.tsx';
@@ -32,6 +33,12 @@ export default function App() {
     }
     return localStorage.getItem('stylex_maintenance_mode') === 'true';
   });
+
+  // Booking Engine Status (controlled by switch in Dashboard)
+  const [isBookingEngineActive, setIsBookingEngineActive] = useState<boolean>(() => {
+    return localStorage.getItem('stylex_booking_engine_active') !== 'false';
+  });
+  const [isBookingPausedModalOpen, setIsBookingPausedModalOpen] = useState<boolean>(false);
 
   // Sync maintenance mode from API and storage events
   useEffect(() => {
@@ -82,6 +89,49 @@ export default function App() {
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Sync booking engine status from backend API and storage events
+  useEffect(() => {
+    const checkEngineStatus = async () => {
+      const local = localStorage.getItem('stylex_booking_engine_active');
+      if (local !== null) {
+        setIsBookingEngineActive(local !== 'false');
+      }
+
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && typeof json.data.bookingEngineActive !== 'undefined') {
+            const active = json.data.bookingEngineActive === true || json.data.bookingEngineActive === 'true';
+            setIsBookingEngineActive(active);
+            localStorage.setItem('stylex_booking_engine_active', String(active));
+          }
+        }
+      } catch {}
+    };
+
+    checkEngineStatus();
+
+    const handleStorage = (e?: StorageEvent) => {
+      if (!e || e.key === 'stylex_booking_engine_active' || !e.key) {
+        const val = localStorage.getItem('stylex_booking_engine_active');
+        if (val !== null) {
+          setIsBookingEngineActive(val !== 'false');
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('stylex_booking_engine_updated', checkEngineStatus);
+    const interval = setInterval(checkEngineStatus, 15000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('stylex_booking_engine_updated', checkEngineStatus);
       clearInterval(interval);
     };
   }, []);
@@ -142,6 +192,11 @@ export default function App() {
 
   // Client-side router navigation
   const navigate = (path: string, sectionId?: string, screenName?: string) => {
+    if ((path === '/booking' || screenName === 'booking' || sectionId === 'booking-engine') && !isBookingEngineActive) {
+      setIsBookingPausedModalOpen(true);
+      return;
+    }
+
     const targetPath = path.startsWith('/booking') ? '/booking' : '/';
     if (screenName) {
       setActiveSection(screenName);
@@ -175,6 +230,10 @@ export default function App() {
 
   // Scroll to booking engine with smooth scroll
   const scrollToBooking = (serviceId?: string) => {
+    if (!isBookingEngineActive) {
+      setIsBookingPausedModalOpen(true);
+      return;
+    }
     if (serviceId) {
       setSelectedServiceId(serviceId);
     }
@@ -243,7 +302,13 @@ export default function App() {
     <div className="min-h-screen bg-transparent font-body-md text-[#181d1b] selection:bg-[#ffdbcf] selection:text-[#380d00] flex flex-col">
       {/* Top Fixed Navigation */}
       <Navbar
-        onOpenBooking={() => navigate('/booking')}
+        onOpenBooking={() => {
+          if (!isBookingEngineActive) {
+            setIsBookingPausedModalOpen(true);
+            return;
+          }
+          navigate('/booking');
+        }}
         activeScreen={activeScreen}
         setActiveScreen={setActiveSection}
         onNavigate={navigate}
@@ -258,6 +323,8 @@ export default function App() {
             onConfirmBooking={(booking) => setConfirmedBooking(booking)}
             onNavigateHome={() => navigate('/')}
             onScrollToSection={(sectionId) => navigate('/', sectionId)}
+            isEngineActive={isBookingEngineActive}
+            onTriggerPausedModal={() => setIsBookingPausedModalOpen(true)}
           />
         ) : (
           /* Full Homepage with All Curated Sections & In-Page Booking Card */
@@ -275,6 +342,8 @@ export default function App() {
             <BookingEngine
               initialServiceId={selectedServiceId}
               onConfirmBooking={(booking) => setConfirmedBooking(booking)}
+              isEngineActive={isBookingEngineActive}
+              onTriggerPausedModal={() => setIsBookingPausedModalOpen(true)}
             />
 
             {/* Curated Signature Services Menu */}
@@ -302,6 +371,11 @@ export default function App() {
       <BookingModal
         booking={confirmedBooking}
         onClose={() => setConfirmedBooking(null)}
+      />
+
+      <BookingPausedModal
+        isOpen={isBookingPausedModalOpen}
+        onClose={() => setIsBookingPausedModalOpen(false)}
       />
 
       <ReelModal

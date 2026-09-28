@@ -57,6 +57,16 @@ export class BookingController {
         throw new AppError('Name, phone, service, date, and time slot are required', 400);
       }
 
+      // Enforce booking engine status when booking is submitted from client website
+      if (source === 'WEBSITE') {
+        const engineSetting = await prisma.salonSetting.findUnique({
+          where: { key: 'bookingEngineActive' },
+        });
+        if (engineSetting && (engineSetting.value === 'false' || (engineSetting.value as any) === false)) {
+          throw new AppError('Online booking is currently paused. Please contact our salon front desk via Call or WhatsApp directly.', 403);
+        }
+      }
+
       // Normalize date to standard ISO YYYY-MM-DD
       let normalizedDate = String(date).trim();
       if (normalizedDate.toLowerCase() === 'today') {
@@ -153,8 +163,16 @@ export class BookingController {
 
       // 4. Database Transaction: Upsert Customer & Create Booking
       const result = await prisma.$transaction(async (tx) => {
-        // Upsert customer in CRM
-        const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
+        // Upsert customer in CRM by normalized mobile number
+        const rawDigits = customerPhone.replace(/[^0-9]/g, '');
+        let cleanPhone = rawDigits;
+        if (countryCode === '+91' || countryCode === '91') {
+          if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+            cleanPhone = cleanPhone.slice(2);
+          } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+            cleanPhone = cleanPhone.slice(1);
+          }
+        }
         const fullGuestPhone = `${countryCode} ${cleanPhone}`;
         const cleanGuestEmail = customerEmail ? customerEmail.trim().toLowerCase() : null;
 

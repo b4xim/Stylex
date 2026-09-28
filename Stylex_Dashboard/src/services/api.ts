@@ -425,7 +425,7 @@ export class DashboardApi {
     return res?.data || {};
   }
 
-  public static async updateSettings(settings: Record<string, string>) {
+  public static async updateSettings(settings: Record<string, any>) {
     return this.request('/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),

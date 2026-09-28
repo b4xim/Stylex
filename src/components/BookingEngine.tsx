@@ -6,6 +6,8 @@ interface BookingEngineProps {
   onConfirmBooking: (booking: BookingState) => void;
   initialServiceId?: string;
   showHeader?: boolean;
+  isEngineActive?: boolean;
+  onTriggerPausedModal?: () => void;
 }
 
 export const COUNTRY_CODES = [
@@ -92,6 +94,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   onConfirmBooking,
   initialServiceId,
   showHeader = true,
+  isEngineActive = true,
+  onTriggerPausedModal,
 }) => {
   // Gender / Department selection (Gents vs Ladies)
   const initialFound = BOOKING_HEADINGS.find((h) => h.id === initialServiceId) 
@@ -576,6 +580,11 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   }, [selectedDay, currentMonthIndex, currentYear, liveBlockedSlots]);
 
   const handleSubmit = async () => {
+    if (!isEngineActive) {
+      onTriggerPausedModal?.();
+      return;
+    }
+
     // Full Name is compulsory
     const cleanName = fullName.trim();
     if (!cleanName) {
@@ -757,6 +766,34 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
         {/* Outer Card Frame */}
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-[#c2c8c2]/50 relative overflow-hidden">
+          {!isEngineActive && (
+            <div
+              onClick={onTriggerPausedModal}
+              className="bg-gradient-to-r from-[#0d261d] via-[#113327] to-[#0d261d] text-white px-4 py-3 sm:px-6 sm:py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-white/10 cursor-pointer hover:brightness-110 transition-all select-none"
+            >
+              <div className="flex items-center gap-2.5 text-center sm:text-left">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fe753c] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#fe753c]"></span>
+                </span>
+                <p className="text-xs sm:text-sm font-medium text-[#caead5]">
+                  <strong className="text-white font-bold">Online Reservations Paused:</strong> We'll be back online soon! Tap here to book via Call or WhatsApp.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTriggerPausedModal?.();
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white text-[11px] font-bold tracking-wide transition-transform active:scale-95 shrink-0 shadow-sm flex items-center gap-1 cursor-pointer"
+              >
+                <span>Contact Front Desk</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </button>
+            </div>
+          )}
+
           {/* Step Indicator Header Bar */}
           <div className="py-3 sm:py-6 border-b border-[#c2c8c2]/40 px-4 sm:px-8 bg-[#f0f5f1]/50">
             {/* Mobile: Ultra-compact Modern Progress Bar */}
@@ -1517,7 +1554,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                   className="w-full py-3.5 px-6 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14.5px] sm:text-[15px] shadow-[0_6px_20px_rgba(254,117,60,0.45)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
                   type="button"
                 >
-                  {isSubmitting ? (
+                  {!isEngineActive ? (
+                    <>
+                      <span className="material-symbols-outlined text-[18px]">pause_circle</span>
+                      <span>Booking Paused • Contact Salon</span>
+                    </>
+                  ) : isSubmitting ? (
                     <>
                       <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
                       <span>Securing Slot...</span>
