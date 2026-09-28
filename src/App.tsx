@@ -240,7 +240,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6faf7] font-body-md text-[#181d1b] selection:bg-[#ffdbcf] selection:text-[#380d00] flex flex-col">
+    <div className="min-h-screen bg-transparent font-body-md text-[#181d1b] selection:bg-[#ffdbcf] selection:text-[#380d00] flex flex-col">
       {/* Top Fixed Navigation */}
       <Navbar
         onOpenBooking={() => navigate('/booking')}
@@ -249,8 +249,8 @@ export default function App() {
         onNavigate={navigate}
       />
 
-      {/* Main Content (pt-[44px] on mobile since top notice bar is hidden, sm:pt-[72px] on desktop) */}
-      <main className="w-full pt-[44px] sm:pt-[72px] bg-[#f6faf7] min-h-[calc(100vh-44px)] sm:min-h-[calc(100vh-72px)] relative flex-grow">
+      {/* Main Content (pt-[44px] on mobile with safe-area support, sm:pt-[72px] on desktop) */}
+      <main className="w-full pt-[calc(44px+env(safe-area-inset-top,0px))] sm:pt-[72px] bg-[#f6faf7] min-h-[calc(100vh-44px)] sm:min-h-[calc(100vh-72px)] relative flex-grow">
         {isBookingPage ? (
           /* Dedicated Standalone /booking Page */
           <BookingPage

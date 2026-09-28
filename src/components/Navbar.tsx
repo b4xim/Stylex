@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 transition-all duration-300">
+    <header className="fixed top-0 left-0 w-full z-50 transition-all duration-300 pt-[env(safe-area-inset-top,0px)] bg-[#031b14]">
       {/* Ultra-Slim Top Notice Bar (Hidden on Mobile, Visible on Desktop/Tablet) */}
       <div className="hidden sm:block w-full bg-[#021811] text-white border-b border-white/[0.08] text-[10px] sm:text-[10.5px] font-medium tracking-wide">
         <div className="w-full px-3 sm:px-6 lg:px-8 h-6 flex items-center justify-between overflow-hidden">

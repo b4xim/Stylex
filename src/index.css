@@ -13,14 +13,31 @@
 
   html {
     scroll-behavior: smooth;
+    /* Primary canvas background color matching the bottom footer so any overscroll at the bottom is dark emerald */
+    background-color: #051812;
+    /* Seamless luxury gradient: Top matches dark header (#031b14), middle is light (#f6faf7), bottom matches footer (#051812) */
+    background-image: linear-gradient(
+      to bottom,
+      #031b14 0%,
+      #031b14 120px,
+      #f6faf7 121px,
+      #f6faf7 calc(100% - 320px),
+      #08241b calc(100% - 319px),
+      #051812 100%
+    );
+    background-repeat: no-repeat;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
   }
 
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #f6faf7;
+    background-color: transparent;
     color: #181d1b;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
   }
 
   /* Custom scrollbar */

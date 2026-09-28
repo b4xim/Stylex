@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-gradient-to-b from-[#08241b] to-[#051812] text-[#d4ebe1] pt-6 sm:pt-14 pb-6 sm:pb-8 border-t border-[#1b4335] relative overflow-hidden">
+    <footer className="w-full bg-gradient-to-b from-[#08241b] to-[#051812] text-[#d4ebe1] pt-6 sm:pt-14 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-8 border-t border-[#1b4335] relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         {/* Mobile: Ultra-Minimal Clean Footer */}
         <div className="md:hidden space-y-3.5 text-center py-1">
