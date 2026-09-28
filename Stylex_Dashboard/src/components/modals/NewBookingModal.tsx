@@ -32,14 +32,17 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const todayYMD = new Date().toISOString().split('T')[0];
   const [dateStr, setDateStr] = useState(initialDate || todayYMD);
   const [notes, setNotes] = useState('');
+  const [slotOccupancy, setSlotOccupancy] = useState<Record<string, { bookedCount: number; maxCapacity: number; status: 'available' | 'filling_fast' | 'full'; isAvailable: boolean }>>({});
+
+  const targetDateYMD = dateStr.toLowerCase() === 'today' ? todayYMD : dateStr;
+  const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
+  const selectedStylist = stylists.find((s) => s.id === selectedStylistId) || stylists[0];
 
   React.useEffect(() => {
     if (isOpen) {
       setDateStr(initialDate || new Date().toISOString().split('T')[0]);
     }
   }, [isOpen, initialDate]);
-
-  const [slotOccupancy, setSlotOccupancy] = useState<Record<string, { bookedCount: number; maxCapacity: number; status: 'available' | 'filling_fast' | 'full'; isAvailable: boolean }>>({});
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -62,11 +65,6 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   }, [isOpen, targetDateYMD, selectedServiceId]);
 
   if (!isOpen) return null;
-
-  const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
-  const selectedStylist = stylists.find((s) => s.id === selectedStylistId) || stylists[0];
-
-  const targetDateYMD = dateStr.toLowerCase() === 'today' ? todayYMD : dateStr;
 
   const activeBlackouts = blackoutDates.filter((b) => {
     if (!b.dateStr) return false;
@@ -256,10 +254,10 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             </div>
           </div>
 
-          {/* Selected Stylist Leave Warning */}
+            {/* Selected Stylist Leave Warning */}
           {(() => {
             const leave = stylistLeaves.find(
-              (l) => l.stylistId === selectedStylistId || l.stylistName.toLowerCase() === selectedStylist?.name.toLowerCase()
+              (l) => l.stylistId === selectedStylistId || (selectedStylist?.name && l.stylistName && l.stylistName.toLowerCase() === selectedStylist.name.toLowerCase())
             );
             if (!leave) return null;
             return (
@@ -330,50 +328,41 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                     onClick={() => setTime(slot)}
                     title={
                       isFull
-                        ? `Fully Booked (${bookedCount}/3)`
+                        ? 'Fully Booked (Red)'
                         : isFillingFast
-                        ? `Filling Fast (${bookedCount}/3)`
-                        : undefined
+                        ? 'Filling Fast (Yellow)'
+                        : 'Available (Green)'
                     }
-                    className={`py-2 px-1 text-xs rounded-lg font-medium transition-all relative text-center ${
+                    className={`py-2 px-1 text-xs rounded-lg font-semibold transition-all relative text-center select-none ${
                       isFull
-                        ? 'bg-red-50 text-red-700 border-2 border-red-300 cursor-not-allowed opacity-85'
+                        ? 'bg-red-500 text-white border border-red-600 cursor-not-allowed opacity-90'
                         : isFillingFast
                         ? time === slot
                           ? 'bg-amber-500 text-white font-bold ring-2 ring-amber-400'
-                          : 'bg-amber-50 text-amber-900 border-2 border-amber-400 hover:bg-amber-100 cursor-pointer'
+                          : 'bg-amber-300 text-amber-950 font-bold border border-amber-400 hover:bg-amber-200 cursor-pointer'
                         : time === slot
                         ? 'bg-[#112e20] text-white shadow-xs font-bold'
                         : 'bg-[#f0f5f1] text-[#181d1b] hover:bg-[#eaefeb] cursor-pointer'
                     }`}
                   >
-                    <span className={isBlocked ? 'line-through' : ''}>{slot}</span>
-                    {isFull ? (
-                      <span className="block text-[8px] font-bold text-red-600 no-underline tracking-tighter mt-0.5">
-                        {isBlocked ? 'Blocked' : 'Full (3/3)'}
-                      </span>
-                    ) : isFillingFast ? (
-                      <span className={`block text-[8px] font-bold tracking-tighter mt-0.5 ${time === slot ? 'text-amber-100' : 'text-amber-700'}`}>
-                        2/3 Booked
-                      </span>
-                    ) : null}
+                    <span>{slot}</span>
                   </button>
                 );
               })}
             </div>
             {/* Status Legend */}
-            <div className="flex items-center gap-3 pt-1 text-[10px] text-[#424844]">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                Available
+            <div className="flex items-center gap-3 pt-1 text-[11px] text-[#424844]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                Available - Green
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400 border border-amber-500" />
-                2 Booked (Yellow)
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500" />
+                Filling Fast (Yellow)
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-500 border border-red-600" />
-                3/3 Full (Red)
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
+                Fully Booked (Red)
               </span>
             </div>
           </div>

@@ -883,64 +883,43 @@ interface SlotOccupancyInfo {
                                     onClick={() => setSelectedTime(slot)}
                                     title={
                                       isFull
-                                        ? `Fully Booked (${bookedCount}/3 spots filled)`
+                                        ? 'Fully Booked (Red)'
                                         : isFillingFast
-                                        ? `Filling Fast (${bookedCount}/3 spots filled - 1 spot left)`
-                                        : `${bookedCount}/3 spots filled`
+                                        ? 'Filling Fast (Yellow)'
+                                        : 'Available (Green)'
                                     }
-                                    className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-semibold transition-all text-center relative select-none ${
+                                    className={`py-2.5 px-1 rounded-xl text-[12px] font-semibold transition-all text-center relative select-none ${
                                       isFull
-                                        ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-2 border-red-300 dark:border-red-800 cursor-not-allowed opacity-85 shadow-2xs'
+                                        ? 'bg-red-500 text-white font-bold border-2 border-red-600 cursor-not-allowed opacity-90 shadow-2xs'
                                         : isFillingFast
                                         ? isSelected
-                                          ? 'bg-amber-500 text-white font-bold shadow-md ring-2 ring-amber-400/60 border-2 border-amber-500 cursor-pointer'
-                                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-2 border-amber-400 dark:border-amber-600 hover:bg-amber-100 hover:border-amber-500 cursor-pointer shadow-2xs'
+                                          ? 'bg-amber-500 text-white font-bold shadow-md ring-2 ring-amber-400/60 border-2 border-amber-600 cursor-pointer'
+                                          : 'bg-amber-300 text-amber-950 font-bold border-2 border-amber-400 hover:bg-amber-200 cursor-pointer shadow-2xs'
                                         : isSelected
                                         ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 cursor-pointer'
                                         : 'bg-[#f0f5f1] dark:bg-[#15231c] text-[#181d1b] dark:text-[#e1e9e3] border border-[#c2c8c2]/50 dark:border-[#2a3c31] hover:bg-[#eaefeb] cursor-pointer'
                                     }`}
                                     type="button"
                                   >
-                                    <span className={isSlotBlocked ? 'line-through' : ''}>{slot}</span>
-                                    {isFull ? (
-                                      <span className="block text-[8px] font-bold text-red-600 dark:text-red-400 uppercase tracking-tight mt-0.5">
-                                        {isSlotBlocked ? 'Blocked' : 'Full (3/3)'}
-                                      </span>
-                                    ) : isFillingFast ? (
-                                      <span
-                                        className={`block text-[8px] font-bold uppercase tracking-tight mt-0.5 ${
-                                          isSelected ? 'text-amber-100' : 'text-amber-700 dark:text-amber-400'
-                                        }`}
-                                      >
-                                        2/3 Booked
-                                      </span>
-                                    ) : bookedCount === 1 ? (
-                                      <span
-                                        className={`block text-[8px] font-medium tracking-tight mt-0.5 ${
-                                          isSelected ? 'text-white/80' : 'text-[#185341] dark:text-[#78c99e]'
-                                        }`}
-                                      >
-                                        1 Booked
-                                      </span>
-                                    ) : null}
+                                    <span>{slot}</span>
                                   </button>
                                 );
                               })}
                             </div>
 
                             {/* Status Legend */}
-                            <div className="flex items-center justify-between pt-1 px-1 text-[10px] font-medium text-[#424844] dark:text-[#a0aba2]">
+                            <div className="flex items-center justify-between pt-1 px-1 text-[11px] font-medium text-[#424844] dark:text-[#a0aba2]">
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-[#185341] dark:bg-[#78c99e]" />
-                                <span>Available</span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                <span className="text-[#185341] dark:text-emerald-400 font-semibold">Available - Green</span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-amber-400 border border-amber-500" />
-                                <span className="text-amber-800 dark:text-amber-400 font-semibold">2 Booked (Yellow)</span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500" />
+                                <span className="text-amber-800 dark:text-amber-300 font-semibold">Filling Fast (Yellow)</span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-red-500 border border-red-600" />
-                                <span className="text-red-700 dark:text-red-400 font-semibold">3/3 Full (Red)</span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
+                                <span className="text-red-700 dark:text-red-400 font-semibold">Fully Booked (Red)</span>
                               </div>
                             </div>
                           </div>
