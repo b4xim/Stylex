@@ -521,7 +521,8 @@ export const INITIAL_STYLISTS: Stylist[] = [
     appointmentsCount: 6,
     rating: 5.0,
     reviewsCount: 164,
-    isAvailableToday: true
+    isAvailableToday: true,
+    gender: "ladies",
   },
   {
     id: "stylist-2",
@@ -532,7 +533,8 @@ export const INITIAL_STYLISTS: Stylist[] = [
     appointmentsCount: 5,
     rating: 5.0,
     reviewsCount: 182,
-    isAvailableToday: true
+    isAvailableToday: true,
+    gender: "both",
   },
   {
     id: "stylist-3",
@@ -543,7 +545,8 @@ export const INITIAL_STYLISTS: Stylist[] = [
     appointmentsCount: 7,
     rating: 4.9,
     reviewsCount: 140,
-    isAvailableToday: true
+    isAvailableToday: true,
+    gender: "gents",
   },
   {
     id: "stylist-4",
@@ -554,7 +557,8 @@ export const INITIAL_STYLISTS: Stylist[] = [
     appointmentsCount: 4,
     rating: 5.0,
     reviewsCount: 118,
-    isAvailableToday: true
+    isAvailableToday: true,
+    gender: "ladies",
   },
   {
     id: "stylist-5",
@@ -565,7 +569,8 @@ export const INITIAL_STYLISTS: Stylist[] = [
     appointmentsCount: 5,
     rating: 4.9,
     reviewsCount: 96,
-    isAvailableToday: true
+    isAvailableToday: true,
+    gender: "ladies",
   },
   {
     id: "stylist-6",
@@ -576,7 +581,8 @@ export const INITIAL_STYLISTS: Stylist[] = [
     appointmentsCount: 4,
     rating: 4.9,
     reviewsCount: 88,
-    isAvailableToday: true
+    isAvailableToday: true,
+    gender: "both",
   }
 ];
 

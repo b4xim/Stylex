@@ -22,6 +22,8 @@ const BLANK: Omit<Stylist, 'id'> = {
 
 export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, stylist, onClose, onSave }) => {
   const [form, setForm] = useState<Omit<Stylist, 'id'>>(BLANK);
+  const [servesGents, setServesGents] = useState(true);
+  const [servesLadies, setServesLadies] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -35,10 +37,15 @@ export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, stylist, onC
       setForm(rest);
       setShowUrlInput(false);
       setUploadError('');
+      const g = (stylist.gender || 'both').toLowerCase();
+      setServesGents(g === 'gents' || g === 'male' || g === 'both' || g === 'any' || g === 'unisex');
+      setServesLadies(g === 'ladies' || g === 'female' || g === 'both' || g === 'any' || g === 'unisex');
     } else {
       setForm(BLANK);
       setShowUrlInput(false);
       setUploadError('');
+      setServesGents(true);
+      setServesLadies(true);
     }
   }, [stylist, isOpen]);
 
@@ -91,9 +98,20 @@ export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, stylist, onC
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.role.trim()) return;
+
+    let computedGender = 'both';
+    if (servesGents && !servesLadies) {
+      computedGender = 'gents';
+    } else if (!servesGents && servesLadies) {
+      computedGender = 'ladies';
+    } else {
+      computedGender = 'both';
+    }
+
     onSave({
       id: stylist?.id ?? `stylist_${Date.now()}`,
       ...form,
+      gender: computedGender,
     });
     onClose();
   };
@@ -289,6 +307,75 @@ export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, stylist, onC
               value={form.station}
               onChange={(e) => setForm({ ...form, station: e.target.value })}
             />
+          </div>
+
+          {/* Target Audience / Gender Served Checkboxes */}
+          <div className="flex flex-col gap-2 pt-1">
+            <label className="text-xs font-semibold text-[#424844] dark:text-[#d3ded8] uppercase tracking-wider">
+              Services Offered To (Target Audience) *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                  servesGents
+                    ? 'bg-emerald-50/70 border-emerald-500/50 dark:bg-emerald-950/40 dark:border-emerald-500/50 text-[#112e20] dark:text-white'
+                    : 'bg-[#f0f5f1]/60 border-[#c2c8c2]/30 dark:bg-[#1a2520] dark:border-[#2b3a32] text-[#727973] opacity-60'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={servesGents}
+                  onChange={(e) => {
+                    if (!e.target.checked && !servesLadies) return; // Prevent deselecting both
+                    setServesGents(e.target.checked);
+                  }}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 accent-[#112e20] dark:accent-emerald-500 cursor-pointer"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-[#112e20] dark:text-[#8fe0b0]">
+                    man
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold leading-tight">Gents</span>
+                    <span className="text-[10px] text-[#727973] dark:text-[#8d9c94]">Men's Grooming</span>
+                  </div>
+                </div>
+              </label>
+
+              <label
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                  servesLadies
+                    ? 'bg-emerald-50/70 border-emerald-500/50 dark:bg-emerald-950/40 dark:border-emerald-500/50 text-[#112e20] dark:text-white'
+                    : 'bg-[#f0f5f1]/60 border-[#c2c8c2]/30 dark:bg-[#1a2520] dark:border-[#2b3a32] text-[#727973] opacity-60'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={servesLadies}
+                  onChange={(e) => {
+                    if (!e.target.checked && !servesGents) return; // Prevent deselecting both
+                    setServesLadies(e.target.checked);
+                  }}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 accent-[#112e20] dark:accent-emerald-500 cursor-pointer"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-rose-600 dark:text-rose-400">
+                    woman
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold leading-tight">Ladies</span>
+                    <span className="text-[10px] text-[#727973] dark:text-[#8d9c94]">Women's Rituals</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <p className="text-[11px] text-[#727973] dark:text-[#8d9c94] px-0.5">
+              {servesGents && servesLadies
+                ? '✓ Serves both Gents and Ladies (Visible in all booking categories).'
+                : servesGents
+                ? '✓ Serves Gents only (Visible in Gents bookings).'
+                : '✓ Serves Ladies only (Visible in Ladies bookings).'}
+            </p>
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-[#eaefeb] dark:border-[#243029]">

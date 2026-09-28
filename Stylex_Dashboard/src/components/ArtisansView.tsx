@@ -182,6 +182,32 @@ export const ArtisansView: React.FC<ArtisansViewProps> = ({
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#f0f5f1] dark:bg-[#1f2d25] text-[#424844] dark:text-[#a0aca4] truncate">
                         {stylist.station}
                       </span>
+                      {/* Audience Badge */}
+                      {(() => {
+                        const g = (stylist.gender || 'both').toLowerCase();
+                        if (g === 'gents' || g === 'male') {
+                          return (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/30 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">man</span>
+                              Gents
+                            </span>
+                          );
+                        }
+                        if (g === 'ladies' || g === 'female') {
+                          return (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/30 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">woman</span>
+                              Ladies
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/30 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">wc</span>
+                            Gents & Ladies
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-[#9b4521] dark:text-[#ff9266] font-semibold mt-0.5 truncate">
                       {stylist.role}
@@ -440,6 +466,7 @@ export const ArtisansView: React.FC<ArtisansViewProps> = ({
                     onClick={() => {
                       const id = stylistToDelete.id;
                       setStylistToDelete(null);
+                      setArtisanList((prev) => prev.filter((s) => s.id !== id));
                       onDeleteStylist(id);
                     }}
                     className="px-5 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 rounded-full shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"

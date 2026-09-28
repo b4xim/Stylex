@@ -94,7 +94,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
           name: s.name,
           role: s.role || 'Senior Stylist',
           specialty: s.specialty || s.role || 'Hair & Styling',
-          gender: s.gender || 'any',
+          gender: s.gender || 'both',
           imageUrl: s.imageUrl || s.avatar,
           rating: s.rating || 4.9,
         }));
@@ -105,7 +105,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (!isMounted) return;
-        if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json?.success && Array.isArray(json.data)) {
           const mapped = sanitizeStylists(json.data);
           setStylistsList(mapped);
           try {
@@ -152,11 +152,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     };
   }, []);
 
+  const matchesStylistGender = (stylistGender: string | undefined, targetGender: 'gents' | 'ladies') => {
+    const g = (stylistGender || 'both').toLowerCase();
+    if (g === 'both' || g === 'any' || g === 'unisex') return true;
+    if (targetGender === 'gents') return g === 'gents' || g === 'male';
+    if (targetGender === 'ladies') return g === 'ladies' || g === 'female';
+    return true;
+  };
+
   // Available artisans filtered by selected gender
-  const availableArtisans = stylistsList.filter((a) => {
-    const g = (a.gender || 'any').toLowerCase();
-    return g === 'any' || g === 'both' || g === selectedGender;
-  });
+  const availableArtisans = stylistsList.filter((a) => matchesStylistGender(a.gender, selectedGender));
 
   const [selectedArtisan, setSelectedArtisan] = useState('Any Stylist');
 
@@ -170,10 +175,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       setSelectedService(newHeadings[0]);
     }
 
-    const newArtisans = stylistsList.filter((a) => {
-      const g = (a.gender || 'any').toLowerCase();
-      return g === 'any' || g === 'both' || g === newGender;
-    });
+    const newArtisans = stylistsList.filter((a) => matchesStylistGender(a.gender, newGender));
     // If a stylist was selected that is specific to the old gender, reset to 'Any Stylist'
     if (selectedArtisan !== 'Any Stylist' && !newArtisans.some((a) => a.name === selectedArtisan)) {
       setSelectedArtisan('Any Stylist');
@@ -193,10 +195,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       if (matchingHeading) {
         setSelectedService(matchingHeading);
       }
-      const filteredArtisans = stylistsList.filter((a) => {
-        const gen = (a.gender || 'any').toLowerCase();
-        return gen === 'any' || gen === 'both' || gen === g;
-      });
+      const filteredArtisans = stylistsList.filter((a) => matchesStylistGender(a.gender, g));
       if (selectedArtisan !== 'Any Stylist' && !filteredArtisans.some((a) => a.name === selectedArtisan)) {
         setSelectedArtisan('Any Stylist');
       }
@@ -1087,7 +1086,7 @@ interface SlotOccupancyInfo {
                               disabled={leaveStatus.isUnavailable}
                               className={leaveStatus.isUnavailable ? 'text-gray-400 bg-gray-100 italic' : 'bg-white text-[#181d1b]'}
                             >
-                              {a.name} ({a.specialty || a.role}){leaveStatus.isUnavailable ? ` • ⚠️ [${leaveStatus.notice}]` : ''}
+                              {a.name}{leaveStatus.isUnavailable ? ` • [${leaveStatus.notice}]` : ''}
                             </option>
                           );
                         })}

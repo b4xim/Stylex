@@ -336,8 +336,12 @@ export default function App() {
       // 3. Fetch live stylists
       try {
         const liveStylists = await DashboardApi.getStylists();
-        if (Array.isArray(liveStylists) && liveStylists.length > 0) {
+        if (Array.isArray(liveStylists)) {
           setStylists(liveStylists);
+          try {
+            safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(liveStylists));
+            safeSetItem('stylex_stylists', JSON.stringify(liveStylists));
+          } catch {}
         }
       } catch (e) {
         console.warn('Live stylists fetch:', e);
@@ -697,6 +701,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
       safeSetItem('stylex_stylists', JSON.stringify(nextStylists));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
 
     try {
@@ -704,6 +709,7 @@ export default function App() {
         await DashboardApi.updateStylist(updated.id, {
           name: updated.name,
           role: updated.role,
+          gender: updated.gender || 'both',
           specialty: updated.specialty,
           imageUrl: updated.avatar,
         });
@@ -712,7 +718,7 @@ export default function App() {
           id: updated.id || updated.name.toLowerCase().replace(/\s+/g, '-'),
           name: updated.name,
           role: updated.role,
-          gender: updated.gender || 'any',
+          gender: updated.gender || 'both',
           specialty: updated.specialty || 'Master Hair Stylist',
           imageUrl: updated.avatar,
         });
@@ -729,6 +735,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
       safeSetItem('stylex_stylists', JSON.stringify(nextStylists));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Stylist Removed', `${target?.name || 'Stylist'} removed from the roster.`);
 
