@@ -999,6 +999,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_reels', JSON.stringify(nextReels));
       safeSetItem('stylex_reels', JSON.stringify(nextReels));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Reel Updated', `Reel is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
 
@@ -1016,6 +1017,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
       safeSetItem('stylex_reels', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('success', 'Reel Published', `"${reel.title}" is now live in the Atelier Reels section.`);
 
@@ -1052,6 +1054,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
       safeSetItem('stylex_reels', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Reel Removed', 'Reel removed from client website gallery.');
 
@@ -1073,6 +1076,7 @@ export default function App() {
       safeSetItem('stylex_photos', JSON.stringify(nextPhotos));
       safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(nextPhotos));
       safeSetItem('stylex_portfolio', JSON.stringify(nextPhotos));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Photo Updated', `Transformation photo is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
 
@@ -1092,6 +1096,7 @@ export default function App() {
       safeSetItem('stylex_photos', JSON.stringify(updated));
       safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(updated));
       safeSetItem('stylex_portfolio', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('success', 'Photo Published', `"${photo.title}" is now live in the Client Transformations gallery.`);
 
@@ -1125,6 +1130,7 @@ export default function App() {
       safeSetItem('stylex_photos', JSON.stringify(updated));
       safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(updated));
       safeSetItem('stylex_portfolio', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Photo Removed', 'Transformation photo removed from client website gallery.');
 

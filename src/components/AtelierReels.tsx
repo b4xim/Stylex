@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { REELS, PORTFOLIO_WORKS, SALON_DATA } from '../data/salonData.ts';
+import { SALON_DATA } from '../data/salonData.ts';
 import { ReelItem, PortfolioWork } from '../types.ts';
 
 interface AtelierReelsProps {
@@ -19,12 +19,11 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const active = parsed.filter((r: any) => r.isActive !== false);
-          if (active.length > 0) return active;
+          return parsed.filter((r: any) => r.isActive !== false);
         }
       }
     } catch {}
-    return REELS;
+    return [];
   });
 
   const [portfolioWorks, setPortfolioWorks] = useState<PortfolioWork[]>(() => {
@@ -37,12 +36,11 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const active = parsed.filter((p: any) => p.isActive !== false);
-          if (active.length > 0) return active;
+          return parsed.filter((p: any) => p.isActive !== false);
         }
       }
     } catch {}
-    return PORTFOLIO_WORKS;
+    return [];
   });
 
   useEffect(() => {
@@ -52,9 +50,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
       .then((data) => {
         if (data?.success && Array.isArray(data.data)) {
           const active = data.data.filter((r: any) => r.isActive !== false);
-          if (active.length > 0) {
-            setReels(active);
-          }
+          setReels(active);
         }
       })
       .catch((err) => console.warn('Live reels load notice:', err));
@@ -65,9 +61,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
       .then((data) => {
         if (data?.success && Array.isArray(data.data)) {
           const active = data.data.filter((p: any) => p.isActive !== false);
-          if (active.length > 0) {
-            setPortfolioWorks(active);
-          }
+          setPortfolioWorks(active);
         }
       })
       .catch((err) => console.warn('Live portfolio load notice:', err));
@@ -81,9 +75,12 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
         if (savedReels) {
           const parsed = JSON.parse(savedReels);
           if (Array.isArray(parsed)) {
-            const active = parsed.filter((r: any) => r.isActive !== false);
-            if (active.length > 0) setReels(active);
+            setReels(parsed.filter((r: any) => r.isActive !== false));
+          } else {
+            setReels([]);
           }
+        } else {
+          setReels([]);
         }
         const savedPortfolio =
           localStorage.getItem('stylex_tirur_v6_photos') ||
@@ -93,9 +90,12 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
         if (savedPortfolio) {
           const parsed = JSON.parse(savedPortfolio);
           if (Array.isArray(parsed)) {
-            const active = parsed.filter((p: any) => p.isActive !== false);
-            if (active.length > 0) setPortfolioWorks(active);
+            setPortfolioWorks(parsed.filter((p: any) => p.isActive !== false));
+          } else {
+            setPortfolioWorks([]);
           }
+        } else {
+          setPortfolioWorks([]);
         }
       } catch {}
     };
@@ -118,11 +118,20 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
     }
   };
 
+  const hasReels = Array.isArray(reels) && reels.length > 0;
+  const hasPhotos = Array.isArray(portfolioWorks) && portfolioWorks.length > 0;
+
+  if (!hasReels && !hasPhotos) {
+    return null;
+  }
+
   return (
     <section className="w-full bg-[#fbf9f5] py-20 px-4 sm:px-6 lg:px-12 border-t border-[#e7e5e0] relative" id="atelier-reels">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        {hasReels && (
+          <>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#112e20]/10 text-[#112e20] font-label-caps text-[11px] uppercase tracking-wider font-bold">
               <svg className="w-3.5 h-3.5 fill-[#fe753c]" viewBox="0 0 24 24">
@@ -237,9 +246,12 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
             </div>
           ))}
         </div>
+      </>
+    )}
 
-        {/* Finished Client Artistry Gallery Row */}
-        <div className="mt-4 border-t border-[#e7e5e0] space-y-6 relative pt-8">
+    {/* Finished Client Artistry Gallery Row */}
+    {hasPhotos && (
+      <div className={`${hasReels ? 'mt-4 border-t border-[#e7e5e0] pt-8' : ''} space-y-6 relative`}>
           <div className="flex items-center justify-between pb-1">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#9b4521]" />
@@ -298,6 +310,7 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
             ))}
           </div>
         </div>
+      )}
       </div>
     </section>
   );
