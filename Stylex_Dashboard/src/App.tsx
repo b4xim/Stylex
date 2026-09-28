@@ -61,15 +61,13 @@ import { ManageBookingModal } from './components/modals/ManageBookingModal';
 import { ScheduleStylistLeaveModal } from './components/modals/ScheduleStylistLeaveModal';
 import { StylistModal } from './components/modals/StylistModal';
 
+import { safeSetItem, safeGetItem, cleanObsoleteStorage } from './utils/storage';
+
+// Run cleanup immediately to purge legacy keys and free up localStorage quota
+cleanObsoleteStorage();
+
 function safeParse<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw || raw === 'undefined' || raw === 'null') return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed !== null && parsed !== undefined ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
+  return safeGetItem<T>(key, fallback);
 }
 
 export default function App() {
@@ -128,7 +126,7 @@ export default function App() {
 
   // Sync users to localStorage
   useEffect(() => {
-    localStorage.setItem('stylex_user_accounts_v2', JSON.stringify(users));
+    safeSetItem('stylex_user_accounts_v2', JSON.stringify(users));
   }, [users]);
 
   // Keep currentUser in sync if updated in users list
@@ -250,51 +248,51 @@ export default function App() {
 
   // Sync state to localStorage
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v7_appointments', JSON.stringify(appointments));
+    safeSetItem('stylex_tirur_v7_appointments', JSON.stringify(appointments));
   }, [appointments]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_services', JSON.stringify(services));
+    safeSetItem('stylex_tirur_v6_services', JSON.stringify(services));
   }, [services]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v7_schedule', JSON.stringify(weekSchedule));
+    safeSetItem('stylex_tirur_v7_schedule', JSON.stringify(weekSchedule));
   }, [weekSchedule]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_blackouts', JSON.stringify(blackoutDates));
+    safeSetItem('stylex_tirur_v6_blackouts', JSON.stringify(blackoutDates));
   }, [blackoutDates]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(banners));
+    safeSetItem('stylex_tirur_v6_banners', JSON.stringify(banners));
   }, [banners]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(reels));
+    safeSetItem('stylex_tirur_v6_reels', JSON.stringify(reels));
     // Dispatch storage event so client site can hot-reload
     window.dispatchEvent(new Event('storage'));
   }, [reels]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_portfolio', JSON.stringify(portfolioWorks));
+    safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(portfolioWorks));
     window.dispatchEvent(new Event('storage'));
   }, [portfolioWorks]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_stylist_leaves', JSON.stringify(stylistLeaves));
-    localStorage.setItem('stylex_stylist_leaves', JSON.stringify(stylistLeaves));
+    safeSetItem('stylex_tirur_v6_stylist_leaves', JSON.stringify(stylistLeaves));
+    safeSetItem('stylex_stylist_leaves', JSON.stringify(stylistLeaves));
   }, [stylistLeaves]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_stylists', JSON.stringify(stylists));
+    safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(stylists));
   }, [stylists]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_inquiries', JSON.stringify(inquiries));
+    safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(inquiries));
   }, [inquiries]);
 
   useEffect(() => {
-    localStorage.setItem('stylex_tirur_v6_settings', JSON.stringify(settings));
+    safeSetItem('stylex_tirur_v6_settings', JSON.stringify(settings));
   }, [settings]);
 
   useEffect(() => {
@@ -697,8 +695,8 @@ export default function App() {
     }
     setStylists(nextStylists);
     try {
-      localStorage.setItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
-      localStorage.setItem('stylex_stylists', JSON.stringify(nextStylists));
+      safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
+      safeSetItem('stylex_stylists', JSON.stringify(nextStylists));
     } catch {}
 
     try {
@@ -729,8 +727,8 @@ export default function App() {
     const nextStylists = stylists.filter((s) => s.id !== id);
     setStylists(nextStylists);
     try {
-      localStorage.setItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
-      localStorage.setItem('stylex_stylists', JSON.stringify(nextStylists));
+      safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
+      safeSetItem('stylex_stylists', JSON.stringify(nextStylists));
     } catch {}
     addToast('info', 'Stylist Removed', `${target?.name || 'Stylist'} removed from the roster.`);
 
@@ -749,8 +747,8 @@ export default function App() {
     const nextServices = services.map((s) => (s.id === id ? { ...s, showOnWebsite: next } : s));
     setServices(nextServices);
     try {
-      localStorage.setItem('stylex_tirur_v6_services', JSON.stringify(nextServices));
-      localStorage.setItem('stylex_services', JSON.stringify(nextServices));
+      safeSetItem('stylex_tirur_v6_services', JSON.stringify(nextServices));
+      safeSetItem('stylex_services', JSON.stringify(nextServices));
     } catch {}
     addToast(
       'info',
@@ -846,8 +844,8 @@ export default function App() {
     const nextBanners = banners.map((b) => (b.id === id ? { ...b, isActive: nextActive } : b));
     setBanners(nextBanners);
     try {
-      localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(nextBanners));
-      localStorage.setItem('stylex_banners', JSON.stringify(nextBanners));
+      safeSetItem('stylex_tirur_v6_banners', JSON.stringify(nextBanners));
+      safeSetItem('stylex_banners', JSON.stringify(nextBanners));
     } catch {}
     addToast('info', 'Banner Updated', `Homepage carousel banner is now ${nextActive ? 'active' : 'hidden'}.`);
 
@@ -863,8 +861,8 @@ export default function App() {
       const exists = prev.some((b) => b.id === banner.id);
       const updated = exists ? prev.map((b) => (b.id === banner.id ? banner : b)) : [banner, ...prev];
       try {
-        localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(updated));
-        localStorage.setItem('stylex_banners', JSON.stringify(updated));
+        safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
+        safeSetItem('stylex_banners', JSON.stringify(updated));
       } catch {}
       return updated;
     });
@@ -875,8 +873,8 @@ export default function App() {
     setBanners((prev) => {
       const updated = prev.filter((b) => b.id !== id);
       try {
-        localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(updated));
-        localStorage.setItem('stylex_banners', JSON.stringify(updated));
+        safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
+        safeSetItem('stylex_banners', JSON.stringify(updated));
       } catch {}
       return updated;
     });
@@ -890,8 +888,8 @@ export default function App() {
     const nextReels = reels.map((r) => (r.id === id ? { ...r, isActive: nextActive } : r));
     setReels(nextReels);
     try {
-      localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(nextReels));
-      localStorage.setItem('stylex_reels', JSON.stringify(nextReels));
+      safeSetItem('stylex_tirur_v6_reels', JSON.stringify(nextReels));
+      safeSetItem('stylex_reels', JSON.stringify(nextReels));
     } catch {}
     addToast('info', 'Reel Updated', `Reel is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
 
@@ -907,8 +905,8 @@ export default function App() {
       const exists = prev.some((r) => r.id === reel.id);
       const updated = exists ? prev.map((r) => (r.id === reel.id ? reel : r)) : [reel, ...prev];
       try {
-        localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(updated));
-        localStorage.setItem('stylex_reels', JSON.stringify(updated));
+        safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
+        safeSetItem('stylex_reels', JSON.stringify(updated));
       } catch {}
       return updated;
     });
@@ -919,8 +917,8 @@ export default function App() {
     setReels((prev) => {
       const updated = prev.filter((r) => r.id !== id);
       try {
-        localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(updated));
-        localStorage.setItem('stylex_reels', JSON.stringify(updated));
+        safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
+        safeSetItem('stylex_reels', JSON.stringify(updated));
       } catch {}
       return updated;
     });
@@ -934,8 +932,8 @@ export default function App() {
     const nextPhotos = portfolioWorks.map((p) => (p.id === id ? { ...p, isActive: nextActive } : p));
     setPortfolioWorks(nextPhotos);
     try {
-      localStorage.setItem('stylex_tirur_v6_photos', JSON.stringify(nextPhotos));
-      localStorage.setItem('stylex_photos', JSON.stringify(nextPhotos));
+      safeSetItem('stylex_tirur_v6_photos', JSON.stringify(nextPhotos));
+      safeSetItem('stylex_photos', JSON.stringify(nextPhotos));
     } catch {}
     addToast('info', 'Photo Updated', `Transformation photo is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
 
@@ -984,9 +982,9 @@ export default function App() {
   // Settings Handlers
   const handleSaveSettings = async (newSettings: SalonSettings) => {
     setSettings(newSettings);
-    localStorage.setItem('stylex_tirur_v6_settings', JSON.stringify(newSettings));
+    safeSetItem('stylex_tirur_v6_settings', JSON.stringify(newSettings));
     if (typeof newSettings.maintenanceMode !== 'undefined') {
-      localStorage.setItem('stylex_maintenance_mode', String(Boolean(newSettings.maintenanceMode)));
+      safeSetItem('stylex_maintenance_mode', String(Boolean(newSettings.maintenanceMode)));
       window.dispatchEvent(new Event('storage'));
     }
 
@@ -1014,8 +1012,8 @@ export default function App() {
   const handleToggleMaintenanceMode = async (enabled: boolean) => {
     const updated = { ...settings, maintenanceMode: enabled };
     setSettings(updated);
-    localStorage.setItem('stylex_tirur_v6_settings', JSON.stringify(updated));
-    localStorage.setItem('stylex_maintenance_mode', String(enabled));
+    safeSetItem('stylex_tirur_v6_settings', JSON.stringify(updated));
+    safeSetItem('stylex_maintenance_mode', String(enabled));
     window.dispatchEvent(new Event('storage'));
 
     try {
@@ -1139,8 +1137,8 @@ export default function App() {
 
   const handleSignInSuccess = (user: UserAccount) => {
     setCurrentUser(user);
-    localStorage.setItem('stylex_current_user_email_v2', user.email);
-    localStorage.setItem('stylex_session_active', 'true');
+    safeSetItem('stylex_current_user_email_v2', user.email);
+    safeSetItem('stylex_session_active', 'true');
     setIsAuthenticated(true);
     addToast(
       'success',

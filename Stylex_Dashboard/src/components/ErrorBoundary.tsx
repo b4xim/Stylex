@@ -46,10 +46,14 @@ export class ErrorBoundary extends Component<Props, State> {
         'stylex_tirur_v6_settings',
       ];
       keysToClear.forEach((k) => localStorage.removeItem(k));
-      if (session) localStorage.setItem('stylex_session_active', session);
-      if (email) localStorage.setItem('stylex_current_user_email_v2', email);
+      if (session) {
+        try { localStorage.setItem('stylex_session_active', session); } catch {}
+      }
+      if (email) {
+        try { localStorage.setItem('stylex_current_user_email_v2', email); } catch {}
+      }
     } catch (e) {
-      localStorage.clear();
+      try { localStorage.clear(); } catch {}
     }
     window.location.reload();
   };

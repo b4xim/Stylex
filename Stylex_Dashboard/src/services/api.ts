@@ -25,7 +25,9 @@ export class DashboardApi {
   }
 
   public static setToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+    } catch {}
   }
 
   public static clearToken(): void {
