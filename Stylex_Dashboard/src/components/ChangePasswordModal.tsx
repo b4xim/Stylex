@@ -5,7 +5,7 @@ interface ChangePasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserAccount;
-  onUpdatePassword: (oldPass: string, newPass: string) => { success: boolean; message: string };
+  onUpdatePassword: (oldPass: string, newPass: string) => { success: boolean; message: string } | Promise<{ success: boolean; message: string }>;
 }
 
 export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
@@ -27,7 +27,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -47,10 +47,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const result = onUpdatePassword(currentPassword, newPassword);
-      setIsSubmitting(false);
-
+    try {
+      const result = await onUpdatePassword(currentPassword, newPassword);
       if (result.success) {
         // Reset state and close
         setCurrentPassword('');
@@ -59,9 +57,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         setErrorMessage('');
         onClose();
       } else {
-        setErrorMessage(result.message);
+        setErrorMessage(result.message || 'Current password does not match.');
       }
-    }, 300);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to update password.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

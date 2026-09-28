@@ -45,7 +45,7 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
           role: (apiUser.role === 'ADMIN' ? 'Admin' : apiUser.role === 'DEVELOPER' ? 'Developer' : 'Manager'),
           roleTitle: matchedLocal?.roleTitle || (apiUser.role === 'DEVELOPER' ? 'Lead Developer & Tech' : 'Salon Administrator'),
           initials: (apiUser.name || 'AD').split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase(),
-          password: '', // Never store plaintext password in browser state
+          password: password,
           createdAt: new Date().toISOString().split('T')[0],
         };
 

@@ -1401,13 +1401,70 @@ export default function App() {
   };
 
   // Change Password Handler for active user
-  const handleUpdatePassword = (oldPass: string, newPass: string) => {
-    if (oldPass !== currentUser.password) {
+  const handleUpdatePassword = async (oldPass: string, newPass: string): Promise<{ success: boolean; message: string }> => {
+    // 1. If backend token exists, call backend API to update password in database
+    const token = DashboardApi.getToken();
+    if (token) {
+      try {
+        const res = await DashboardApi.updatePassword(oldPass, newPass);
+        if (res && res.success !== false) {
+          const updatedUser = { ...currentUser, password: newPass };
+          setCurrentUser(updatedUser);
+          setUsers((prev) => {
+            const next = prev.map((u) => (u.id === updatedUser.id ? updatedUser : u));
+            try {
+              safeSetItem('stylex_user_accounts_v2', JSON.stringify(next));
+            } catch {}
+            return next;
+          });
+          addToast(
+            'success',
+            'Password Updated',
+            `Credentials updated successfully for ${currentUser.name}.`
+          );
+          return { success: true, message: 'Password updated successfully.' };
+        } else {
+          return { success: false, message: res?.message || 'Current password does not match.' };
+        }
+      } catch (err: any) {
+        console.error('API updatePassword error:', err);
+        const errMsg = err?.message || '';
+        if (
+          errMsg.toLowerCase().includes('current password') ||
+          errMsg.toLowerCase().includes('incorrect') ||
+          errMsg.includes('400')
+        ) {
+          return { success: false, message: 'Current password does not match. Please verify and try again.' };
+        }
+        return { success: false, message: errMsg || 'Failed to update password.' };
+      }
+    }
+
+    // 2. Offline / local fallback mode
+    let expectedPassword = currentUser.password;
+    if (!expectedPassword) {
+      if (currentUser.username === 'developer' || currentUser.email === 'dev@stylexsalon.in') {
+        expectedPassword = 'stylexdev';
+      } else if (currentUser.username === 'admin' || currentUser.email === 'admin@stylexsalon.in') {
+        expectedPassword = 'stylex2024';
+      } else if (currentUser.username === 'bladeoski' || currentUser.email === 'bladeoski@stylex.com') {
+        expectedPassword = 'bL4d3_89xK!mPq2';
+      }
+    }
+
+    if (expectedPassword && oldPass !== expectedPassword) {
       return { success: false, message: 'Current password does not match.' };
     }
+
     const updatedUser = { ...currentUser, password: newPass };
     setCurrentUser(updatedUser);
-    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    setUsers((prev) => {
+      const next = prev.map((u) => (u.id === updatedUser.id ? updatedUser : u));
+      try {
+        safeSetItem('stylex_user_accounts_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
     addToast(
       'success',
       'Password Updated',
@@ -1426,6 +1483,16 @@ export default function App() {
 
   const handleSignInSuccess = (user: UserAccount) => {
     setCurrentUser(user);
+    setUsers((prev) => {
+      const exists = prev.some((u) => u.id === user.id || u.username === user.username);
+      const next = exists
+        ? prev.map((u) => (u.id === user.id || u.username === user.username ? { ...u, ...user } : u))
+        : [...prev, user];
+      try {
+        safeSetItem('stylex_user_accounts_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
     safeSetItem('stylex_current_user_email_v2', user.email);
     safeSetItem('stylex_session_active', 'true');
     setIsAuthenticated(true);
