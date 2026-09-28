@@ -137,9 +137,26 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
                 className="grid grid-cols-12 gap-4 items-center px-6 py-4 hover:bg-[#f0f5f1]/40 transition-colors"
               >
                 <div className="col-span-8 flex flex-col">
-                  <span className="text-base text-[#112e20] font-semibold">
-                    {svc.name}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base text-[#112e20] font-semibold">
+                      {svc.name}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        svc.gender === 'ladies'
+                          ? 'bg-rose-100 text-rose-800'
+                          : svc.gender === 'gents'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {svc.gender === 'ladies'
+                        ? 'Ladies'
+                        : svc.gender === 'gents'
+                        ? 'Gents'
+                        : 'Ladies & Gents'}
+                    </span>
+                  </div>
                   <span className="text-xs text-[#424844] mt-0.5 leading-relaxed">
                     {svc.description}
                   </span>

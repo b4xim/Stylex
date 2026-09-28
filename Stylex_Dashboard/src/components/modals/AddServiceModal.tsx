@@ -19,6 +19,8 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
   const [durationMin, setDurationMin] = useState(45);
   const [description, setDescription] = useState('');
   const [showOnWebsite, setShowOnWebsite] = useState(true);
+  const [servesGents, setServesGents] = useState(true);
+  const [servesLadies, setServesLadies] = useState(true);
 
   useEffect(() => {
     if (serviceToEdit) {
@@ -27,12 +29,17 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
       setDurationMin(serviceToEdit.durationMin);
       setDescription(serviceToEdit.description);
       setShowOnWebsite(serviceToEdit.showOnWebsite);
+      const g = (serviceToEdit.gender || 'both').toLowerCase();
+      setServesGents(g === 'gents' || g === 'both' || g === 'unisex');
+      setServesLadies(g === 'ladies' || g === 'both' || g === 'unisex');
     } else {
       setName('');
       setCategory('hair');
       setDurationMin(45);
       setDescription('');
       setShowOnWebsite(true);
+      setServesGents(true);
+      setServesLadies(true);
     }
   }, [serviceToEdit, isOpen]);
 
@@ -42,6 +49,15 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
+    let computedGender: 'gents' | 'ladies' | 'both' = 'both';
+    if (servesGents && !servesLadies) {
+      computedGender = 'gents';
+    } else if (!servesGents && servesLadies) {
+      computedGender = 'ladies';
+    } else {
+      computedGender = 'both';
+    }
+
     const newOrUpdated: ServiceItem = {
       id: serviceToEdit ? serviceToEdit.id : `svc-${Date.now()}`,
       name: name.trim(),
@@ -49,6 +65,7 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
       durationMin: Number(durationMin),
       description: description.trim(),
       showOnWebsite,
+      gender: computedGender,
     };
 
     onSaveService(newOrUpdated);
@@ -124,6 +141,71 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-lg bg-[#f0f5f1] border border-[#c2c8c2]/40 text-sm focus:bg-white focus:ring-1 focus:ring-[#112e20] outline-none"
               />
             </div>
+          </div>
+
+          {/* Target Section / Gender Checkboxes */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-[#181d1b]">
+              Target Section / Gender Offered *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label
+                className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                  servesGents
+                    ? 'bg-emerald-50/70 border-emerald-500/50 text-[#112e20]'
+                    : 'bg-[#f0f5f1]/60 border-[#c2c8c2]/30 text-[#727973] opacity-60'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={servesGents}
+                  onChange={(e) => {
+                    if (!e.target.checked && !servesLadies) return; // Prevent deselecting both
+                    setServesGents(e.target.checked);
+                  }}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 accent-[#112e20] cursor-pointer"
+                />
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px] text-[#112e20]">man</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold leading-tight">Gents</span>
+                    <span className="text-[10px] text-[#727973]">Men's Section</span>
+                  </div>
+                </div>
+              </label>
+
+              <label
+                className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                  servesLadies
+                    ? 'bg-rose-50/70 border-rose-500/50 text-[#112e20]'
+                    : 'bg-[#f0f5f1]/60 border-[#c2c8c2]/30 text-[#727973] opacity-60'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={servesLadies}
+                  onChange={(e) => {
+                    if (!e.target.checked && !servesGents) return; // Prevent deselecting both
+                    setServesLadies(e.target.checked);
+                  }}
+                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-gray-300 accent-[#9b4521] cursor-pointer"
+                />
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px] text-rose-600">woman</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold leading-tight">Ladies</span>
+                    <span className="text-[10px] text-[#727973]">Women's Section</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <p className="text-[10px] text-[#727973] italic">
+              {servesGents && servesLadies
+                ? '✓ Available in both Gents & Ladies menus (Unisex)'
+                : servesGents
+                ? '✓ Available only in Gents menu'
+                : '✓ Available only in Ladies menu'}
+            </p>
           </div>
 
           <div>

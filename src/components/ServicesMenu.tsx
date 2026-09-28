@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SERVICES } from '../data/salonData.ts';
 import { ServiceItem } from '../types.ts';
 
@@ -6,10 +6,101 @@ interface ServicesMenuProps {
   onSelectServiceToBook: (service: ServiceItem) => void;
 }
 
+const applyStorageServices = (baseList: ServiceItem[]): ServiceItem[] => {
+  try {
+    const saved =
+      localStorage.getItem('stylex_tirur_v6_services') ||
+      localStorage.getItem('stylex_services');
+    if (!saved) return baseList;
+
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return baseList;
+
+    const dashMap = new Map<string, any>();
+    parsed.forEach((item) => {
+      if (item && item.id) {
+        dashMap.set(item.id, item);
+      }
+    });
+
+    const result: ServiceItem[] = [];
+    const processedIds = new Set<string>();
+
+    for (const base of baseList) {
+      processedIds.add(base.id);
+      const dashItem = dashMap.get(base.id);
+      if (dashItem) {
+        if (dashItem.showOnWebsite === false || dashItem.isActive === false) {
+          continue; // hidden
+        }
+        const updatedGender: 'gents' | 'ladies' | 'both' =
+          dashItem.gender === 'ladies'
+            ? 'ladies'
+            : dashItem.gender === 'gents'
+            ? 'gents'
+            : dashItem.gender === 'unisex' || dashItem.gender === 'both'
+            ? 'both'
+            : base.gender || 'both';
+
+        result.push({
+          ...base,
+          name: dashItem.name || base.name,
+          category: (dashItem.category as any) || base.category,
+          categoryLabel: dashItem.categoryLabel || base.categoryLabel,
+          duration: dashItem.durationMin || dashItem.duration || base.duration,
+          durationLabel: dashItem.durationLabel || `${dashItem.durationMin || dashItem.duration || base.duration} mins`,
+          description: dashItem.description || base.description,
+          gender: updatedGender,
+        });
+      } else {
+        result.push(base);
+      }
+    }
+
+    for (const dashItem of parsed) {
+      if (!dashItem || !dashItem.id || processedIds.has(dashItem.id)) continue;
+      if (dashItem.showOnWebsite === false || dashItem.isActive === false) continue;
+
+      let cat: 'hair' | 'skin' | 'bridal' | 'groom' | 'spa' = 'hair';
+      const c = (dashItem.category || '').toLowerCase();
+      if (c.includes('skin') || c.includes('facial')) cat = 'skin';
+      else if (c.includes('spa') || c.includes('nail')) cat = 'spa';
+      else if (c.includes('beard') || c.includes('shave') || c.includes('groom')) cat = 'groom';
+      else if (c.includes('bridal')) cat = 'bridal';
+
+      const gen: 'gents' | 'ladies' | 'both' =
+        dashItem.gender === 'ladies'
+          ? 'ladies'
+          : dashItem.gender === 'gents'
+          ? 'gents'
+          : 'both';
+
+      result.push({
+        id: dashItem.id,
+        name: dashItem.name || 'Custom Service',
+        category: cat,
+        categoryLabel: dashItem.categoryLabel || dashItem.category || 'Specialty Care',
+        duration: dashItem.durationMin || dashItem.duration || 45,
+        durationLabel: `${dashItem.durationMin || dashItem.duration || 45} mins`,
+        price: Number(dashItem.price) || 350,
+        startingPrice: dashItem.startingPrice ? Number(dashItem.startingPrice) : undefined,
+        description: dashItem.description || '',
+        features: Array.isArray(dashItem.features) ? dashItem.features : [],
+        gender: gen,
+      });
+    }
+
+    return result;
+  } catch {
+    return baseList;
+  }
+};
+
 export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBook }) => {
   const [selectedGender, setSelectedGender] = useState<'gents' | 'ladies'>('gents');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'hair' | 'skin' | 'bridal' | 'groom' | 'spa'>('all');
-  const [menuServices, setMenuServices] = useState<ServiceItem[]>(SERVICES);
+  const baseServicesRef = useRef<ServiceItem[]>(SERVICES);
+  const [menuServices, setMenuServices] = useState<ServiceItem[]>(() => applyStorageServices(SERVICES));
 
   useEffect(() => {
     // 1. Fetch live active services from backend API
@@ -46,27 +137,15 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBoo
                 gender: s.gender === 'ladies' ? 'ladies' : s.gender === 'gents' ? 'gents' : 'both',
               };
             });
-          setMenuServices(mapped);
+          baseServicesRef.current = mapped;
+          setMenuServices(applyStorageServices(mapped));
         }
       })
       .catch(() => {});
 
     // 2. Storage event listener for cross-tab updates from Dashboard
     const handleSync = () => {
-      try {
-        const saved =
-          localStorage.getItem('stylex_tirur_v6_services') ||
-          localStorage.getItem('stylex_services');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            const hiddenIds = new Set(
-              parsed.filter((p: any) => p.showOnWebsite === false || p.isActive === false).map((p: any) => p.id)
-            );
-            setMenuServices((prev) => prev.filter((s) => !hiddenIds.has(s.id)));
-          }
-        }
-      } catch {}
+      setMenuServices(applyStorageServices(baseServicesRef.current));
     };
     window.addEventListener('storage', handleSync);
     return () => window.removeEventListener('storage', handleSync);

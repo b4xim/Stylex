@@ -857,6 +857,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_services', JSON.stringify(nextServices));
       safeSetItem('stylex_services', JSON.stringify(nextServices));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast(
       'info',
@@ -873,12 +874,17 @@ export default function App() {
 
   const handleSaveService = async (service: ServiceItem) => {
     const exists = services.some((s) => s.id === service.id);
-    setServices((prev) => {
-      if (exists) {
-        return prev.map((s) => (s.id === service.id ? service : s));
-      }
-      return [...prev, service];
-    });
+    const updated = exists
+      ? services.map((s) => (s.id === service.id ? service : s))
+      : [...services, service];
+    setServices(updated);
+
+    try {
+      safeSetItem('stylex_tirur_v6_services', JSON.stringify(updated));
+      safeSetItem('stylex_services', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
+
     addToast(
       'success',
       serviceToEdit ? 'Service Details Updated' : 'New Service Published',
@@ -886,21 +892,29 @@ export default function App() {
     );
     setServiceToEdit(null);
 
+    const backendGender =
+      service.gender === 'ladies'
+        ? 'ladies'
+        : service.gender === 'gents'
+        ? 'gents'
+        : 'unisex';
+
     try {
       if (exists) {
         await DashboardApi.updateService(service.id, {
           name: service.name,
           category: service.category,
+          gender: backendGender,
           durationMins: service.durationMin,
           description: service.description,
           isActive: service.showOnWebsite,
         });
       } else {
         await DashboardApi.createService({
-          id: service.id || service.name.toLowerCase().replace(/\s+/g, '-'),
+          id: service.id || service.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           name: service.name,
           category: service.category,
-          gender: 'unisex',
+          gender: backendGender,
           durationMins: service.durationMin,
           price: 350,
           description: service.description,
@@ -914,7 +928,15 @@ export default function App() {
 
   const handleDeleteService = async (id: string) => {
     const target = services.find((s) => s.id === id);
-    setServices((prev) => prev.filter((s) => s.id !== id));
+    const updated = services.filter((s) => s.id !== id);
+    setServices(updated);
+
+    try {
+      safeSetItem('stylex_tirur_v6_services', JSON.stringify(updated));
+      safeSetItem('stylex_services', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
+
     addToast('info', 'Service Removed', `"${target?.name || 'Service'}" removed from catalog.`);
 
     try {
