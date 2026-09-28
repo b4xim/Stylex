@@ -14,12 +14,12 @@ echo "Registration Email: $EMAIL"
 
 mkdir -p certbot/conf certbot/www
 
-SUDO_DOCKER=""
-if ! docker info &> /dev/null; then
-  SUDO_DOCKER="sudo"
+DOCKER_CMD="docker"
+if ! docker info &> /dev/null 2>&1; then
+  DOCKER_CMD="sudo docker"
 fi
 
-$SUDO_DOCKER run -it --rm --name temp_certbot \
+$DOCKER_CMD run -i --rm --name temp_certbot \
   -v "$(pwd)/certbot/conf:/etc/letsencrypt" \
   -v "$(pwd)/certbot/www:/var/www/certbot" \
   certbot/certbot certonly --webroot \
@@ -34,12 +34,12 @@ if [ -f "certbot/conf/live/stylexsalon.in/fullchain.pem" ]; then
   echo "SSL certificate successfully obtained! Activating HTTPS configuration..."
   cp nginx/conf.d/ssl.conf.template nginx/conf.d/default.conf
   
-  if $SUDO_DOCKER docker compose version &> /dev/null 2>&1; then
-    $SUDO_DOCKER docker compose exec nginx nginx -s reload
-  elif $SUDO_DOCKER docker-compose version &> /dev/null 2>&1; then
-    $SUDO_DOCKER docker-compose exec nginx nginx -s reload
+  if $DOCKER_CMD compose version &> /dev/null 2>&1; then
+    $DOCKER_CMD compose exec nginx nginx -s reload
+  elif command -v docker-compose &> /dev/null; then
+    sudo docker-compose exec nginx nginx -s reload
   else
-    $SUDO_DOCKER docker exec stylex_nginx nginx -s reload
+    $DOCKER_CMD exec stylex_nginx nginx -s reload
   fi
 
   echo "================================================================="
