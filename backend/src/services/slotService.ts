@@ -79,7 +79,15 @@ export class SlotService {
       },
     });
 
-    const bookedSlotSet = new Set(bookings.map((b) => b.timeSlot));
+    // Count active stylists for capacity calculation
+    const totalStylists = await prisma.stylist.count({ where: { isActive: true } });
+    const maxCapacity = Math.max(totalStylists, 4);
+
+    const slotBookingCounts = new Map<string, number>();
+    for (const b of bookings) {
+      slotBookingCounts.set(b.timeSlot, (slotBookingCounts.get(b.timeSlot) || 0) + 1);
+    }
+
     const blockedSlotMap = new Map(blockedSlots.map((b) => [b.timeSlot, b.reason || 'Blocked by Admin']));
 
     // Check if entire day is blocked
@@ -102,11 +110,14 @@ export class SlotService {
         };
       }
 
-      if (bookedSlotSet.has(slot)) {
+      const currentCount = slotBookingCounts.get(slot) || 0;
+      const isSlotFull = stylistId ? currentCount >= 1 : currentCount >= maxCapacity;
+
+      if (isSlotFull) {
         return {
           timeSlot: slot,
           isAvailable: false,
-          reason: 'Slot already reserved',
+          reason: stylistId ? 'Stylist already reserved for this slot' : 'All styling stations reserved',
         };
       }
 
@@ -152,20 +163,41 @@ export class SlotService {
     }
 
     // 2. Check for conflicting booking
-    const conflicting = await prisma.booking.findFirst({
-      where: {
-        date,
-        timeSlot,
-        status: { in: ['CONFIRMED', 'PENDING'] },
-        ...(stylistId ? { stylistId } : {}),
-      },
-    });
+    if (stylistId) {
+      const conflicting = await prisma.booking.findFirst({
+        where: {
+          date,
+          timeSlot,
+          status: { in: ['CONFIRMED', 'PENDING'] },
+          stylistId,
+        },
+      });
 
-    if (conflicting) {
-      throw new AppError(
-        `The requested slot ${timeSlot} on ${date} has just been reserved by another client. Please select an adjacent time.`,
-        409
-      );
+      if (conflicting) {
+        throw new AppError(
+          `The requested slot ${timeSlot} on ${date} is already reserved for this stylist. Please select another stylist or an adjacent time.`,
+          409
+        );
+      }
+    } else {
+      // General booking without specific stylist: check against total active stylists capacity
+      const totalStylists = await prisma.stylist.count({ where: { isActive: true } });
+      const maxCapacity = Math.max(totalStylists, 4);
+
+      const currentBookingsCount = await prisma.booking.count({
+        where: {
+          date,
+          timeSlot,
+          status: { in: ['CONFIRMED', 'PENDING'] },
+        },
+      });
+
+      if (currentBookingsCount >= maxCapacity) {
+        throw new AppError(
+          `All styling stations are fully booked at ${timeSlot} on ${date}. Please select an adjacent time.`,
+          409
+        );
+      }
     }
   }
 }

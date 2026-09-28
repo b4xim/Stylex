@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BookingState } from '../types.ts';
 
 interface BookingModalProps {
@@ -7,9 +7,20 @@ interface BookingModalProps {
 }
 
 export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) => {
+  const [isCompleting, setIsCompleting] = useState(false);
+
   if (!booking) return null;
 
   const bookingCode = booking.bookingRef || `SX-${Math.floor(1000 + Math.random() * 9000)}-TIRUR`;
+
+  const handleDoneClick = () => {
+    if (isCompleting) return;
+    setIsCompleting(true);
+    setTimeout(() => {
+      onClose();
+      setIsCompleting(false);
+    }, 850);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
@@ -135,26 +146,30 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             </div>
           )}
 
-          {/* Simulated QR Code & Barcode */}
-          <div className="flex items-center justify-between bg-white text-black p-3 rounded-2xl">
-            <div className="space-y-0.5">
-              <p className="text-[9px] uppercase font-bold tracking-wider text-black/60">Digital Salon Pass</p>
-              <p className="text-[12px] font-mono font-bold">{bookingCode}</p>
-              <p className="text-[10px] text-black/70">Show this pass to your arrival concierge at One Arcade</p>
-            </div>
-            <div className="w-14 h-14 bg-black flex items-center justify-center rounded-lg text-white font-mono text-[9px] text-center p-1 font-bold">
-              [QR PASS]
-            </div>
-          </div>
-
-          {/* Actions */}
+          {/* Actions with Completion Celebration Animation */}
           <div className="pt-2">
             <button
-              onClick={onClose}
-              className="w-full py-3.5 rounded-full bg-[#fe753c] hover:bg-[#e0622a] text-white text-[14px] font-bold shadow-[0_4px_16px_rgba(254,117,60,0.4)] flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+              onClick={handleDoneClick}
+              disabled={isCompleting}
+              className={`w-full py-4 rounded-full text-white text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 relative overflow-hidden select-none ${
+                isCompleting
+                  ? 'bg-emerald-600 shadow-[0_0_30px_rgba(16,185,129,0.7)] scale-[1.02]'
+                  : 'bg-[#fe753c] hover:bg-[#e0622a] shadow-[0_4px_16px_rgba(254,117,60,0.4)] hover:shadow-[0_6px_22px_rgba(254,117,60,0.6)] active:scale-95'
+              }`}
             >
-              <span>Done</span>
-              <span className="material-symbols-outlined text-[18px]">done</span>
+              {isCompleting ? (
+                <div className="flex items-center gap-2 animate-pulse">
+                  <span className="material-symbols-outlined text-[20px] text-white">
+                    check_circle
+                  </span>
+                  <span className="tracking-wide">Reservation Secured • See You Soon!</span>
+                </div>
+              ) : (
+                <>
+                  <span>Done</span>
+                  <span className="material-symbols-outlined text-[18px]">done</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -162,3 +177,4 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
     </div>
   );
 };
+

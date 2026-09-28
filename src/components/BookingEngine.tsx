@@ -319,7 +319,19 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       });
 
       const json = await res.json().catch(() => null);
-      const serverRef = json?.data?.booking?.bookingRef;
+
+      if (!res.ok || !json?.success || !json?.data?.booking) {
+        const errorMsg =
+          json?.message ||
+          'Unable to complete your reservation. Please try another time slot or contact our concierge directly at +91 96561 11149.';
+        console.error('Booking submission rejected by server:', res.status, json);
+        alert(errorMsg);
+        return;
+      }
+
+      const createdBooking = json.data.booking;
+      const serverRef = createdBooking.bookingRef;
+      const assignedStylistName = createdBooking.stylist?.name || selectedArtisan;
 
       onConfirmBooking({
         bookingRef: serverRef,
@@ -331,7 +343,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         date: dateString,
         dayOfMonth: selectedDay,
         time: selectedTime,
-        stylist: selectedArtisan,
+        stylist: assignedStylistName,
         notes: notes,
         beverage: 'Complimentary Artisanal Herbal Drink',
         gender: selectedGender,
@@ -340,24 +352,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         email: email.trim(),
       });
     } catch (err) {
-      console.warn('Booking API error, proceeding with local pass confirmation:', err);
-      onConfirmBooking({
-        customerName: cleanName,
-        serviceId: selectedService.id,
-        serviceName: selectedService.name,
-        price: selectedService.price,
-        duration: selectedService.duration,
-        date: dateString,
-        dayOfMonth: selectedDay,
-        time: selectedTime,
-        stylist: selectedArtisan,
-        notes: notes,
-        beverage: 'Complimentary Artisanal Herbal Drink',
-        gender: selectedGender,
-        phoneCountryCode: phoneCountryCode,
-        phone: cleanPhone,
-        email: email.trim(),
-      });
+      console.error('Booking network error:', err);
+      alert('Network error connecting to StyleX reservation servers. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }

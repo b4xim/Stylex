@@ -125,7 +125,7 @@ export class BookingController {
         }
       }
 
-      // Optional stylist
+      // Optional stylist lookup
       let stylist = null;
       if (cleanStylistId) {
         stylist = await prisma.stylist.findFirst({
@@ -138,11 +138,60 @@ export class BookingController {
         });
       }
 
+      // If customer chose 'Any Stylist' or specific stylist was not found, auto-assign an active artisan who is free!
+      if (!stylist) {
+        const bookedStylistIds = (
+          await prisma.booking.findMany({
+            where: {
+              date: normalizedDate,
+              timeSlot,
+              status: { in: ['CONFIRMED', 'PENDING'] },
+              stylistId: { not: null },
+            },
+            select: { stylistId: true },
+          })
+        )
+          .map((b) => b.stylistId)
+          .filter(Boolean) as string[];
+
+        // Try to match section preference if service has gender specified
+        const serviceGender = primaryService.gender?.toLowerCase();
+        let genderFilter: any = {};
+        if (serviceGender === 'ladies') {
+          genderFilter = { gender: { in: ['female', 'any', 'both'] } };
+        } else if (serviceGender === 'gents') {
+          genderFilter = { gender: { in: ['male', 'any', 'both'] } };
+        }
+
+        stylist = await prisma.stylist.findFirst({
+          where: {
+            isActive: true,
+            id: { notIn: bookedStylistIds },
+            ...genderFilter,
+          },
+        });
+
+        // Fallback to any active stylist without gender filter
+        if (!stylist) {
+          stylist = await prisma.stylist.findFirst({
+            where: {
+              isActive: true,
+              id: { notIn: bookedStylistIds },
+            },
+          });
+        }
+
+        // Final fallback to any active stylist
+        if (!stylist) {
+          stylist = await prisma.stylist.findFirst({ where: { isActive: true } });
+        }
+      }
+
       const subtotal = primaryService.price + secondaryPrice;
       const total = subtotal;
 
-      // 2. Concurrency Guard: Verify slot availability
-      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, cleanStylistId);
+      // 2. Concurrency Guard: Verify slot availability using the resolved stylist ID
+      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, stylist?.id);
 
       // 3. Generate unique Reference
       const bookingRef = await SlotService.generateBookingRef();

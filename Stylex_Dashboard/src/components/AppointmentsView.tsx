@@ -252,13 +252,15 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     });
   }, [selectedDate, appointments, todayYMD]);
 
-  // Active appointments: all appointments if showAllDates is true, or filtered by selectedDate
+  const hasGlobalSearch = Boolean(globalSearchQuery && globalSearchQuery.trim().length > 0);
+
+  // Active appointments: all appointments if showAllDates is true or when searching globally, or filtered by selectedDate
   const relevantAppointments = useMemo(() => {
-    if (showAllDates) {
+    if (showAllDates || hasGlobalSearch) {
       return appointments;
     }
     return appointments.filter((apt) => isDateMatching(apt.dateStr, selectedDate));
-  }, [appointments, selectedDate, showAllDates]);
+  }, [appointments, selectedDate, showAllDates, hasGlobalSearch]);
 
   // Status counts for current scope
   const statusCounts = useMemo(() => {
@@ -282,11 +284,12 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
         apt.serviceName.toLowerCase().includes(q) ||
         apt.stylistName.toLowerCase().includes(q) ||
         apt.clientPhone.includes(q) ||
+        (apt.notes ? apt.notes.toLowerCase().includes(q) : false) ||
         (apt.clientEmail ? apt.clientEmail.toLowerCase().includes(q) : false)
       );
     });
 
-    if (showAllDates) {
+    if (showAllDates || hasGlobalSearch) {
       return [...result].sort((a, b) => {
         const dateA = a.dateStr?.toLowerCase() === 'today' ? todayYMD : a.dateStr || '';
         const dateB = b.dateStr?.toLowerCase() === 'today' ? todayYMD : b.dateStr || '';
@@ -296,7 +299,7 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     }
 
     return result;
-  }, [relevantAppointments, statusFilter, globalSearchQuery, showAllDates, todayYMD]);
+  }, [relevantAppointments, statusFilter, globalSearchQuery, showAllDates, hasGlobalSearch, todayYMD]);
 
   return (
     <div className="flex flex-col w-full gap-6">
@@ -305,11 +308,13 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#9b4521] dark:text-[#ff9266]">
-              {showAllDates ? 'Master Manifest' : 'Daily Manifest'}
+              {hasGlobalSearch ? 'Search Manifest' : showAllDates ? 'Master Manifest' : 'Daily Manifest'}
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#112e20] dark:bg-[#caead5]"></span>
             <span className="text-xs text-[#424844] dark:text-[#a0aca4]">
-              {showAllDates
+              {hasGlobalSearch
+                ? `${statusCounts.ALL} match${statusCounts.ALL === 1 ? '' : 'es'} found across all dates`
+                : showAllDates
                 ? `${statusCounts.ALL} total reservation${statusCounts.ALL === 1 ? '' : 's'} across all dates`
                 : `${statusCounts.ALL} reservation${statusCounts.ALL === 1 ? '' : 's'} on this date`}
             </span>
