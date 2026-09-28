@@ -29,6 +29,49 @@ export interface SlotAvailability {
   reason?: string;
 }
 
+export const isPastSlotInIST = (dateStr: string, slotStr: string): boolean => {
+  try {
+    const salonNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const [yStr, mStr, dStr] = dateStr.split('-');
+    const year = parseInt(yStr, 10);
+    const month = parseInt(mStr, 10) - 1;
+    const day = parseInt(dStr, 10);
+
+    const currentSalonDay = new Date(salonNow.getFullYear(), salonNow.getMonth(), salonNow.getDate()).getTime();
+    const targetDay = new Date(year, month, day).getTime();
+
+    if (targetDay < currentSalonDay) return true;
+    if (targetDay > currentSalonDay) return false;
+
+    const match = slotStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return false;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const meridian = match[3].toUpperCase();
+
+    if (meridian === 'AM' && hours === 12) {
+      hours = 24;
+    } else if (meridian === 'PM' && hours < 12) {
+      hours += 12;
+    }
+
+    const slotTimestamp = new Date(
+      salonNow.getFullYear(),
+      salonNow.getMonth(),
+      salonNow.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    ).getTime();
+
+    return salonNow.getTime() >= slotTimestamp;
+  } catch {
+    return false;
+  }
+};
+
 export class SlotService {
   /**
    * Generates a unique salon booking reference (e.g. SX-8291)
@@ -141,6 +184,17 @@ export class SlotService {
           : normalizedGender === 'gents'
           ? gentsCount
           : Math.max(gentsCount, ladiesCount);
+
+      if (isPastSlotInIST(date, slot)) {
+        return {
+          timeSlot: slot,
+          isAvailable: false,
+          bookedCount,
+          maxCapacity: 3,
+          status: 'full',
+          reason: 'Time slot has passed',
+        };
+      }
 
       if (allDayBlocked) {
         return {
@@ -256,6 +310,14 @@ export class SlotService {
       if (foundStylist) {
         resolvedStylistId = foundStylist.id;
       }
+    }
+
+    // 0. Check if slot has already passed
+    if (isPastSlotInIST(date, timeSlot)) {
+      throw new AppError(
+        `The requested time slot ${timeSlot} on ${date} has already passed. Please select an upcoming slot.`,
+        400
+      );
     }
 
     // 1. Check for blocked slot

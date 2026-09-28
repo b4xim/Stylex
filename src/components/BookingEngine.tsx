@@ -25,6 +25,69 @@ export const COUNTRY_CODES = [
   { code: '+33', country: 'France', flag: '🇫🇷' },
 ];
 
+export interface SlotOccupancyInfo {
+  timeSlot: string;
+  isAvailable: boolean;
+  bookedCount: number;
+  maxCapacity: number;
+  status: 'available' | 'filling_fast' | 'full';
+  reason?: string;
+}
+
+export const getSalonNow = (): Date => {
+  try {
+    const str = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    return new Date(str);
+  } catch {
+    return new Date();
+  }
+};
+
+export const isSlotInPast = (
+  slotStr: string,
+  selectedDay: number,
+  selectedMonthIndex: number,
+  selectedYear: number
+): boolean => {
+  const salonNow = getSalonNow();
+  const currentSalonDay = new Date(salonNow.getFullYear(), salonNow.getMonth(), salonNow.getDate()).getTime();
+  const chosenDay = new Date(selectedYear, selectedMonthIndex, selectedDay).getTime();
+
+  // If chosen day is before today in salon time, all slots are in the past
+  if (chosenDay < currentSalonDay) return true;
+  // If chosen day is in the future, none of the slots are in the past
+  if (chosenDay > currentSalonDay) return false;
+
+  // Selected day is TODAY: Parse slot start time
+  const match = slotStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return false;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridian = match[3].toUpperCase();
+
+  if (meridian === 'AM' && hours === 12) {
+    // 12:00 AM is midnight at the end of the operating day (24:00)
+    hours = 24;
+  } else if (meridian === 'PM' && hours < 12) {
+    hours += 12;
+  }
+
+  // Create slot Date timestamp for today
+  const slotTimestamp = new Date(
+    salonNow.getFullYear(),
+    salonNow.getMonth(),
+    salonNow.getDate(),
+    hours,
+    minutes,
+    0,
+    0
+  ).getTime();
+
+  // The slot is in the past if salon's current time has reached or passed the slot start time
+  return salonNow.getTime() >= slotTimestamp;
+};
+
 export const BookingEngine: React.FC<BookingEngineProps> = ({
   onConfirmBooking,
   initialServiceId,
@@ -202,24 +265,20 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     }
   }, [initialServiceId, stylistsList]);
 
-  // Month & Day selection
-  const now = new Date();
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(now.getMonth());
-  const [currentYear, setCurrentYear] = useState(now.getFullYear());
-  const [selectedDay, setSelectedDay] = useState<number>(now.getDate());
-
-interface SlotOccupancyInfo {
-  timeSlot: string;
-  isAvailable: boolean;
-  bookedCount: number;
-  maxCapacity: number;
-  status: 'available' | 'filling_fast' | 'full';
-  reason?: string;
-}
+  // Month & Day selection (Synchronized with Salon Local Time in Tirur, Kerala)
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(() => getSalonNow().getMonth());
+  const [currentYear, setCurrentYear] = useState(() => getSalonNow().getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number>(() => getSalonNow().getDate());
 
   // Time selection
   const timeSlots = TIME_SLOTS;
-  const [selectedTime, setSelectedTime] = useState<string>(TIME_SLOTS[0]);
+  const [selectedTime, setSelectedTime] = useState<string>(() => {
+    const sNow = getSalonNow();
+    const firstValid = TIME_SLOTS.find(
+      (s) => !isSlotInPast(s, sNow.getDate(), sNow.getMonth(), sNow.getFullYear())
+    );
+    return firstValid || TIME_SLOTS[0];
+  });
   const [slotOccupancy, setSlotOccupancy] = useState<Record<string, SlotOccupancyInfo>>({});
   const [, setIsLoadingSlots] = useState<boolean>(false);
 
@@ -246,7 +305,7 @@ interface SlotOccupancyInfo {
 
   // Quick 7 days for mobile 1-tap booking
   const next7Days = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
+    const d = getSalonNow();
     d.setDate(d.getDate() + i);
     return {
       dayNum: d.getDate(),
@@ -257,9 +316,10 @@ interface SlotOccupancyInfo {
     };
   });
 
+  const salonNow = getSalonNow();
   const isCurrentOrPastMonth =
-    currentYear < now.getFullYear() ||
-    (currentYear === now.getFullYear() && currentMonthIndex <= now.getMonth());
+    currentYear < salonNow.getFullYear() ||
+    (currentYear === salonNow.getFullYear() && currentMonthIndex <= salonNow.getMonth());
 
   const handlePrevMonth = () => {
     if (isCurrentOrPastMonth) return;
@@ -426,10 +486,19 @@ interface SlotOccupancyInfo {
           });
           setSlotOccupancy(map);
 
-          // If current selected time is full (3/3), auto-select first available time slot
+          // If current selected time is full (3/3), blocked, or in the past, auto-select first available time slot
+          const currentBlackout = getBlackoutStatus(selectedDay);
           const currentSlot = map[selectedTime];
-          if (currentSlot && (!currentSlot.isAvailable || currentSlot.status === 'full' || currentSlot.bookedCount >= 3)) {
+          const isCurrentPast = isSlotInPast(selectedTime, selectedDay, currentMonthIndex, currentYear);
+          const isCurrentFull =
+            isCurrentPast ||
+            currentBlackout.blockedSlots.includes(selectedTime) ||
+            (currentSlot && (!currentSlot.isAvailable || currentSlot.status === 'full' || currentSlot.bookedCount >= 3));
+
+          if (isCurrentFull) {
             const firstAvailable = TIME_SLOTS.find((s) => {
+              if (isSlotInPast(s, selectedDay, currentMonthIndex, currentYear)) return false;
+              if (currentBlackout.blockedSlots.includes(s)) return false;
               const occ = map[s];
               return !occ || (occ.isAvailable && occ.status !== 'full' && occ.bookedCount < 3);
             });
@@ -454,6 +523,27 @@ interface SlotOccupancyInfo {
       clearInterval(interval);
     };
   }, [selectedDay, currentMonthIndex, currentYear, selectedGender, selectedArtisan]);
+
+  // Ensure selectedTime automatically switches away from past/blocked/full slot whenever date changes
+  useEffect(() => {
+    const isPast = isSlotInPast(selectedTime, selectedDay, currentMonthIndex, currentYear);
+    const occ = slotOccupancy[selectedTime];
+    const isBlocked = getBlackoutStatus(selectedDay).blockedSlots.includes(selectedTime);
+    const isFull = isBlocked || (occ ? !occ.isAvailable || occ.status === 'full' || (occ.bookedCount || 0) >= 3 : false);
+
+    if (isPast || isFull) {
+      const currentBlackout = getBlackoutStatus(selectedDay);
+      const nextAvailable = TIME_SLOTS.find((s) => {
+        if (isSlotInPast(s, selectedDay, currentMonthIndex, currentYear)) return false;
+        if (currentBlackout.blockedSlots.includes(s)) return false;
+        const o = slotOccupancy[s];
+        return !o || (o.isAvailable && o.status !== 'full' && (o.bookedCount || 0) < 3);
+      });
+      if (nextAvailable) {
+        setSelectedTime(nextAvailable);
+      }
+    }
+  }, [selectedDay, currentMonthIndex, currentYear]);
 
   const handleSubmit = async () => {
     // Full Name is compulsory
@@ -491,6 +581,10 @@ interface SlotOccupancyInfo {
     }
     if (currentBlackout.blockedSlots.includes(selectedTime)) {
       alert(`The selected time slot (${selectedTime}) is blocked. Please select another slot.`);
+      return;
+    }
+    if (isSlotInPast(selectedTime, selectedDay, currentMonthIndex, currentYear)) {
+      alert(`The selected time slot (${selectedTime}) has already passed. Please choose an upcoming time slot.`);
       return;
     }
 
@@ -925,7 +1019,7 @@ interface SlotOccupancyInfo {
                         const dayBlackout = getBlackoutStatus(dayNum);
                         const isDayClosed = dayBlackout.isFullDayClosed;
 
-                        const todayObj = new Date();
+                        const todayObj = getSalonNow();
                         todayObj.setHours(0, 0, 0, 0);
                         const cellDateObj = new Date(currentYear, currentMonthIndex, dayNum);
                         cellDateObj.setHours(0, 0, 0, 0);
@@ -999,8 +1093,38 @@ interface SlotOccupancyInfo {
                           );
                         }
 
+                        const allSlotsPast = timeSlots.every((s) =>
+                          isSlotInPast(s, selectedDay, currentMonthIndex, currentYear)
+                        );
+
                         return (
                           <div className="space-y-2">
+                            {allSlotsPast && (
+                              <div className="p-3 bg-amber-50/90 border border-amber-200/90 rounded-2xl text-center space-y-1.5">
+                                <div className="flex items-center justify-center gap-1.5 text-amber-900 text-[12px] font-bold">
+                                  <span className="material-symbols-outlined text-[17px] text-amber-600">history_toggle_off</span>
+                                  <span>All Slots for Today Have Closed</span>
+                                </div>
+                                <p className="text-[11px] text-amber-800">
+                                  Appointment slots for today have concluded. Please select tomorrow to reserve your slot.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const tomorrow = new Date(getSalonNow());
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    setSelectedDay(tomorrow.getDate());
+                                    setCurrentMonthIndex(tomorrow.getMonth());
+                                    setCurrentYear(tomorrow.getFullYear());
+                                  }}
+                                  className="mt-0.5 px-3 py-1 bg-[#112e20] text-white text-[11px] font-semibold rounded-lg hover:bg-[#185341] transition-colors cursor-pointer inline-flex items-center gap-1"
+                                >
+                                  <span>Reserve for Tomorrow</span>
+                                  <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
+                                </button>
+                              </div>
+                            )}
+
                             <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                               {timeSlots.map((slot) => {
                                 const isSelected = selectedTime === slot;
@@ -1008,22 +1132,28 @@ interface SlotOccupancyInfo {
                                 const occ = slotOccupancy[slot];
                                 const bookedCount = occ?.bookedCount || 0;
                                 const isFull = isSlotBlocked || (occ ? !occ.isAvailable || occ.status === 'full' || bookedCount >= 3 : false);
-                                const isFillingFast = !isFull && (occ ? occ.status === 'filling_fast' || bookedCount === 2 : false);
+                                const isPast = isSlotInPast(slot, selectedDay, currentMonthIndex, currentYear);
+                                const isDisabled = isPast || isFull;
+                                const isFillingFast = !isDisabled && (occ ? occ.status === 'filling_fast' || bookedCount === 2 : false);
 
                                 return (
                                   <button
                                     key={slot}
-                                    disabled={isFull}
+                                    disabled={isDisabled}
                                     onClick={() => setSelectedTime(slot)}
                                     title={
-                                      isFull
+                                      isPast
+                                        ? 'Time Passed (Cannot book past slots)'
+                                        : isFull
                                         ? 'Fully Booked'
                                         : isFillingFast
                                         ? 'Filling Fast'
                                         : 'Available'
                                     }
                                     className={`py-2.5 px-1 rounded-xl text-[12px] font-semibold transition-all duration-150 text-center relative select-none ${
-                                      isFull
+                                      isPast
+                                        ? 'bg-neutral-100 text-neutral-400 border-2 border-neutral-200/80 cursor-not-allowed opacity-50 line-through'
+                                        : isFull
                                         ? 'bg-red-50/70 text-red-500/80 border-2 border-red-200/80 cursor-not-allowed opacity-70'
                                         : isFillingFast
                                         ? isSelected
@@ -1042,7 +1172,7 @@ interface SlotOccupancyInfo {
                             </div>
 
                             {/* Status Legend */}
-                            <div className="flex items-center justify-between pt-1 px-1 text-[11px] font-medium text-[#424844]">
+                            <div className="flex items-center justify-between flex-wrap gap-2 pt-1 px-1 text-[11px] font-medium text-[#424844]">
                               <div className="flex items-center gap-1.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600" />
                                 <span className="text-[#185341] font-semibold">Available</span>
@@ -1053,7 +1183,11 @@ interface SlotOccupancyInfo {
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
-                                <span className="text-red-700 font-semibold">Fully Booked</span>
+                                <span className="text-red-700 font-semibold">Full</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-neutral-300 border border-neutral-400" />
+                                <span className="text-neutral-500 font-semibold">Past Slot</span>
                               </div>
                             </div>
                           </div>
