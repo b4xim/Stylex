@@ -345,7 +345,7 @@ function normalizeToYMD(dateStr: string): string {
 }
 
 export function mapBackendBookingToAppointment(b: any): Appointment {
-  const name = b.customer?.name || 'Guest Client';
+  const name = b.guestName || b.customer?.name || 'Guest Client';
   const initials = name
     .split(' ')
     .filter(Boolean)
@@ -367,9 +367,11 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
   else if (visits >= 2) clientTier = 'VIP Member';
   else clientTier = 'New Guest';
 
-  const fullPhone = b.customer?.phone
+  const fullPhone = b.guestPhone || (b.customer?.phone
     ? `${b.customer.countryCode ? b.customer.countryCode + ' ' : ''}${b.customer.phone}`
-    : '+91 96561 11149';
+    : '+91 96561 11149');
+
+  const email = b.guestEmail || b.customer?.email || undefined;
 
   return {
     id: b.id,
@@ -377,7 +379,7 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
     durationMin: b.service?.durationMins || 45,
     clientName: name,
     clientPhone: fullPhone,
-    clientEmail: b.customer?.email || undefined,
+    clientEmail: email,
     clientInitials: initials,
     clientTier,
     serviceName: b.service?.name || 'Signature Salon Ritual',

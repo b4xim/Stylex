@@ -64,12 +64,27 @@ export class SlotService {
     stylistId?: string,
     gender?: string
   ): Promise<SlotAvailability[]> {
+    let resolvedStylistId = stylistId;
+    if (stylistId) {
+      const foundStylist = await prisma.stylist.findFirst({
+        where: {
+          OR: [
+            { id: stylistId },
+            { name: { equals: stylistId, mode: 'insensitive' } },
+          ],
+        },
+      });
+      if (foundStylist) {
+        resolvedStylistId = foundStylist.id;
+      }
+    }
+
     // 1. Fetch active bookings for this date including their service department
     const bookings = await prisma.booking.findMany({
       where: {
         date,
         status: { in: ['CONFIRMED', 'PENDING'] },
-        ...(stylistId ? { stylistId } : {}),
+        ...(resolvedStylistId ? { stylistId: resolvedStylistId } : {}),
       },
       select: {
         timeSlot: true,
@@ -88,7 +103,7 @@ export class SlotService {
         date,
         OR: [
           { stylistId: null }, // Global salon block
-          ...(stylistId ? [{ stylistId }] : []),
+          ...(resolvedStylistId ? [{ stylistId: resolvedStylistId }] : []),
         ],
       },
       select: {
@@ -228,6 +243,21 @@ export class SlotService {
     stylistId?: string | null,
     gender?: string | null
   ): Promise<void> {
+    let resolvedStylistId = stylistId;
+    if (stylistId) {
+      const foundStylist = await prisma.stylist.findFirst({
+        where: {
+          OR: [
+            { id: stylistId },
+            { name: { equals: stylistId, mode: 'insensitive' } },
+          ],
+        },
+      });
+      if (foundStylist) {
+        resolvedStylistId = foundStylist.id;
+      }
+    }
+
     // 1. Check for blocked slot
     const blocked = await prisma.blockedSlot.findFirst({
       where: {
@@ -240,7 +270,7 @@ export class SlotService {
           {
             OR: [
               { stylistId: null },
-              ...(stylistId ? [{ stylistId }] : []),
+              ...(resolvedStylistId ? [{ stylistId: resolvedStylistId }] : []),
             ],
           },
         ],
@@ -255,13 +285,13 @@ export class SlotService {
     }
 
     // 2. Check for conflicting booking for specific stylist
-    if (stylistId) {
+    if (resolvedStylistId) {
       const conflicting = await prisma.booking.findFirst({
         where: {
           date,
           timeSlot,
           status: { in: ['CONFIRMED', 'PENDING'] },
-          stylistId,
+          stylistId: resolvedStylistId,
         },
       });
 

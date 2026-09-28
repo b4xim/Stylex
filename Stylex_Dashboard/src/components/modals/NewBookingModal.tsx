@@ -328,21 +328,21 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                     onClick={() => setTime(slot)}
                     title={
                       isFull
-                        ? 'Fully Booked (Red)'
+                        ? 'Fully Booked'
                         : isFillingFast
-                        ? 'Filling Fast (Yellow)'
-                        : 'Available (Green)'
+                        ? 'Filling Fast'
+                        : 'Available'
                     }
                     className={`py-2 px-1 text-xs rounded-lg font-semibold transition-all relative text-center select-none ${
                       isFull
-                        ? 'bg-red-500 text-white border border-red-600 cursor-not-allowed opacity-90'
+                        ? 'bg-red-50 text-red-600/80 font-bold border-2 border-red-200 cursor-not-allowed opacity-75 shadow-2xs'
                         : isFillingFast
                         ? time === slot
-                          ? 'bg-amber-500 text-white font-bold ring-2 ring-amber-400'
-                          : 'bg-amber-300 text-amber-950 font-bold border border-amber-400 hover:bg-amber-200 cursor-pointer'
+                          ? 'bg-amber-500 text-white font-bold ring-2 ring-amber-400 border-2 border-amber-600'
+                          : 'bg-amber-50 text-amber-900 font-bold border-2 border-amber-400/80 hover:bg-amber-100/70 cursor-pointer shadow-2xs'
                         : time === slot
-                        ? 'bg-[#112e20] text-white shadow-xs font-bold'
-                        : 'bg-[#f0f5f1] text-[#181d1b] hover:bg-[#eaefeb] cursor-pointer'
+                        ? 'bg-[#112e20] text-white shadow-xs font-bold border-2 border-[#112e20]'
+                        : 'bg-white text-[#185341] border-2 border-emerald-500/70 hover:bg-emerald-50/50 hover:border-emerald-600 cursor-pointer shadow-2xs'
                     }`}
                   >
                     <span>{slot}</span>
@@ -351,18 +351,18 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
               })}
             </div>
             {/* Status Legend */}
-            <div className="flex items-center gap-3 pt-1 text-[11px] text-[#424844]">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                Available - Green
+            <div className="flex items-center gap-4 pt-1 text-[11px] text-[#424844]">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600" />
+                <span className="text-[#185341] font-semibold">Available</span>
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500" />
-                Filling Fast (Yellow)
+                <span className="text-amber-800 font-semibold">Filling Fast</span>
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
-                Fully Booked (Red)
+                <span className="text-red-700 font-semibold">Fully Booked</span>
               </span>
             </div>
           </div>

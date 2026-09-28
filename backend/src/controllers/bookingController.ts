@@ -155,6 +155,9 @@ export class BookingController {
       const result = await prisma.$transaction(async (tx) => {
         // Upsert customer in CRM
         const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
+        const fullGuestPhone = `${countryCode} ${cleanPhone}`;
+        const cleanGuestEmail = customerEmail ? customerEmail.trim().toLowerCase() : null;
+
         const customer = await tx.customer.upsert({
           where: {
             countryCode_phone: {
@@ -163,8 +166,6 @@ export class BookingController {
             },
           },
           update: {
-            name: customerName,
-            ...(customerEmail ? { email: customerEmail.trim().toLowerCase() } : {}),
             totalVisits: { increment: 1 },
             totalSpent: { increment: total },
           },
@@ -172,17 +173,20 @@ export class BookingController {
             name: customerName,
             phone: cleanPhone,
             countryCode,
-            email: customerEmail ? customerEmail.trim().toLowerCase() : null,
+            email: cleanGuestEmail,
             totalVisits: 1,
             totalSpent: total,
           },
         });
 
-        // Create booking
+        // Create booking with individual guest identity snapshot
         const booking = await tx.booking.create({
           data: {
             bookingRef,
             customerId: customer.id,
+            guestName: customerName,
+            guestPhone: fullGuestPhone,
+            guestEmail: cleanGuestEmail,
             serviceId: primaryService.id,
             secondaryServiceId: secondaryService?.id,
             secondaryService: secondaryService?.name,
@@ -288,6 +292,8 @@ export class BookingController {
           { bookingRef: { contains: search, mode: 'insensitive' } },
           { customer: { name: { contains: search, mode: 'insensitive' } } },
           { customer: { phone: { contains: search } } },
+          { guestName: { contains: search, mode: 'insensitive' } },
+          { guestPhone: { contains: search } },
         ];
       }
 

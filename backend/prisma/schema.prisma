@@ -98,6 +98,9 @@ model Booking {
   stylist            Stylist?  @relation(fields: [stylistId], references: [id])
   serviceId          String
   service            Service   @relation(fields: [serviceId], references: [id])
+  guestName          String?
+  guestPhone         String?
+  guestEmail         String?
   secondaryServiceId String?
   secondaryService   String?
   secondaryPrice     Float?
