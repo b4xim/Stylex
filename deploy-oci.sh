@@ -74,13 +74,20 @@ if ! command -v docker &> /dev/null; then
   rm get-docker.sh
 fi
 
-DOCKER_COMPOSE="docker compose"
-if ! docker compose version &> /dev/null; then
+# Test if docker requires sudo permission
+SUDO_DOCKER=""
+if ! docker info &> /dev/null; then
+  SUDO_DOCKER="sudo"
+fi
+
+DOCKER_COMPOSE="$SUDO_DOCKER docker compose"
+if ! $DOCKER_COMPOSE version &> /dev/null; then
   if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
+    DOCKER_COMPOSE="$SUDO_DOCKER docker-compose"
   else
     echo -e "${RED}Docker Compose plugin missing. Installing...${NC}"
     sudo apt-get update && sudo apt-get install -y docker-compose-plugin
+    DOCKER_COMPOSE="$SUDO_DOCKER docker compose"
   fi
 fi
 
