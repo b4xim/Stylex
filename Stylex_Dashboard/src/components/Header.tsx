@@ -13,6 +13,8 @@ interface HeaderProps {
   unreadCount?: number;
   darkMode?: boolean;
   onToggleDarkMode?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenChangePassword,
   onLogout,
   unreadCount = 2,
+  onRefresh,
+  isRefreshing = false,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -105,6 +109,27 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
         </div>
+
+        {/* Refresh Live Data CTA */}
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#f0f5f1] dark:bg-[#192720] text-[#112e20] dark:text-[#caead5] border border-[#c2c8c2]/50 dark:border-[#2a3c31] text-[13px] font-medium hover:bg-[#e2ebe4] dark:hover:bg-[#22352b] transition-all cursor-pointer shadow-2xs group active:scale-95 disabled:opacity-60"
+            title="Refresh live appointments & records from database"
+          >
+            <span
+              className={`material-symbols-outlined text-[19px] text-[#112e20] dark:text-[#7cebb0] ${
+                isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'
+              }`}
+            >
+              refresh
+            </span>
+            <span className="hidden sm:inline font-semibold text-xs">
+              {isRefreshing ? 'Syncing...' : 'Refresh'}
+            </span>
+          </button>
+        )}
 
         {/* New Booking CTA */}
         <button

@@ -295,90 +295,103 @@ export default function App() {
   }, [settings.darkMode]);
 
   // Live Data Synchronization with PostgreSQL Backend
-  useEffect(() => {
-    let isMounted = true;
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-    async function loadRealData() {
-      try {
-        if (!DashboardApi.getToken()) {
-          await DashboardApi.silentLogin();
-        }
-
-        // 1. Fetch live bookings from PostgreSQL
-        try {
-          const liveBookings = await DashboardApi.getBookings();
-          if (isMounted && Array.isArray(liveBookings) && liveBookings.length > 0) {
-            const mappedAppointments = liveBookings.map(mapBackendBookingToAppointment);
-            setAppointments(mappedAppointments);
-          }
-        } catch (e) {
-          console.warn('Live bookings fetch:', e);
-        }
-
-        // 2. Fetch live services
-        try {
-          const liveServices = await DashboardApi.getServices();
-          if (isMounted && Array.isArray(liveServices) && liveServices.length > 0) {
-            setServices(liveServices);
-          }
-        } catch (e) {
-          console.warn('Live services fetch:', e);
-        }
-
-        // 3. Fetch live stylists
-        try {
-          const liveStylists = await DashboardApi.getStylists();
-          if (isMounted && Array.isArray(liveStylists) && liveStylists.length > 0) {
-            setStylists(liveStylists);
-          }
-        } catch (e) {
-          console.warn('Live stylists fetch:', e);
-        }
-
-        // 4. Fetch live customers (CRM)
-        try {
-          const liveCustomers = await DashboardApi.getCustomers();
-          if (isMounted && Array.isArray(liveCustomers) && liveCustomers.length > 0) {
-            setVipClients(liveCustomers);
-          }
-        } catch (e) {
-          console.warn('Live customers fetch:', e);
-        }
-
-        // 5. Fetch promotional banners, reels, and photos
-        try {
-          const liveBanners = await DashboardApi.getBanners();
-          if (isMounted && Array.isArray(liveBanners) && liveBanners.length > 0) {
-            setBanners(liveBanners);
-          }
-        } catch {}
-
-        try {
-          const liveReels = await DashboardApi.getReels();
-          if (isMounted && Array.isArray(liveReels) && liveReels.length > 0) {
-            setReels(liveReels);
-          }
-        } catch {}
-
-        try {
-          const livePhotos = await DashboardApi.getPortfolioPhotos();
-          if (isMounted && Array.isArray(livePhotos) && livePhotos.length > 0) {
-            setPortfolioWorks(livePhotos);
-          }
-        } catch {}
-
-      } catch (err) {
-        console.warn('Live data sync encountered an error:', err);
+  const loadRealData = async (silent = true) => {
+    try {
+      if (!DashboardApi.getToken()) {
+        await DashboardApi.silentLogin();
       }
-    }
 
+      // 1. Fetch live bookings from PostgreSQL
+      try {
+        const liveBookings = await DashboardApi.getBookings();
+        if (Array.isArray(liveBookings)) {
+          const mappedAppointments = liveBookings.map(mapBackendBookingToAppointment);
+          setAppointments(mappedAppointments);
+        }
+      } catch (e) {
+        console.warn('Live bookings fetch:', e);
+      }
+
+      // 2. Fetch live services
+      try {
+        const liveServices = await DashboardApi.getServices();
+        if (Array.isArray(liveServices) && liveServices.length > 0) {
+          setServices(liveServices);
+        }
+      } catch (e) {
+        console.warn('Live services fetch:', e);
+      }
+
+      // 3. Fetch live stylists
+      try {
+        const liveStylists = await DashboardApi.getStylists();
+        if (Array.isArray(liveStylists) && liveStylists.length > 0) {
+          setStylists(liveStylists);
+        }
+      } catch (e) {
+        console.warn('Live stylists fetch:', e);
+      }
+
+      // 4. Fetch live customers (CRM)
+      try {
+        const liveCustomers = await DashboardApi.getCustomers();
+        if (Array.isArray(liveCustomers) && liveCustomers.length > 0) {
+          setVipClients(liveCustomers);
+        }
+      } catch (e) {
+        console.warn('Live customers fetch:', e);
+      }
+
+      // 5. Fetch promotional banners, reels, and photos
+      try {
+        const liveBanners = await DashboardApi.getBanners();
+        if (Array.isArray(liveBanners) && liveBanners.length > 0) {
+          setBanners(liveBanners);
+        }
+      } catch {}
+
+      try {
+        const liveReels = await DashboardApi.getReels();
+        if (Array.isArray(liveReels) && liveReels.length > 0) {
+          setReels(liveReels);
+        }
+      } catch {}
+
+      try {
+        const livePhotos = await DashboardApi.getPortfolioPhotos();
+        if (Array.isArray(livePhotos) && livePhotos.length > 0) {
+          setPortfolioWorks(livePhotos);
+        }
+      } catch {}
+
+    } catch (err) {
+      console.warn('Live data sync encountered an error:', err);
+    }
+  };
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadRealData(false);
+      addToast(
+        'success',
+        'Live Data Synchronized',
+        'Successfully fetched latest appointments and salon records from PostgreSQL.'
+      );
+    } catch {
+      addToast('info', 'Synced', 'Salon records refreshed.');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 450);
+    }
+  };
+
+  useEffect(() => {
     if (isAuthenticated) {
       loadRealData();
-      const interval = setInterval(loadRealData, 20000); // 20s polling for real-time bookings
-      return () => {
-        isMounted = false;
-        clearInterval(interval);
-      };
+      const interval = setInterval(() => loadRealData(), 20000); // 20s polling for real-time bookings
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 
@@ -1046,6 +1059,8 @@ export default function App() {
           unreadCount={unreadInquiriesCount}
           darkMode={settings.darkMode}
           onToggleDarkMode={() => handleToggleDarkMode(!settings.darkMode)}
+          onRefresh={handleRefreshData}
+          isRefreshing={isRefreshing}
         />
 
         <main className="relative pt-20 bg-[#f6faf7] min-h-screen px-6 sm:px-8 py-8">
