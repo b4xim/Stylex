@@ -175,6 +175,7 @@ export interface SalonSettings {
   darkMode?: boolean;
   whatsappBotConnected?: boolean;
   whatsappBotPhone?: string;
+  maintenanceMode?: boolean;
 }
 
 export type SystemRole = 'Admin' | 'Developer' | 'Manager' | 'Staff' | 'Normal User';

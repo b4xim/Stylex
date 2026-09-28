@@ -79,20 +79,27 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
   const filteredAppointments = useMemo(() => {
     return activeOverviewAppointments.filter((apt) => {
+      if (!apt) return false;
       if (!effectiveSearch) return true;
+      const clientName = (apt.clientName || '').toLowerCase();
+      const serviceName = (apt.serviceName || '').toLowerCase();
+      const stylistName = (apt.stylistName || '').toLowerCase();
+      const station = (apt.station || '').toLowerCase();
       return (
-        apt.clientName.toLowerCase().includes(effectiveSearch) ||
-        apt.serviceName.toLowerCase().includes(effectiveSearch) ||
-        apt.stylistName.toLowerCase().includes(effectiveSearch) ||
-        apt.station.toLowerCase().includes(effectiveSearch)
+        clientName.includes(effectiveSearch) ||
+        serviceName.includes(effectiveSearch) ||
+        stylistName.includes(effectiveSearch) ||
+        station.includes(effectiveSearch)
       );
     });
   }, [activeOverviewAppointments, effectiveSearch]);
 
   // Today's appointments for top KPI metrics
   const todayAppointments = useMemo(() => {
+    if (!Array.isArray(appointments)) return [];
     return appointments.filter((apt) => {
-      const normalized = !apt.dateStr || apt.dateStr.toLowerCase() === 'today' ? todayYMD : apt.dateStr;
+      if (!apt) return false;
+      const normalized = !apt.dateStr || (apt.dateStr || '').toLowerCase() === 'today' ? todayYMD : apt.dateStr;
       return normalized === todayYMD;
     });
   }, [appointments, todayYMD]);

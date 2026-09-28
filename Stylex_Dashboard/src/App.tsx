@@ -61,6 +61,17 @@ import { ManageBookingModal } from './components/modals/ManageBookingModal';
 import { ScheduleStylistLeaveModal } from './components/modals/ScheduleStylistLeaveModal';
 import { StylistModal } from './components/modals/StylistModal';
 
+function safeParse<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw || raw === 'undefined' || raw === 'null') return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed !== null && parsed !== undefined ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function App() {
   // Navigation & Authentication
   const [currentTab, setCurrentTab] = useState<NavTab>('overview');
@@ -70,50 +81,45 @@ export default function App() {
 
   // User Accounts & Authentication (Dynamic Staff Directory)
   const [users, setUsers] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem('stylex_user_accounts_v2');
-    if (!saved) return INITIAL_USERS;
-    try {
-      const parsed: UserAccount[] = JSON.parse(saved);
-      // Ensure bladeoski and developer are always guaranteed present
-      const hasBladeoski = parsed.some((u) => u.username === 'bladeoski' || u.id === 'user-bladeoski');
-      const hasDev = parsed.some((u) => u.username === 'developer' || u.id === 'user-dev');
-      const hasAdmin = parsed.some((u) => u.username === 'admin' || u.id === 'user-1');
-      let merged = [...parsed];
-      if (!hasBladeoski) {
-        const blade = INITIAL_USERS.find((u) => u.username === 'bladeoski');
-        if (blade) merged.push(blade);
-      }
-      if (!hasDev) {
-        const dev = INITIAL_USERS.find((u) => u.username === 'developer');
-        if (dev) merged.push(dev);
-      }
-      if (!hasAdmin) {
-        const adm = INITIAL_USERS.find((u) => u.username === 'admin');
-        if (adm) merged.push(adm);
-      }
-      return merged;
-    } catch {
-      return INITIAL_USERS;
+    const parsed = safeParse<UserAccount[]>('stylex_user_accounts_v2', INITIAL_USERS);
+    const safeList = Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_USERS;
+    const hasBladeoski = safeList.some((u) => u?.username === 'bladeoski' || u?.id === 'user-bladeoski');
+    const hasDev = safeList.some((u) => u?.username === 'developer' || u?.id === 'user-dev');
+    const hasAdmin = safeList.some((u) => u?.username === 'admin' || u?.id === 'user-admin' || u?.id === 'user-1');
+    let merged = [...safeList];
+    if (!hasBladeoski) {
+      const blade = INITIAL_USERS.find((u) => u.username === 'bladeoski');
+      if (blade) merged.push(blade);
     }
+    if (!hasDev) {
+      const dev = INITIAL_USERS.find((u) => u.username === 'developer');
+      if (dev) merged.push(dev);
+    }
+    if (!hasAdmin) {
+      const adm = INITIAL_USERS.find((u) => u.username === 'admin');
+      if (adm) merged.push(adm);
+    }
+    return merged;
   });
 
   const [currentUser, setCurrentUser] = useState<UserAccount>(() => {
-    const saved = localStorage.getItem('stylex_user_accounts_v2');
-    let loadedUsers: UserAccount[] = INITIAL_USERS;
-    if (saved) {
-      try {
-        loadedUsers = JSON.parse(saved);
-      } catch {
-        loadedUsers = INITIAL_USERS;
-      }
+    const loadedUsers = safeParse<UserAccount[]>('stylex_user_accounts_v2', INITIAL_USERS);
+    const safeUsersList = Array.isArray(loadedUsers) && loadedUsers.length > 0 ? loadedUsers : INITIAL_USERS;
+    const savedIdentifier = (
+      localStorage.getItem('stylex_current_user_email_v2') ||
+      localStorage.getItem('stylex_current_user_email_v1') ||
+      ''
+    ).trim().toLowerCase();
+
+    if (savedIdentifier) {
+      const matched = safeUsersList.find((u) => {
+        const uEmail = (u?.email || '').trim().toLowerCase();
+        const uName = (u?.username || '').trim().toLowerCase();
+        return (uEmail && uEmail === savedIdentifier) || (uName && uName === savedIdentifier);
+      });
+      if (matched) return matched;
     }
-    const savedIdentifier = localStorage.getItem('stylex_current_user_email_v2') || localStorage.getItem('stylex_current_user_email_v1');
-    const matched = loadedUsers.find(
-      (u) =>
-        u.email.toLowerCase() === (savedIdentifier || '').toLowerCase() ||
-        (u.username && u.username.toLowerCase() === (savedIdentifier || '').toLowerCase())
-    );
-    return matched || loadedUsers[0] || INITIAL_USERS[0];
+    return safeUsersList[0] || INITIAL_USERS[0];
   });
 
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
@@ -127,76 +133,81 @@ export default function App() {
 
   // Keep currentUser in sync if updated in users list
   useEffect(() => {
-    const updated = users.find((u) => u.id === currentUser.id);
+    if (!currentUser?.id) return;
+    const updated = users.find((u) => u?.id === currentUser.id);
     if (updated) {
       setCurrentUser(updated);
     }
-  }, [users]);
+  }, [users, currentUser?.id]);
 
   // Core Data (with Tirur Flagship data keys)
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v7_appointments');
-    return saved ? JSON.parse(saved) : INITIAL_APPOINTMENTS;
+    const parsed = safeParse<Appointment[]>('stylex_tirur_v7_appointments', INITIAL_APPOINTMENTS);
+    return Array.isArray(parsed) ? parsed : INITIAL_APPOINTMENTS;
   });
 
   const [services, setServices] = useState<ServiceItem[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_services');
-    return saved ? JSON.parse(saved) : INITIAL_SERVICES;
+    const parsed = safeParse<ServiceItem[]>('stylex_tirur_v6_services', INITIAL_SERVICES);
+    return Array.isArray(parsed) ? parsed : INITIAL_SERVICES;
   });
 
   const [weekSchedule, setWeekSchedule] = useState<DaySchedule[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v7_schedule');
-    return saved ? JSON.parse(saved) : INITIAL_WEEK_SCHEDULE;
+    const parsed = safeParse<DaySchedule[]>('stylex_tirur_v7_schedule', INITIAL_WEEK_SCHEDULE);
+    return Array.isArray(parsed) ? parsed : INITIAL_WEEK_SCHEDULE;
   });
 
   const [blackoutDates, setBlackoutDates] = useState<BlackoutDate[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_blackouts');
-    return saved ? JSON.parse(saved) : INITIAL_BLACKOUT_DATES;
+    const parsed = safeParse<BlackoutDate[]>('stylex_tirur_v6_blackouts', INITIAL_BLACKOUT_DATES);
+    return Array.isArray(parsed) ? parsed : INITIAL_BLACKOUT_DATES;
   });
 
   const [banners, setBanners] = useState<CarouselBanner[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_banners');
-    return saved ? JSON.parse(saved) : INITIAL_BANNERS;
+    const parsed = safeParse<CarouselBanner[]>('stylex_tirur_v6_banners', INITIAL_BANNERS);
+    return Array.isArray(parsed) ? parsed : INITIAL_BANNERS;
   });
 
   const [reels, setReels] = useState<ReelItem[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_reels');
-    return saved ? JSON.parse(saved) : INITIAL_REELS;
+    const parsed = safeParse<ReelItem[]>('stylex_tirur_v6_reels', INITIAL_REELS);
+    return Array.isArray(parsed) ? parsed : INITIAL_REELS;
   });
 
   const [portfolioWorks, setPortfolioWorks] = useState<PortfolioWork[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_portfolio');
-    return saved ? JSON.parse(saved) : INITIAL_PORTFOLIO_WORKS;
+    const parsed = safeParse<PortfolioWork[]>('stylex_tirur_v6_portfolio', INITIAL_PORTFOLIO_WORKS);
+    return Array.isArray(parsed) ? parsed : INITIAL_PORTFOLIO_WORKS;
   });
 
   const [stylists, setStylists] = useState<Stylist[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_stylists');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.map((s: Stylist) => {
-          const { specialty: _spec, ...rest } = s;
-          return rest;
-        });
-      } catch (e) {}
+    const parsed = safeParse<Stylist[]>('stylex_tirur_v6_stylists', INITIAL_STYLISTS);
+    if (Array.isArray(parsed)) {
+      return parsed.map((s: Stylist) => {
+        const { specialty: _spec, ...rest } = s;
+        return rest;
+      });
     }
     return INITIAL_STYLISTS;
   });
-  const [vipClients, setVipClients] = useState<VIPClient[]>(INITIAL_VIP_CLIENTS);
+  const [vipClients, setVipClients] = useState<VIPClient[]>(() => {
+    const parsed = safeParse<VIPClient[]>('stylex_tirur_v6_clients', INITIAL_VIP_CLIENTS);
+    return Array.isArray(parsed) ? parsed : INITIAL_VIP_CLIENTS;
+  });
 
   const [stylistLeaves, setStylistLeaves] = useState<StylistLeave[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_stylist_leaves');
-    return saved ? JSON.parse(saved) : INITIAL_STYLIST_LEAVES;
+    const parsed = safeParse<StylistLeave[]>('stylex_tirur_v6_stylist_leaves', INITIAL_STYLIST_LEAVES);
+    return Array.isArray(parsed) ? parsed : INITIAL_STYLIST_LEAVES;
   });
 
   const [inquiries, setInquiries] = useState<ConciergeInquiry[]>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_inquiries');
-    return saved ? JSON.parse(saved) : INITIAL_CONCIERGE_INQUIRIES;
+    const parsed = safeParse<ConciergeInquiry[]>('stylex_tirur_v6_inquiries', INITIAL_CONCIERGE_INQUIRIES);
+    return Array.isArray(parsed) ? parsed : INITIAL_CONCIERGE_INQUIRIES;
   });
 
   const [settings, setSettings] = useState<SalonSettings>(() => {
-    const saved = localStorage.getItem('stylex_tirur_v6_settings');
-    return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+    const parsed = safeParse<SalonSettings>('stylex_tirur_v6_settings', INITIAL_SETTINGS);
+    const maintenanceSaved = localStorage.getItem('stylex_maintenance_mode');
+    if (maintenanceSaved !== null) {
+      return { ...parsed, maintenanceMode: maintenanceSaved === 'true' };
+    }
+    return parsed;
   });
 
   const [isEngineActive, setIsEngineActive] = useState<boolean>(true);
@@ -971,9 +982,66 @@ export default function App() {
   };
 
   // Settings Handlers
-  const handleSaveSettings = (newSettings: SalonSettings) => {
+  const handleSaveSettings = async (newSettings: SalonSettings) => {
     setSettings(newSettings);
+    localStorage.setItem('stylex_tirur_v6_settings', JSON.stringify(newSettings));
+    if (typeof newSettings.maintenanceMode !== 'undefined') {
+      localStorage.setItem('stylex_maintenance_mode', String(Boolean(newSettings.maintenanceMode)));
+      window.dispatchEvent(new Event('storage'));
+    }
+
+    try {
+      if (!DashboardApi.getToken()) await DashboardApi.silentLogin();
+      await DashboardApi.updateSettings({
+        salonName: newSettings.salonName,
+        phone: newSettings.phone,
+        email: newSettings.email,
+        address: newSettings.address,
+        reschedulePolicy24h: String(newSettings.reschedulePolicy24h),
+        smsWhatsappReminders: String(newSettings.smsWhatsappReminders),
+        emailCalendarInvites: String(newSettings.emailCalendarInvites),
+        darkMode: String(Boolean(newSettings.darkMode)),
+        whatsappBotConnected: String(Boolean(newSettings.whatsappBotConnected)),
+        whatsappBotPhone: newSettings.whatsappBotPhone || '',
+        maintenanceMode: String(Boolean(newSettings.maintenanceMode)),
+      });
+    } catch (e) {
+      console.warn('API sync warning for settings:', e);
+    }
     addToast('success', 'Salon Settings Saved', 'Salon profile and notification policies updated.');
+  };
+
+  const handleToggleMaintenanceMode = async (enabled: boolean) => {
+    const updated = { ...settings, maintenanceMode: enabled };
+    setSettings(updated);
+    localStorage.setItem('stylex_tirur_v6_settings', JSON.stringify(updated));
+    localStorage.setItem('stylex_maintenance_mode', String(enabled));
+    window.dispatchEvent(new Event('storage'));
+
+    try {
+      if (!DashboardApi.getToken()) await DashboardApi.silentLogin();
+      await DashboardApi.updateSettings({
+        salonName: updated.salonName,
+        phone: updated.phone,
+        email: updated.email,
+        address: updated.address,
+        maintenanceMode: String(enabled),
+      });
+      addToast(
+        enabled ? 'error' : 'success',
+        enabled ? 'Maintenance Mode Enabled' : 'Maintenance Mode Disabled',
+        enabled
+          ? 'Client website is now displaying the static maintenance page.'
+          : 'Client website is live and operational.'
+      );
+    } catch (e) {
+      console.warn('API sync warning for maintenance mode:', e);
+      addToast(
+        enabled ? 'info' : 'success',
+        enabled ? 'Maintenance Mode Active (Local)' : 'Maintenance Mode Inactive',
+        enabled ? 'Client site is displaying maintenance page.' : 'Client site is live.'
+      );
+    }
   };
 
   const handleToggleDarkMode = (enabled: boolean) => {
@@ -1290,6 +1358,7 @@ export default function App() {
               settings={settings}
               onSave={handleSaveSettings}
               onToggleDarkMode={handleToggleDarkMode}
+              onToggleMaintenanceMode={handleToggleMaintenanceMode}
               users={users}
               currentUser={currentUser}
               onAddUser={handleAddUser}

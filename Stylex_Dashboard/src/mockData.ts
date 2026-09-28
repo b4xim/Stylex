@@ -699,6 +699,7 @@ export const INITIAL_SETTINGS: SalonSettings = {
   darkMode: false,
   whatsappBotConnected: false,
   whatsappBotPhone: "+91 96561 11149",
+  maintenanceMode: false,
 };
 
 export const INITIAL_STYLIST_LEAVES: StylistLeave[] = [

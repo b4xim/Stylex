@@ -21,6 +21,13 @@ export class SettingController {
       if (!settingsMap.whatsappQrUrl) {
         settingsMap.whatsappQrUrl = WhatsAppService.generateWhatsAppQrCodeUrl(settingsMap.whatsappNumber);
       }
+      if (typeof settingsMap.maintenanceMode === 'undefined') {
+        settingsMap.maintenanceMode = false;
+      } else if (settingsMap.maintenanceMode === 'true') {
+        settingsMap.maintenanceMode = true;
+      } else if (settingsMap.maintenanceMode === 'false') {
+        settingsMap.maintenanceMode = false;
+      }
 
       res.status(200).json({ success: true, data: settingsMap });
     } catch (error) {

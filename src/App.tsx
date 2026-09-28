@@ -17,11 +17,74 @@ import { BookingModal } from './components/BookingModal.tsx';
 import { ReelModal } from './components/ReelModal.tsx';
 import { PortfolioModal } from './components/PortfolioModal.tsx';
 import { BookingPage } from './pages/BookingPage.tsx';
+import { MaintenancePage } from './pages/MaintenancePage.tsx';
 import { BookingState, ReelItem, ServiceItem, PortfolioWork } from './types.ts';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
   const [selectedServiceId, setSelectedServiceId] = useState<string>('hair-1');
+
+  // Maintenance Mode (controlled by Developer in Dashboard)
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('preview') === 'true' || params.get('admin') === 'true') {
+      return false;
+    }
+    return localStorage.getItem('stylex_maintenance_mode') === 'true';
+  });
+
+  // Sync maintenance mode from API and storage events
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('preview') === 'true' || params.get('admin') === 'true') {
+        setIsMaintenanceMode(false);
+        return;
+      }
+
+      // Check localStorage
+      const local = localStorage.getItem('stylex_maintenance_mode');
+      if (local !== null) {
+        setIsMaintenanceMode(local === 'true');
+      }
+
+      // Check backend API settings
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && typeof json.data.maintenanceMode !== 'undefined') {
+            const isMaint = json.data.maintenanceMode === true || json.data.maintenanceMode === 'true';
+            setIsMaintenanceMode(isMaint);
+            localStorage.setItem('stylex_maintenance_mode', String(isMaint));
+          }
+        }
+      } catch {
+        // Fallback to local
+      }
+    };
+
+    checkMaintenance();
+
+    const handleStorageChange = (e?: StorageEvent) => {
+      if (!e || e.key === 'stylex_maintenance_mode' || !e.key) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('preview') === 'true' || params.get('admin') === 'true') return;
+        const val = localStorage.getItem('stylex_maintenance_mode');
+        if (val !== null) {
+          setIsMaintenanceMode(val === 'true');
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(checkMaintenance, 15000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Modals state
   const [confirmedBooking, setConfirmedBooking] = useState<BookingState | null>(null);
@@ -171,6 +234,10 @@ export default function App() {
   const handleBookFromPortfolio = (_artisan: string) => {
     scrollToBooking('hair-1');
   };
+
+  if (isMaintenanceMode) {
+    return <MaintenancePage />;
+  }
 
   return (
     <div className="min-h-screen bg-[#f6faf7] font-body-md text-[#181d1b] selection:bg-[#ffdbcf] selection:text-[#380d00] flex flex-col">

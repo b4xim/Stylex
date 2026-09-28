@@ -34,7 +34,7 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
         const matchedLocal = users.find(
           (u) =>
             (u.username && u.username.toLowerCase() === clean) ||
-            u.email.trim().toLowerCase() === clean
+            (u.email && u.email.trim().toLowerCase() === clean)
         );
 
         const authenticatedUser: UserAccount = matchedLocal || {
@@ -67,7 +67,7 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
     const matchedUser = users.find(
       (u) =>
         (u.username && u.username.toLowerCase() === clean) ||
-        u.email.trim().toLowerCase() === clean
+        (u.email && u.email.trim().toLowerCase() === clean)
     );
 
     if (!matchedUser) {

@@ -25,16 +25,16 @@ const parseYMD = (ymd: string): Date => {
   return new Date(y, m - 1, d);
 };
 
-const isDateMatching = (aptDateStr: string, targetYMD: string): boolean => {
-  if (!aptDateStr) return false;
+const isDateMatching = (aptDateStr?: string, targetYMD?: string): boolean => {
+  if (!aptDateStr || !targetYMD) return false;
   const todayYMD = formatYMD(new Date());
-  const normalizedApt = aptDateStr.toLowerCase() === 'today' ? todayYMD : aptDateStr;
+  const normalizedApt = (aptDateStr || '').toLowerCase() === 'today' ? todayYMD : aptDateStr;
   return normalizedApt === targetYMD;
 };
 
-const formatAptDateLabel = (dateStr: string): string => {
+const formatAptDateLabel = (dateStr?: string): string => {
   if (!dateStr) return 'Date TBD';
-  if (dateStr.toLowerCase() === 'today') return 'Today';
+  if ((dateStr || '').toLowerCase() === 'today') return 'Today';
   try {
     const d = parseYMD(dateStr);
     if (isNaN(d.getTime())) return dateStr;
@@ -279,13 +279,19 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
       if (statusFilter !== 'ALL' && apt.status !== statusFilter) return false;
       if (!globalSearchQuery) return true;
       const q = globalSearchQuery.toLowerCase();
+      const clientName = (apt.clientName || '').toLowerCase();
+      const serviceName = (apt.serviceName || '').toLowerCase();
+      const stylistName = (apt.stylistName || '').toLowerCase();
+      const phone = (apt.clientPhone || '').toLowerCase();
+      const notes = (apt.notes || '').toLowerCase();
+      const email = (apt.clientEmail || '').toLowerCase();
       return (
-        apt.clientName.toLowerCase().includes(q) ||
-        apt.serviceName.toLowerCase().includes(q) ||
-        apt.stylistName.toLowerCase().includes(q) ||
-        apt.clientPhone.includes(q) ||
-        (apt.notes ? apt.notes.toLowerCase().includes(q) : false) ||
-        (apt.clientEmail ? apt.clientEmail.toLowerCase().includes(q) : false)
+        clientName.includes(q) ||
+        serviceName.includes(q) ||
+        stylistName.includes(q) ||
+        phone.includes(q) ||
+        notes.includes(q) ||
+        email.includes(q)
       );
     });
 

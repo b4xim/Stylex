@@ -20,12 +20,17 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
   const safeClients = Array.isArray(clients) ? clients : [];
 
   const filtered = safeClients.filter((c) => {
+    if (!c) return false;
     if (!effectiveSearch) return true;
+    const name = (c.name || '').toLowerCase();
+    const phone = (c.phone || '').toLowerCase();
+    const email = (c.email || '').toLowerCase();
+    const ritual = (c.favoriteRitual || '').toLowerCase();
     return (
-      c.name.toLowerCase().includes(effectiveSearch) ||
-      c.phone.toLowerCase().includes(effectiveSearch) ||
-      c.email.toLowerCase().includes(effectiveSearch) ||
-      (c.favoriteRitual || '').toLowerCase().includes(effectiveSearch)
+      name.includes(effectiveSearch) ||
+      phone.includes(effectiveSearch) ||
+      email.includes(effectiveSearch) ||
+      ritual.includes(effectiveSearch)
     );
   });
 
