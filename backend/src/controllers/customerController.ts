@@ -94,4 +94,17 @@ export class CustomerController {
       next(error);
     }
   }
+
+  public static async deleteCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      await prisma.$transaction([
+        prisma.booking.deleteMany({ where: { customerId: id } }),
+        prisma.customer.delete({ where: { id } }),
+      ]);
+      res.status(200).json({ success: true, message: 'Customer deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -8,6 +8,7 @@ import promotionRoutes from './promotionRoutes';
 import customerRoutes from './customerRoutes';
 import settingRoutes from './settingRoutes';
 import uploadRoutes from './uploadRoutes';
+import inquiryRoutes from './inquiryRoutes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/promotions', promotionRoutes);
 router.use('/customers', customerRoutes);
 router.use('/settings', settingRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/inquiries', inquiryRoutes);
 
 export default router;

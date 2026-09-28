@@ -14,6 +14,7 @@ import {
   ReelItem,
   PortfolioWork,
   SalonSettings,
+  ConciergeInquiry,
 } from '../types';
 
 const TOKEN_KEY = 'stylex_admin_token';
@@ -262,6 +263,12 @@ export class DashboardApi {
     return rawList.map(mapBackendCustomerToVipClient);
   }
 
+  public static async deleteCustomer(id: string): Promise<void> {
+    await this.request(`/customers/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ============================================================================
   // Promotions (Banners, Reels, Portfolio)
   // ============================================================================
@@ -445,6 +452,35 @@ export class DashboardApi {
 
   public static async deleteBlockedSlot(id: string) {
     return this.request(`/blocked-slots/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================================================
+  // Concierge Inquiries
+  // ============================================================================
+  public static async getInquiries(): Promise<ConciergeInquiry[]> {
+    const res = await this.request('/inquiries');
+    return res?.data || [];
+  }
+
+  public static async createInquiry(data: Partial<ConciergeInquiry>): Promise<ConciergeInquiry> {
+    const res = await this.request('/inquiries', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res?.data;
+  }
+
+  public static async updateInquiry(id: string, updates: Partial<ConciergeInquiry>): Promise<void> {
+    await this.request(`/inquiries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  public static async deleteInquiry(id: string): Promise<void> {
+    await this.request(`/inquiries/${id}`, {
       method: 'DELETE',
     });
   }

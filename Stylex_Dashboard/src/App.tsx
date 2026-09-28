@@ -292,6 +292,10 @@ export default function App() {
   }, [inquiries]);
 
   useEffect(() => {
+    safeSetItem('stylex_tirur_v6_clients', JSON.stringify(vipClients));
+  }, [vipClients]);
+
+  useEffect(() => {
     safeSetItem('stylex_tirur_v6_settings', JSON.stringify(settings));
   }, [settings]);
 
@@ -302,6 +306,31 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [settings.darkMode]);
+
+  // Real-time cross-tab storage sync (e.g. concierge inquiries from website)
+  useEffect(() => {
+    const handleStorageSync = () => {
+      try {
+        const savedInquiries = localStorage.getItem('stylex_tirur_v6_inquiries');
+        if (savedInquiries) {
+          const parsed = JSON.parse(savedInquiries);
+          if (Array.isArray(parsed)) {
+            setInquiries(parsed);
+          }
+        }
+        const savedClients = localStorage.getItem('stylex_tirur_v6_clients');
+        if (savedClients) {
+          const parsed = JSON.parse(savedClients);
+          if (Array.isArray(parsed)) {
+            setVipClients(parsed);
+          }
+        }
+      } catch {}
+    };
+
+    window.addEventListener('storage', handleStorageSync);
+    return () => window.removeEventListener('storage', handleStorageSync);
+  }, []);
 
   // Live Data Synchronization with PostgreSQL Backend
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -439,6 +468,17 @@ export default function App() {
         }
       } catch (e) {
         console.warn('Live blocked slots fetch:', e);
+      }
+
+      // 7. Fetch live concierge inquiries
+      try {
+        const liveInquiries = await DashboardApi.getInquiries();
+        if (Array.isArray(liveInquiries)) {
+          setInquiries(liveInquiries);
+          safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(liveInquiries));
+        }
+      } catch (e) {
+        console.warn('Live inquiries fetch:', e);
       }
     } catch (err) {
       console.warn('Live data sync encountered an error:', err);
@@ -1142,22 +1182,65 @@ export default function App() {
   };
 
   // Concierge Handlers
-  const handleResolveInquiry = (id: string) => {
-    setInquiries((prev) =>
-      prev.map((inq) => (inq.id === id ? { ...inq, status: 'Resolved' as const } : inq))
+  const handleResolveInquiry = async (id: string) => {
+    const updated = inquiries.map((inq) =>
+      inq.id === id ? { ...inq, status: 'Resolved' as const } : inq
     );
+    setInquiries(updated);
+    safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
     addToast('success', 'Inquiry Resolved', 'Marked as completed in concierge ledger.');
+
+    try {
+      await DashboardApi.updateInquiry(id, { status: 'Resolved' });
+    } catch {}
   };
 
-  const handleReplyInquiry = (id: string, replyText: string) => {
-    setInquiries((prev) =>
-      prev.map((inq) => (inq.id === id ? { ...inq, status: 'In Progress' as const } : inq))
+  const handleReplyInquiry = async (id: string, replyText: string) => {
+    const updated = inquiries.map((inq) =>
+      inq.id === id ? { ...inq, status: 'In Progress' as const } : inq
     );
+    setInquiries(updated);
+    safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
     addToast(
       'success',
       'Dispatch Transmitted',
       `Message forwarded to guest: "${replyText.slice(0, 40)}..."`
     );
+
+    try {
+      await DashboardApi.updateInquiry(id, { status: 'In Progress' });
+    } catch {}
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    const updated = inquiries.filter((inq) => inq.id !== id);
+    setInquiries(updated);
+    safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+    addToast('info', 'Inquiry Removed', 'Message deleted from concierge desk.');
+
+    try {
+      await DashboardApi.deleteInquiry(id);
+    } catch (err) {
+      console.warn('Backend inquiry delete failed:', err);
+    }
+  };
+
+  // Clients Handlers
+  const handleDeleteClient = async (id: string) => {
+    const updated = vipClients.filter((c) => c.id !== id);
+    setVipClients(updated);
+    safeSetItem('stylex_tirur_v6_clients', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+    addToast('info', 'Client Removed', 'Client profile deleted from directory.');
+
+    try {
+      await DashboardApi.deleteCustomer(id);
+    } catch (err) {
+      console.warn('Backend customer delete failed:', err);
+    }
   };
 
   // Settings Handlers
@@ -1522,6 +1605,7 @@ export default function App() {
               onBookClient={(name, phone) => {
                 setIsNewBookingOpen(true);
               }}
+              onDeleteClient={handleDeleteClient}
               globalSearchQuery={globalSearchQuery}
             />
           )}
@@ -1531,6 +1615,7 @@ export default function App() {
               inquiries={inquiries}
               onResolveInquiry={handleResolveInquiry}
               onReplyInquiry={handleReplyInquiry}
+              onDeleteInquiry={handleDeleteInquiry}
               globalSearchQuery={globalSearchQuery}
             />
           )}

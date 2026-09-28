@@ -14,12 +14,56 @@ export const ContactAndMap: React.FC<ContactAndMapProps> = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim() || !phone.trim() || !message.trim()) return;
+
+    const newInquiry = {
+      id: 'inq-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      clientName: fullName.trim(),
+      clientTier: 'Guest',
+      phone: phone.trim(),
+      serviceRequested: subject,
+      preferredDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      message: message.trim(),
+      status: 'Unread' as const,
+      timeAgo: 'Just now',
+    };
+
+    // 1. Sync to localStorage for immediate cross-tab dashboard detection
+    try {
+      const existingRaw = localStorage.getItem('stylex_tirur_v6_inquiries');
+      let existing: any[] = [];
+      if (existingRaw) {
+        try {
+          const parsed = JSON.parse(existingRaw);
+          if (Array.isArray(parsed)) existing = parsed;
+        } catch {}
+      }
+      const updated = [newInquiry, ...existing];
+      localStorage.setItem('stylex_tirur_v6_inquiries', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.warn('Could not save inquiry locally:', err);
+    }
+
+    // 2. Dispatch to PostgreSQL backend API
+    fetch('/api/inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientName: fullName.trim(),
+        phone: phone.trim(),
+        serviceRequested: subject,
+        message: message.trim(),
+      }),
+    }).catch((err) => console.warn('Backend inquiry dispatch notice:', err));
+
     setFormSubmitted(true);
     setTimeout(() => {
       setFullName('');
       setPhone('');
       setMessage('');
-    }, 2500);
+      setTimeout(() => setFormSubmitted(false), 3000);
+    }, 1500);
   };
 
   const whatsappInquiryUrl = `https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Tirur Outlet, I would like to inquire about appointments and availability.')}`;
