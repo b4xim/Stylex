@@ -523,7 +523,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         type="button"
                         onClick={() => onEditUser(u)}
                         className="w-8 h-8 rounded-xl border border-[#c2c8c2]/50 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-[#eaefeb] dark:hover:bg-white/10 text-[#424844] dark:text-neutral-200 hover:text-[#112e20] dark:hover:text-white flex items-center justify-center transition-all shadow-2xs cursor-pointer"
-                        title="Edit User Details / Password"
+                        title={isCurrent ? "Edit Your Profile & Password" : "Edit User Profile"}
                       >
                         <span className="material-symbols-outlined text-[17px] text-current">edit</span>
                       </button>

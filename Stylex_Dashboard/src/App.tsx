@@ -1082,9 +1082,18 @@ export default function App() {
       addToast('error', 'Access Denied', 'Only Admin and Developer accounts have access to modify users.');
       return { success: false, message: 'Permission denied: Only Admin and Developer accounts can modify users.' };
     }
-    const exists = users.some((u) => u.id === userPayload.id);
+    const exists = users.find((u) => u.id === userPayload.id);
     if (exists) {
-      setUsers((prev) => prev.map((u) => (u.id === userPayload.id ? userPayload : u)));
+      // RBAC RULE: A user can only change their own password!
+      // If another user (e.g. Admin editing Developer) is updating details,
+      // preserve the target user's existing password so it cannot be altered by anyone else.
+      const isSelf = currentUser.id === userPayload.id;
+      const safePayload: UserAccount = {
+        ...userPayload,
+        password: isSelf ? (userPayload.password || exists.password) : exists.password,
+      };
+
+      setUsers((prev) => prev.map((u) => (u.id === userPayload.id ? safePayload : u)));
       addToast('success', 'User Updated', `Account for ${userPayload.name} updated successfully.`);
     } else {
       setUsers((prev) => [...prev, userPayload]);
@@ -1487,6 +1496,7 @@ export default function App() {
       <UserModal
         isOpen={isUserModalOpen}
         user={userToEdit}
+        currentUser={currentUser}
         onClose={() => {
           setIsUserModalOpen(false);
           setUserToEdit(null);

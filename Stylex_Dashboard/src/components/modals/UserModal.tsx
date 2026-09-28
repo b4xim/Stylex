@@ -4,6 +4,7 @@ import { UserAccount, SystemRole } from '../../types';
 interface UserModalProps {
   isOpen: boolean;
   user?: UserAccount | null;
+  currentUser?: UserAccount;
   onClose: () => void;
   onSave: (user: UserAccount) => { success: boolean; message?: string };
   existingEmails: string[];
@@ -27,11 +28,13 @@ const getInitials = (name: string): string => {
 export const UserModal: React.FC<UserModalProps> = ({
   isOpen,
   user,
+  currentUser,
   onClose,
   onSave,
   existingEmails,
 }) => {
   const isEdit = !!user;
+  const isSelf = isEdit && user?.id === currentUser?.id;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -91,14 +94,24 @@ export const UserModal: React.FC<UserModalProps> = ({
       return;
     }
 
-    if (!isEdit && (!password || password.length < 6)) {
-      setErrorMessage('Please enter a secure password of at least 6 characters.');
-      return;
-    }
-
-    if (isEdit && password && password.length < 6) {
-      setErrorMessage('New password must be at least 6 characters.');
-      return;
+    let finalPassword = user?.password || '';
+    if (!isEdit) {
+      if (!password || password.length < 6) {
+        setErrorMessage('Please enter a secure password of at least 6 characters.');
+        return;
+      }
+      finalPassword = password;
+    } else if (isSelf) {
+      if (password && password.length < 6) {
+        setErrorMessage('New password must be at least 6 characters.');
+        return;
+      }
+      if (password) {
+        finalPassword = password;
+      }
+    } else {
+      // RBAC: An admin or other user editing another account CANNOT change their password!
+      finalPassword = user?.password || '';
     }
 
     const userPayload: UserAccount = {
@@ -108,8 +121,9 @@ export const UserModal: React.FC<UserModalProps> = ({
       role,
       roleTitle: roleTitle.trim() || DEFAULT_TITLES[role],
       initials: getInitials(name),
-      password: password ? password : (user?.password ?? 'stylex2024'),
+      password: finalPassword,
       createdAt: user?.createdAt ?? new Date().toISOString().split('T')[0],
+      isSecret: user?.isSecret,
     };
 
     const res = onSave(userPayload);
@@ -228,43 +242,62 @@ export const UserModal: React.FC<UserModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-[#181d1b] dark:text-[#d3ded8]">
-                {isEdit ? 'Change Password (leave blank to keep current)' : 'Account Password *'}
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  const randomPass = 'stylex' + Math.floor(1000 + Math.random() * 9000);
-                  setPassword(randomPass);
-                  setShowPassword(true);
-                }}
-                className="text-[11px] text-[#9b4521] dark:text-[#ff9266] hover:underline cursor-pointer"
-              >
-                Generate Password
-              </button>
+          {/* Password Section - RBAC Protected */}
+          {isEdit && !isSelf ? (
+            <div className="p-3.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-[#2b3a32] flex items-start gap-3">
+              <span className="material-symbols-outlined text-[20px] text-[#727973] dark:text-[#8d9c94] mt-0.5 shrink-0">
+                lock
+              </span>
+              <div>
+                <h4 className="text-xs font-semibold text-[#112e20] dark:text-white leading-tight">
+                  Password Protected (RBAC)
+                </h4>
+                <p className="text-[11px] text-[#727973] dark:text-[#8d9c94] mt-0.5 leading-relaxed">
+                  Users can only change their own password. <strong className="text-[#112e20] dark:text-white">{user?.name}</strong> must update their password from their own profile.
+                </p>
+              </div>
             </div>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={isEdit ? '••••••••••••' : 'Minimum 6 characters'}
-                className={inputClass}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label="Toggle password visibility"
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#727973] hover:text-[#181d1b] dark:hover:text-white transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
-                </span>
-              </button>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-[#181d1b] dark:text-[#d3ded8]">
+                  {isEdit ? 'Change Your Password (leave blank to keep current)' : 'Account Password *'}
+                </label>
+                {!isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randomPass = 'stylex' + Math.floor(1000 + Math.random() * 9000);
+                      setPassword(randomPass);
+                      setShowPassword(true);
+                    }}
+                    className="text-[11px] text-[#9b4521] dark:text-[#ff9266] hover:underline cursor-pointer"
+                  >
+                    Generate Password
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={isEdit ? '•••••••••••• (Leave blank to keep current)' : 'Minimum 6 characters'}
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label="Toggle password visibility"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#727973] hover:text-[#181d1b] dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Footer buttons */}
           <div className="pt-3 border-t border-[#eaefeb] dark:border-[#243029] flex items-center justify-end gap-3">
