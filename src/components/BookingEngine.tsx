@@ -311,6 +311,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         customerEmail: email.trim() || undefined,
         serviceId: selectedService.id,
         stylistId: cleanStylist,
+        gender: selectedGender,
         date: isoDateStr,
         timeSlot: selectedTime,
         notes: notes.trim() || undefined,

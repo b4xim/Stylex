@@ -11,7 +11,7 @@ export class BookingController {
    */
   public static async getAvailableSlots(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { date, stylistId } = req.query;
+      const { date, stylistId, gender } = req.query;
 
       if (!date || typeof date !== 'string') {
         throw new AppError('Date query parameter (YYYY-MM-DD) is required', 400);
@@ -19,7 +19,8 @@ export class BookingController {
 
       const slots = await SlotService.getSlotsForDate(
         date,
-        typeof stylistId === 'string' ? stylistId : undefined
+        typeof stylistId === 'string' ? stylistId : undefined,
+        typeof gender === 'string' ? gender : undefined
       );
 
       res.status(200).json({
@@ -45,6 +46,7 @@ export class BookingController {
         serviceId,
         secondaryServiceId,
         stylistId,
+        gender,
         date,
         timeSlot,
         notes,
@@ -141,8 +143,10 @@ export class BookingController {
       const subtotal = primaryService.price + secondaryPrice;
       const total = subtotal;
 
-      // 2. Concurrency Guard: Verify slot availability (stylistId is null if customer chose Any Stylist)
-      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, stylist?.id || null);
+      const targetGender = gender || primaryService.gender || 'gents';
+
+      // 2. Concurrency Guard: Verify slot availability (stylistId is null if customer chose Any Stylist; targetGender limits to 3 per slot)
+      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, stylist?.id || null, targetGender);
 
       // 3. Generate unique Reference
       const bookingRef = await SlotService.generateBookingRef();

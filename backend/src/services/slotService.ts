@@ -49,9 +49,10 @@ export class SlotService {
    */
   public static async getSlotsForDate(
     date: string,
-    stylistId?: string
+    stylistId?: string,
+    gender?: string
   ): Promise<SlotAvailability[]> {
-    // 1. Fetch active bookings for this date
+    // 1. Fetch active bookings for this date including their service department
     const bookings = await prisma.booking.findMany({
       where: {
         date,
@@ -61,6 +62,11 @@ export class SlotService {
       select: {
         timeSlot: true,
         stylistId: true,
+        service: {
+          select: {
+            gender: true,
+          },
+        },
       },
     });
 
@@ -79,18 +85,24 @@ export class SlotService {
       },
     });
 
-    // Count active stylists for capacity calculation
-    const totalStylists = await prisma.stylist.count({ where: { isActive: true } });
-    const maxCapacity = Math.max(totalStylists, 4);
+    const normalizedGender = gender
+      ? (gender.toLowerCase().includes('ladi') || gender.toLowerCase().includes('female') ? 'ladies' : 'gents')
+      : undefined;
 
-    const slotBookingCounts = new Map<string, number>();
+    // Count bookings per slot separated by Gents and Ladies departments (Max 3 per slot each)
+    const gentsSlotCounts = new Map<string, number>();
+    const ladiesSlotCounts = new Map<string, number>();
+
     for (const b of bookings) {
-      slotBookingCounts.set(b.timeSlot, (slotBookingCounts.get(b.timeSlot) || 0) + 1);
+      const g = (b.service?.gender || 'gents').toLowerCase();
+      if (g.includes('ladi') || g.includes('female')) {
+        ladiesSlotCounts.set(b.timeSlot, (ladiesSlotCounts.get(b.timeSlot) || 0) + 1);
+      } else {
+        gentsSlotCounts.set(b.timeSlot, (gentsSlotCounts.get(b.timeSlot) || 0) + 1);
+      }
     }
 
     const blockedSlotMap = new Map(blockedSlots.map((b) => [b.timeSlot, b.reason || 'Blocked by Admin']));
-
-    // Check if entire day is blocked
     const allDayBlocked = blockedSlotMap.has('ALL_DAY');
 
     return SALON_DAILY_SLOTS.map((slot) => {
@@ -110,15 +122,47 @@ export class SlotService {
         };
       }
 
-      const currentCount = slotBookingCounts.get(slot) || 0;
-      const isSlotFull = stylistId ? currentCount >= 1 : currentCount >= maxCapacity;
+      // If a specific stylist is requested, check if booked
+      if (stylistId) {
+        const isStylistBooked = bookings.some((b) => b.timeSlot === slot && b.stylistId === stylistId);
+        if (isStylistBooked) {
+          return {
+            timeSlot: slot,
+            isAvailable: false,
+            reason: 'Stylist already reserved for this slot',
+          };
+        }
+      }
 
-      if (isSlotFull) {
-        return {
-          timeSlot: slot,
-          isAvailable: false,
-          reason: stylistId ? 'Stylist already reserved for this slot' : 'All styling stations reserved',
-        };
+      const gentsCount = gentsSlotCounts.get(slot) || 0;
+      const ladiesCount = ladiesSlotCounts.get(slot) || 0;
+
+      // Max 3 bookings per timeslot for Gents, 3 bookings for Ladies
+      if (normalizedGender === 'ladies') {
+        if (ladiesCount >= 3) {
+          return {
+            timeSlot: slot,
+            isAvailable: false,
+            reason: 'Ladies section is fully booked for this time slot (3/3)',
+          };
+        }
+      } else if (normalizedGender === 'gents') {
+        if (gentsCount >= 3) {
+          return {
+            timeSlot: slot,
+            isAvailable: false,
+            reason: 'Gents section is fully booked for this time slot (3/3)',
+          };
+        }
+      } else {
+        // If gender not specified, full only if both departments are full (3 gents + 3 ladies)
+        if (gentsCount >= 3 && ladiesCount >= 3) {
+          return {
+            timeSlot: slot,
+            isAvailable: false,
+            reason: 'All sections fully booked for this time slot',
+          };
+        }
       }
 
       return {
@@ -130,11 +174,13 @@ export class SlotService {
 
   /**
    * Concurrency Guard: Atomically verify and lock a time slot within a transaction
+   * Enforces 3 bookings max per slot for Gents and 3 bookings max per slot for Ladies
    */
   public static async assertSlotAvailable(
     date: string,
     timeSlot: string,
-    stylistId?: string | null
+    stylistId?: string | null,
+    gender?: string | null
   ): Promise<void> {
     // 1. Check for blocked slot
     const blocked = await prisma.blockedSlot.findFirst({
@@ -162,7 +208,7 @@ export class SlotService {
       );
     }
 
-    // 2. Check for conflicting booking
+    // 2. Check for conflicting booking for specific stylist
     if (stylistId) {
       const conflicting = await prisma.booking.findFirst({
         where: {
@@ -179,25 +225,30 @@ export class SlotService {
           409
         );
       }
-    } else {
-      // General booking without specific stylist: check against total active stylists capacity
-      const totalStylists = await prisma.stylist.count({ where: { isActive: true } });
-      const maxCapacity = Math.max(totalStylists, 4);
+    }
 
-      const currentBookingsCount = await prisma.booking.count({
-        where: {
-          date,
-          timeSlot,
-          status: { in: ['CONFIRMED', 'PENDING'] },
+    // 3. Department capacity check (Max 3 bookings per slot for Gents, 3 for Ladies)
+    const normalizedGender = (gender || 'gents').toLowerCase();
+    const isLadies = normalizedGender.includes('ladi') || normalizedGender.includes('female');
+    const targetDepartment = isLadies ? 'ladies' : 'gents';
+    const departmentLabel = isLadies ? 'Ladies Section' : 'Gents Section';
+
+    const departmentBookingsCount = await prisma.booking.count({
+      where: {
+        date,
+        timeSlot,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        service: {
+          gender: targetDepartment,
         },
-      });
+      },
+    });
 
-      if (currentBookingsCount >= maxCapacity) {
-        throw new AppError(
-          `All styling stations are fully booked at ${timeSlot} on ${date}. Please select an adjacent time.`,
-          409
-        );
-      }
+    if (departmentBookingsCount >= 3) {
+      throw new AppError(
+        `The ${departmentLabel} has reached its maximum capacity of 3 concurrent appointments for ${timeSlot} on ${date}. Please select an adjacent time slot.`,
+        409
+      );
     }
   }
 }
