@@ -19,13 +19,14 @@ export class PromotionController {
 
   public static async createBanner(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { title, subtitle, badge, ctaText, link, imageUrl, orderIndex = 0 } = req.body;
+      const { id, title, subtitle, badge, ctaText, link, imageUrl, orderIndex = 0 } = req.body;
       if (!title || !imageUrl) {
         throw new AppError('Title and Image URL are required', 400);
       }
 
       const banner = await prisma.carouselBanner.create({
         data: {
+          id: id || undefined,
           title,
           subtitle,
           badge,
@@ -58,7 +59,7 @@ export class PromotionController {
   public static async deleteBanner(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string;
-      await prisma.carouselBanner.delete({ where: { id } });
+      await prisma.carouselBanner.deleteMany({ where: { id } });
       res.status(200).json({ success: true, message: 'Banner deleted' });
     } catch (error) {
       next(error);
@@ -82,6 +83,7 @@ export class PromotionController {
   public static async createReel(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const {
+        id,
         title,
         tag = 'Styling',
         category = 'Hair',
@@ -100,6 +102,7 @@ export class PromotionController {
 
       const reel = await prisma.reelItem.create({
         data: {
+          id: id || undefined,
           title,
           tag,
           category,
@@ -135,7 +138,7 @@ export class PromotionController {
   public static async deleteReel(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string;
-      await prisma.reelItem.delete({ where: { id } });
+      await prisma.reelItem.deleteMany({ where: { id } });
       res.status(200).json({ success: true, message: 'Reel deleted' });
     } catch (error) {
       next(error);
@@ -158,13 +161,23 @@ export class PromotionController {
 
   public static async createPortfolioWork(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { title, category, artisan, imageUrl, description, orderIndex = 0 } = req.body;
-      if (!title || !imageUrl || !category || !artisan) {
-        throw new AppError('Title, category, artisan name, and image URL are required', 400);
+      const {
+        id,
+        title,
+        category = 'Hair Styling',
+        artisan = 'StyleX Master Artisan',
+        imageUrl,
+        description,
+        orderIndex = 0,
+      } = req.body;
+
+      if (!title || !imageUrl) {
+        throw new AppError('Title and image URL are required', 400);
       }
 
       const work = await prisma.portfolioWork.create({
         data: {
+          id: id || undefined,
           title,
           category,
           artisan,
@@ -196,7 +209,7 @@ export class PromotionController {
   public static async deletePortfolioWork(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string;
-      await prisma.portfolioWork.delete({ where: { id } });
+      await prisma.portfolioWork.deleteMany({ where: { id } });
       res.status(200).json({ success: true, message: 'Photo deleted' });
     } catch (error) {
       next(error);

@@ -360,22 +360,30 @@ export default function App() {
       // 5. Fetch promotional banners, reels, and photos
       try {
         const liveBanners = await DashboardApi.getBanners();
-        if (Array.isArray(liveBanners) && liveBanners.length > 0) {
+        if (Array.isArray(liveBanners)) {
           setBanners(liveBanners);
+          safeSetItem('stylex_tirur_v6_banners', JSON.stringify(liveBanners));
+          safeSetItem('stylex_banners', JSON.stringify(liveBanners));
         }
       } catch {}
 
       try {
         const liveReels = await DashboardApi.getReels();
-        if (Array.isArray(liveReels) && liveReels.length > 0) {
+        if (Array.isArray(liveReels)) {
           setReels(liveReels);
+          safeSetItem('stylex_tirur_v6_reels', JSON.stringify(liveReels));
+          safeSetItem('stylex_reels', JSON.stringify(liveReels));
         }
       } catch {}
 
       try {
         const livePhotos = await DashboardApi.getPortfolioPhotos();
-        if (Array.isArray(livePhotos) && livePhotos.length > 0) {
+        if (Array.isArray(livePhotos)) {
           setPortfolioWorks(livePhotos);
+          safeSetItem('stylex_tirur_v6_photos', JSON.stringify(livePhotos));
+          safeSetItem('stylex_photos', JSON.stringify(livePhotos));
+          safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(livePhotos));
+          safeSetItem('stylex_portfolio', JSON.stringify(livePhotos));
         }
       } catch {}
 
@@ -863,29 +871,51 @@ export default function App() {
     }
   };
 
-  const handleSaveBanner = (banner: CarouselBanner) => {
-    setBanners((prev) => {
-      const exists = prev.some((b) => b.id === banner.id);
-      const updated = exists ? prev.map((b) => (b.id === banner.id ? banner : b)) : [banner, ...prev];
-      try {
-        safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
-        safeSetItem('stylex_banners', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+  const handleSaveBanner = async (banner: CarouselBanner) => {
+    const exists = banners.some((b) => b.id === banner.id);
+    const updated = exists ? banners.map((b) => (b.id === banner.id ? banner : b)) : [banner, ...banners];
+    setBanners(updated);
+    try {
+      safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
+      safeSetItem('stylex_banners', JSON.stringify(updated));
+    } catch {}
     addToast('success', 'Promotion Slide Saved', `"${banner.title}" saved.`);
+
+    try {
+      if (exists) {
+        await DashboardApi.updateBanner(banner.id, {
+          title: banner.title,
+          badge: banner.tag,
+          imageUrl: banner.imageUrl,
+          isActive: banner.isActive,
+        });
+      } else {
+        await DashboardApi.createBanner({
+          id: banner.id,
+          title: banner.title,
+          badge: banner.tag,
+          imageUrl: banner.imageUrl,
+        });
+      }
+    } catch (err) {
+      console.warn('Backend API banner save failed:', err);
+    }
   };
 
-  const handleDeleteBanner = (id: string) => {
-    setBanners((prev) => {
-      const updated = prev.filter((b) => b.id !== id);
-      try {
-        safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
-        safeSetItem('stylex_banners', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+  const handleDeleteBanner = async (id: string) => {
+    const updated = banners.filter((b) => b.id !== id);
+    setBanners(updated);
+    try {
+      safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
+      safeSetItem('stylex_banners', JSON.stringify(updated));
+    } catch {}
     addToast('info', 'Slide Removed', 'Carousel promotion slide removed.');
+
+    try {
+      await DashboardApi.deleteBanner(id);
+    } catch (err) {
+      console.warn('Backend API banner delete failed:', err);
+    }
   };
 
   // Reels Handlers
@@ -907,29 +937,57 @@ export default function App() {
     }
   };
 
-  const handleSaveReel = (reel: ReelItem) => {
-    setReels((prev) => {
-      const exists = prev.some((r) => r.id === reel.id);
-      const updated = exists ? prev.map((r) => (r.id === reel.id ? reel : r)) : [reel, ...prev];
-      try {
-        safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
-        safeSetItem('stylex_reels', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+  const handleSaveReel = async (reel: ReelItem) => {
+    const exists = reels.some((r) => r.id === reel.id);
+    const updated = exists ? reels.map((r) => (r.id === reel.id ? reel : r)) : [reel, ...reels];
+    setReels(updated);
+    try {
+      safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
+      safeSetItem('stylex_reels', JSON.stringify(updated));
+    } catch {}
     addToast('success', 'Reel Published', `"${reel.title}" is now live in the Atelier Reels section.`);
+
+    try {
+      if (exists) {
+        await DashboardApi.updateReel(reel.id, {
+          title: reel.title,
+          imageUrl: reel.imageUrl,
+          videoUrl: reel.videoUrl,
+          isActive: reel.isActive,
+        });
+      } else {
+        await DashboardApi.createReel({
+          id: reel.id,
+          title: reel.title,
+          tag: reel.tag,
+          category: reel.category,
+          imageUrl: reel.imageUrl,
+          videoUrl: reel.videoUrl,
+          instagramUrl: reel.instagramUrl,
+          audioTrack: reel.audioTrack,
+          stylistHandle: reel.stylistHandle,
+          description: reel.description,
+        });
+      }
+    } catch (err) {
+      console.warn('Backend API reel save failed:', err);
+    }
   };
 
-  const handleDeleteReel = (id: string) => {
-    setReels((prev) => {
-      const updated = prev.filter((r) => r.id !== id);
-      try {
-        safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
-        safeSetItem('stylex_reels', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+  const handleDeleteReel = async (id: string) => {
+    const updated = reels.filter((r) => r.id !== id);
+    setReels(updated);
+    try {
+      safeSetItem('stylex_tirur_v6_reels', JSON.stringify(updated));
+      safeSetItem('stylex_reels', JSON.stringify(updated));
+    } catch {}
     addToast('info', 'Reel Removed', 'Reel removed from client website gallery.');
+
+    try {
+      await DashboardApi.deleteReel(id);
+    } catch (err) {
+      console.warn('Backend API reel delete failed:', err);
+    }
   };
 
   // Portfolio Works Handlers
@@ -941,6 +999,8 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_photos', JSON.stringify(nextPhotos));
       safeSetItem('stylex_photos', JSON.stringify(nextPhotos));
+      safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(nextPhotos));
+      safeSetItem('stylex_portfolio', JSON.stringify(nextPhotos));
     } catch {}
     addToast('info', 'Photo Updated', `Transformation photo is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
 
@@ -951,20 +1011,56 @@ export default function App() {
     }
   };
 
-  const handleSavePortfolioPhoto = (photo: PortfolioWork) => {
-    setPortfolioWorks((prev) => {
-      const exists = prev.some((p) => p.id === photo.id);
-      if (exists) {
-        return prev.map((p) => (p.id === photo.id ? photo : p));
-      }
-      return [photo, ...prev];
-    });
+  const handleSavePortfolioPhoto = async (photo: PortfolioWork) => {
+    const exists = portfolioWorks.some((p) => p.id === photo.id);
+    const updated = exists ? portfolioWorks.map((p) => (p.id === photo.id ? photo : p)) : [photo, ...portfolioWorks];
+    setPortfolioWorks(updated);
+    try {
+      safeSetItem('stylex_tirur_v6_photos', JSON.stringify(updated));
+      safeSetItem('stylex_photos', JSON.stringify(updated));
+      safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(updated));
+      safeSetItem('stylex_portfolio', JSON.stringify(updated));
+    } catch {}
     addToast('success', 'Photo Published', `"${photo.title}" is now live in the Client Transformations gallery.`);
+
+    try {
+      if (exists) {
+        await DashboardApi.updatePortfolioPhoto(photo.id, {
+          title: photo.title,
+          imageUrl: photo.imageUrl,
+          isActive: photo.isActive,
+        });
+      } else {
+        await DashboardApi.createPortfolioPhoto({
+          id: photo.id,
+          title: photo.title,
+          category: photo.category,
+          artisan: photo.artisan,
+          imageUrl: photo.imageUrl,
+          description: photo.description,
+        });
+      }
+    } catch (err) {
+      console.warn('Backend API portfolio save failed:', err);
+    }
   };
 
-  const handleDeletePortfolioWork = (id: string) => {
-    setPortfolioWorks((prev) => prev.filter((p) => p.id !== id));
+  const handleDeletePortfolioWork = async (id: string) => {
+    const updated = portfolioWorks.filter((p) => p.id !== id);
+    setPortfolioWorks(updated);
+    try {
+      safeSetItem('stylex_tirur_v6_photos', JSON.stringify(updated));
+      safeSetItem('stylex_photos', JSON.stringify(updated));
+      safeSetItem('stylex_tirur_v6_portfolio', JSON.stringify(updated));
+      safeSetItem('stylex_portfolio', JSON.stringify(updated));
+    } catch {}
     addToast('info', 'Photo Removed', 'Transformation photo removed from client website gallery.');
+
+    try {
+      await DashboardApi.deletePortfolioPhoto(id);
+    } catch (err) {
+      console.warn('Backend API portfolio delete failed:', err);
+    }
   };
 
   // Concierge Handlers

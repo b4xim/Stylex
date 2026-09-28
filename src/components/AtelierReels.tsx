@@ -13,11 +13,15 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
 
   const [reels, setReels] = useState<ReelItem[]>(() => {
     try {
-      const saved = localStorage.getItem('stylex_tirur_v6_reels');
+      const saved =
+        localStorage.getItem('stylex_tirur_v6_reels') ||
+        localStorage.getItem('stylex_reels');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const active = parsed.filter((r: any) => r.isActive !== false);
-        if (active.length > 0) return active;
+        if (Array.isArray(parsed)) {
+          const active = parsed.filter((r: any) => r.isActive !== false);
+          if (active.length > 0) return active;
+        }
       }
     } catch {}
     return REELS;
@@ -25,30 +29,73 @@ export const AtelierReels: React.FC<AtelierReelsProps> = ({ onOpenReel, onOpenPo
 
   const [portfolioWorks, setPortfolioWorks] = useState<PortfolioWork[]>(() => {
     try {
-      const saved = localStorage.getItem('stylex_tirur_v6_portfolio');
+      const saved =
+        localStorage.getItem('stylex_tirur_v6_photos') ||
+        localStorage.getItem('stylex_tirur_v6_portfolio') ||
+        localStorage.getItem('stylex_photos') ||
+        localStorage.getItem('stylex_portfolio');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const active = parsed.filter((p: any) => p.isActive !== false);
-        if (active.length > 0) return active;
+        if (Array.isArray(parsed)) {
+          const active = parsed.filter((p: any) => p.isActive !== false);
+          if (active.length > 0) return active;
+        }
       }
     } catch {}
     return PORTFOLIO_WORKS;
   });
 
   useEffect(() => {
+    // 1. Fetch live reels from backend PostgreSQL API
+    fetch('/api/promotions/reels')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data)) {
+          const active = data.data.filter((r: any) => r.isActive !== false);
+          if (active.length > 0) {
+            setReels(active);
+          }
+        }
+      })
+      .catch((err) => console.warn('Live reels load notice:', err));
+
+    // 2. Fetch live transformation photos from backend PostgreSQL API
+    fetch('/api/promotions/photos')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data)) {
+          const active = data.data.filter((p: any) => p.isActive !== false);
+          if (active.length > 0) {
+            setPortfolioWorks(active);
+          }
+        }
+      })
+      .catch((err) => console.warn('Live portfolio load notice:', err));
+
+    // 3. Storage event listener for real-time cross-tab updates from Dashboard
     const handleSync = () => {
       try {
-        const savedReels = localStorage.getItem('stylex_tirur_v6_reels');
+        const savedReels =
+          localStorage.getItem('stylex_tirur_v6_reels') ||
+          localStorage.getItem('stylex_reels');
         if (savedReels) {
           const parsed = JSON.parse(savedReels);
-          const active = parsed.filter((r: any) => r.isActive !== false);
-          if (active.length > 0) setReels(active);
+          if (Array.isArray(parsed)) {
+            const active = parsed.filter((r: any) => r.isActive !== false);
+            if (active.length > 0) setReels(active);
+          }
         }
-        const savedPortfolio = localStorage.getItem('stylex_tirur_v6_portfolio');
+        const savedPortfolio =
+          localStorage.getItem('stylex_tirur_v6_photos') ||
+          localStorage.getItem('stylex_tirur_v6_portfolio') ||
+          localStorage.getItem('stylex_photos') ||
+          localStorage.getItem('stylex_portfolio');
         if (savedPortfolio) {
           const parsed = JSON.parse(savedPortfolio);
-          const active = parsed.filter((p: any) => p.isActive !== false);
-          if (active.length > 0) setPortfolioWorks(active);
+          if (Array.isArray(parsed)) {
+            const active = parsed.filter((p: any) => p.isActive !== false);
+            if (active.length > 0) setPortfolioWorks(active);
+          }
         }
       } catch {}
     };

@@ -311,9 +311,50 @@ export class DashboardApi {
     }));
   }
 
+  public static async createBanner(data: {
+    id?: string;
+    title: string;
+    subtitle?: string;
+    badge?: string;
+    ctaText?: string;
+    link?: string;
+    imageUrl: string;
+    orderIndex?: number;
+  }) {
+    return this.request('/promotions/banners', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   public static async updateBanner(id: string, data: Partial<{ title: string; imageUrl: string; isActive: boolean; badge: string }>) {
     return this.request(`/promotions/banners/${id}`, {
       method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async deleteBanner(id: string) {
+    return this.request(`/promotions/banners/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  public static async createReel(data: {
+    id?: string;
+    title: string;
+    tag?: string;
+    category?: string;
+    imageUrl: string;
+    videoUrl?: string;
+    instagramUrl?: string;
+    audioTrack?: string;
+    stylistHandle?: string;
+    description?: string;
+    orderIndex?: number;
+  }) {
+    return this.request('/promotions/reels', {
+      method: 'POST',
       body: JSON.stringify(data),
     });
   }
@@ -325,10 +366,37 @@ export class DashboardApi {
     });
   }
 
+  public static async deleteReel(id: string) {
+    return this.request(`/promotions/reels/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  public static async createPortfolioPhoto(data: {
+    id?: string;
+    title: string;
+    category?: string;
+    artisan?: string;
+    imageUrl: string;
+    description?: string;
+    orderIndex?: number;
+  }) {
+    return this.request('/promotions/photos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   public static async updatePortfolioPhoto(id: string, data: Partial<{ title: string; imageUrl: string; isActive: boolean }>) {
     return this.request(`/promotions/photos/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  public static async deletePortfolioPhoto(id: string) {
+    return this.request(`/promotions/photos/${id}`, {
+      method: 'DELETE',
     });
   }
 
