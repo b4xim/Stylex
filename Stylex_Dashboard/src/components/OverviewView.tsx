@@ -84,8 +84,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         apt.clientName.toLowerCase().includes(effectiveSearch) ||
         apt.serviceName.toLowerCase().includes(effectiveSearch) ||
         apt.stylistName.toLowerCase().includes(effectiveSearch) ||
-        apt.station.toLowerCase().includes(effectiveSearch) ||
-        (apt.clientTier && apt.clientTier.toLowerCase().includes(effectiveSearch))
+        apt.station.toLowerCase().includes(effectiveSearch)
       );
     });
   }, [activeOverviewAppointments, effectiveSearch]);
@@ -433,12 +432,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                             </div>
                             <div className="text-xs text-[#424844] dark:text-[#a0aca4] flex items-center gap-1.5 flex-wrap">
                               <span>{apt.clientPhone}</span>
-                              {apt.clientTier && (
-                                <>
-                                  <span>•</span>
-                                  <span>{apt.clientTier}</span>
-                                </>
-                              )}
                               {apt.clientEmail && (
                                 <>
                                   <span>•</span>

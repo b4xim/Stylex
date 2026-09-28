@@ -390,7 +390,16 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated) {
       loadRealData();
-      const interval = setInterval(() => loadRealData(), 20000); // 20s polling for real-time bookings
+      // Only poll bookings every 20s (not banners/services/stylists to avoid overwriting user toggles)
+      const interval = setInterval(async () => {
+        try {
+          if (!DashboardApi.getToken()) await DashboardApi.silentLogin();
+          const liveBookings = await DashboardApi.getBookings();
+          if (Array.isArray(liveBookings)) {
+            setAppointments(liveBookings.map(mapBackendBookingToAppointment));
+          }
+        } catch {}
+      }, 20000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
@@ -613,9 +622,13 @@ export default function App() {
     );
 
     try {
-      await DashboardApi.updateBookingStatus(aptId, 'CANCELLED');
+      await DashboardApi.deleteBooking(aptId);
     } catch (err) {
-      console.warn('Backend API delete status failed:', err);
+      // If DELETE not supported yet, fall back to marking CANCELLED
+      try {
+        await DashboardApi.updateBookingStatus(aptId, 'CANCELLED');
+      } catch {}
+      console.warn('Backend API delete booking failed (fell back to cancel):', err);
     }
   };
 
@@ -663,14 +676,19 @@ export default function App() {
 
   const handleSaveStylist = async (updated: Stylist) => {
     const exists = stylists.find((s) => s.id === updated.id);
-    setStylists((prev) => {
-      if (exists) {
-        addToast('success', 'Stylist Updated', `${updated.name}'s profile has been saved.`);
-        return prev.map((s) => (s.id === updated.id ? updated : s));
-      }
+    let nextStylists: Stylist[];
+    if (exists) {
+      addToast('success', 'Stylist Updated', `${updated.name}'s profile has been saved.`);
+      nextStylists = stylists.map((s) => (s.id === updated.id ? updated : s));
+    } else {
       addToast('success', 'Stylist Added', `${updated.name} has been added to the team.`);
-      return [updated, ...prev];
-    });
+      nextStylists = [updated, ...stylists];
+    }
+    setStylists(nextStylists);
+    try {
+      localStorage.setItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
+      localStorage.setItem('stylex_stylists', JSON.stringify(nextStylists));
+    } catch {}
 
     try {
       if (exists) {
@@ -685,7 +703,7 @@ export default function App() {
           id: updated.id || updated.name.toLowerCase().replace(/\s+/g, '-'),
           name: updated.name,
           role: updated.role,
-          gender: 'any',
+          gender: updated.gender || 'any',
           specialty: updated.specialty || 'Master Hair Stylist',
           imageUrl: updated.avatar,
         });
@@ -697,7 +715,12 @@ export default function App() {
 
   const handleDeleteStylist = async (id: string) => {
     const target = stylists.find((s) => s.id === id);
-    setStylists((prev) => prev.filter((s) => s.id !== id));
+    const nextStylists = stylists.filter((s) => s.id !== id);
+    setStylists(nextStylists);
+    try {
+      localStorage.setItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
+      localStorage.setItem('stylex_stylists', JSON.stringify(nextStylists));
+    } catch {}
     addToast('info', 'Stylist Removed', `${target?.name || 'Stylist'} removed from the roster.`);
 
     try {
@@ -712,9 +735,12 @@ export default function App() {
     const target = services.find((s) => s.id === id);
     if (!target) return;
     const next = !target.showOnWebsite;
-    setServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, showOnWebsite: next } : s))
-    );
+    const nextServices = services.map((s) => (s.id === id ? { ...s, showOnWebsite: next } : s));
+    setServices(nextServices);
+    try {
+      localStorage.setItem('stylex_tirur_v6_services', JSON.stringify(nextServices));
+      localStorage.setItem('stylex_services', JSON.stringify(nextServices));
+    } catch {}
     addToast(
       'info',
       'Service Visibility Updated',
@@ -803,59 +829,110 @@ export default function App() {
   };
 
   // Promotions Handlers
-  const handleToggleBanner = (id: string) => {
-    setBanners((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, isActive: !b.isActive } : b))
-    );
-    addToast('info', 'Banner Updated', 'Homepage carousel banner display updated.');
+  const handleToggleBanner = async (id: string) => {
+    const target = banners.find((b) => b.id === id);
+    const nextActive = !(target?.isActive ?? true);
+    const nextBanners = banners.map((b) => (b.id === id ? { ...b, isActive: nextActive } : b));
+    setBanners(nextBanners);
+    try {
+      localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(nextBanners));
+      localStorage.setItem('stylex_banners', JSON.stringify(nextBanners));
+    } catch {}
+    addToast('info', 'Banner Updated', `Homepage carousel banner is now ${nextActive ? 'active' : 'hidden'}.`);
+
+    try {
+      await DashboardApi.updateBanner(id, { isActive: nextActive });
+    } catch (err) {
+      console.warn('Backend API banner toggle failed:', err);
+    }
   };
 
   const handleSaveBanner = (banner: CarouselBanner) => {
     setBanners((prev) => {
       const exists = prev.some((b) => b.id === banner.id);
-      if (exists) {
-        return prev.map((b) => (b.id === banner.id ? banner : b));
-      }
-      return [banner, ...prev];
+      const updated = exists ? prev.map((b) => (b.id === banner.id ? banner : b)) : [banner, ...prev];
+      try {
+        localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(updated));
+        localStorage.setItem('stylex_banners', JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
     addToast('success', 'Promotion Slide Saved', `"${banner.title}" saved.`);
   };
 
   const handleDeleteBanner = (id: string) => {
-    setBanners((prev) => prev.filter((b) => b.id !== id));
+    setBanners((prev) => {
+      const updated = prev.filter((b) => b.id !== id);
+      try {
+        localStorage.setItem('stylex_tirur_v6_banners', JSON.stringify(updated));
+        localStorage.setItem('stylex_banners', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     addToast('info', 'Slide Removed', 'Carousel promotion slide removed.');
   };
 
   // Reels Handlers
-  const handleToggleReel = (id: string) => {
-    setReels((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, isActive: r.isActive === false ? true : false } : r))
-    );
-    addToast('info', 'Reel Updated', 'Reel display status updated on client website.');
+  const handleToggleReel = async (id: string) => {
+    const target = reels.find((r) => r.id === id);
+    const nextActive = !(target?.isActive ?? true);
+    const nextReels = reels.map((r) => (r.id === id ? { ...r, isActive: nextActive } : r));
+    setReels(nextReels);
+    try {
+      localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(nextReels));
+      localStorage.setItem('stylex_reels', JSON.stringify(nextReels));
+    } catch {}
+    addToast('info', 'Reel Updated', `Reel is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
+
+    try {
+      await DashboardApi.updateReel(id, { isActive: nextActive });
+    } catch (err) {
+      console.warn('Backend API reel toggle failed:', err);
+    }
   };
 
   const handleSaveReel = (reel: ReelItem) => {
     setReels((prev) => {
       const exists = prev.some((r) => r.id === reel.id);
-      if (exists) {
-        return prev.map((r) => (r.id === reel.id ? reel : r));
-      }
-      return [reel, ...prev];
+      const updated = exists ? prev.map((r) => (r.id === reel.id ? reel : r)) : [reel, ...prev];
+      try {
+        localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(updated));
+        localStorage.setItem('stylex_reels', JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
     addToast('success', 'Reel Published', `"${reel.title}" is now live in the Atelier Reels section.`);
   };
 
   const handleDeleteReel = (id: string) => {
-    setReels((prev) => prev.filter((r) => r.id !== id));
+    setReels((prev) => {
+      const updated = prev.filter((r) => r.id !== id);
+      try {
+        localStorage.setItem('stylex_tirur_v6_reels', JSON.stringify(updated));
+        localStorage.setItem('stylex_reels', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     addToast('info', 'Reel Removed', 'Reel removed from client website gallery.');
   };
 
   // Portfolio Works Handlers
-  const handleTogglePortfolioWork = (id: string) => {
-    setPortfolioWorks((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isActive: p.isActive === false ? true : false } : p))
-    );
-    addToast('info', 'Photo Updated', 'Transformation photo visibility updated on client website.');
+  const handleTogglePortfolioWork = async (id: string) => {
+    const target = portfolioWorks.find((p) => p.id === id);
+    const nextActive = !(target?.isActive ?? true);
+    const nextPhotos = portfolioWorks.map((p) => (p.id === id ? { ...p, isActive: nextActive } : p));
+    setPortfolioWorks(nextPhotos);
+    try {
+      localStorage.setItem('stylex_tirur_v6_photos', JSON.stringify(nextPhotos));
+      localStorage.setItem('stylex_photos', JSON.stringify(nextPhotos));
+    } catch {}
+    addToast('info', 'Photo Updated', `Transformation photo is now ${nextActive ? 'visible' : 'hidden'} on client website.`);
+
+    try {
+      await DashboardApi.updatePortfolioPhoto(id, { isActive: nextActive });
+    } catch (err) {
+      console.warn('Backend API portfolio toggle failed:', err);
+    }
   };
 
   const handleSavePortfolioPhoto = (photo: PortfolioWork) => {

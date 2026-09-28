@@ -197,7 +197,7 @@ export class DashboardApi {
   // Services
   // ============================================================================
   public static async getServices(): Promise<ServiceItem[]> {
-    const res = await this.request('/services');
+    const res = await this.request('/services?includeInactive=true');
     const rawList = res?.data || [];
     return rawList.map(mapBackendServiceToItem);
   }
@@ -226,7 +226,7 @@ export class DashboardApi {
   // Stylists
   // ============================================================================
   public static async getStylists(): Promise<Stylist[]> {
-    const res = await this.request('/stylists');
+    const res = await this.request('/stylists?includeInactive=true');
     const rawList = res?.data || [];
     return rawList.map(mapBackendStylistToItem);
   }
@@ -264,7 +264,7 @@ export class DashboardApi {
   // Promotions (Banners, Reels, Portfolio)
   // ============================================================================
   public static async getBanners(): Promise<CarouselBanner[]> {
-    const res = await this.request('/promotions/banners');
+    const res = await this.request('/promotions/banners?includeInactive=true');
     const rawList = res?.data || [];
     return rawList.map((b: any) => ({
       id: b.id,
@@ -277,7 +277,7 @@ export class DashboardApi {
   }
 
   public static async getReels(): Promise<ReelItem[]> {
-    const res = await this.request('/promotions/reels');
+    const res = await this.request('/promotions/reels?includeInactive=true');
     const rawList = res?.data || [];
     return rawList.map((r: any) => ({
       id: r.id,
@@ -296,7 +296,7 @@ export class DashboardApi {
   }
 
   public static async getPortfolioPhotos(): Promise<PortfolioWork[]> {
-    const res = await this.request('/promotions/photos');
+    const res = await this.request('/promotions/photos?includeInactive=true');
     const rawList = res?.data || [];
     return rawList.map((p: any) => ({
       id: p.id,
@@ -307,6 +307,33 @@ export class DashboardApi {
       description: p.description || '',
       isActive: p.isActive ?? true,
     }));
+  }
+
+  public static async updateBanner(id: string, data: Partial<{ title: string; imageUrl: string; isActive: boolean; badge: string }>) {
+    return this.request(`/promotions/banners/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async updateReel(id: string, data: Partial<{ title: string; imageUrl: string; isActive: boolean; videoUrl: string }>) {
+    return this.request(`/promotions/reels/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async updatePortfolioPhoto(id: string, data: Partial<{ title: string; imageUrl: string; isActive: boolean }>) {
+    return this.request(`/promotions/photos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async deleteBooking(id: string) {
+    return this.request(`/bookings/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   // ============================================================================
@@ -360,13 +387,6 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
   else if (b.status === 'CANCELLED') status = 'CANCELLED';
   else status = 'BOOKED';
 
-  const visits = b.customer?.totalVisits || 1;
-  let clientTier: Appointment['clientTier'] = 'Standard';
-  if (visits >= 10) clientTier = 'VIP Platinum';
-  else if (visits >= 5) clientTier = 'VIP Gold';
-  else if (visits >= 2) clientTier = 'VIP Member';
-  else clientTier = 'New Guest';
-
   const fullPhone = b.guestPhone || (b.customer?.phone
     ? `${b.customer.countryCode ? b.customer.countryCode + ' ' : ''}${b.customer.phone}`
     : '+91 96561 11149');
@@ -381,7 +401,6 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
     clientPhone: fullPhone,
     clientEmail: email,
     clientInitials: initials,
-    clientTier,
     serviceName: b.service?.name || 'Signature Salon Ritual',
     station: b.source === 'WALK_IN' ? 'Walk-in Express Station' : (b.stylist?.station || 'Styling Station 01'),
     stylistName: b.stylist?.name || 'Any Stylist',
@@ -421,6 +440,8 @@ export function mapBackendStylistToItem(st: any): Stylist {
     appointmentsCount: st.bookings?.length || 15,
     rating: st.rating || 4.9,
     reviewsCount: st.reviewCount || 42,
+    isAvailableToday: st.isActive ?? true,
+    gender: st.gender || 'any',
   };
 }
 
@@ -434,20 +455,15 @@ export function mapBackendCustomerToVipClient(c: any): VIPClient {
     .toUpperCase();
 
   const visits = c.totalVisits || 1;
-  let tier: VIPClient['tier'] = 'VIP Member';
-  if (visits >= 10) tier = 'VIP Platinum';
-  else if (visits >= 5) tier = 'VIP Gold';
-  else if (visits === 1) tier = 'New Guest';
-
   const lastBooking = c.bookings?.[0];
   const lastVisit = lastBooking ? `${lastBooking.date} (${lastBooking.timeSlot})` : 'Recent';
 
   return {
     id: c.id,
     name: c.name,
-    tier,
     phone: `${c.countryCode || '+91'} ${c.phone}`,
     email: c.email || 'guest@stylexsalon.in',
+    totalVisits: visits,
     visits,
     spent: `₹${(c.totalSpent || 0).toLocaleString('en-IN')}`,
     favArtisan: lastBooking?.stylist?.name || 'Niya Mathew',

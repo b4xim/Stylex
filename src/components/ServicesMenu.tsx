@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SERVICES } from '../data/salonData.ts';
 import { ServiceItem } from '../types.ts';
 
@@ -9,9 +9,71 @@ interface ServicesMenuProps {
 export const ServicesMenu: React.FC<ServicesMenuProps> = ({ onSelectServiceToBook }) => {
   const [selectedGender, setSelectedGender] = useState<'gents' | 'ladies'>('gents');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'hair' | 'skin' | 'bridal' | 'groom' | 'spa'>('all');
+  const [menuServices, setMenuServices] = useState<ServiceItem[]>(SERVICES);
 
-  const filteredServices = SERVICES.filter((srv) => {
-    const matchesGender = srv.gender === selectedGender;
+  useEffect(() => {
+    // 1. Fetch live active services from backend API
+    fetch('/api/services')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+          const mapped: ServiceItem[] = data.data
+            .filter((s: any) => s.isActive !== false)
+            .map((s: any) => {
+              let cat: 'hair' | 'skin' | 'bridal' | 'groom' | 'spa' = 'hair';
+              const c = (s.category || '').toLowerCase();
+              if (c.includes('skin') || c.includes('facial')) cat = 'skin';
+              else if (c.includes('spa') || c.includes('nail')) cat = 'spa';
+              else if (c.includes('beard') || c.includes('shave') || c.includes('groom')) cat = 'groom';
+              else if (c.includes('bridal')) cat = 'bridal';
+
+              let feats: string[] = [];
+              try {
+                feats = Array.isArray(s.benefits) ? s.benefits : JSON.parse(s.benefits || '[]');
+              } catch {}
+
+              return {
+                id: s.id,
+                name: s.name,
+                category: cat,
+                categoryLabel: s.category || 'Specialty Care',
+                duration: s.durationMins || 45,
+                durationLabel: `${s.durationMins || 45} mins`,
+                price: Number(s.price) || 0,
+                startingPrice: s.originalPrice ? Number(s.originalPrice) : undefined,
+                description: s.description || '',
+                features: feats,
+                gender: s.gender === 'ladies' ? 'ladies' : s.gender === 'gents' ? 'gents' : 'both',
+              };
+            });
+          setMenuServices(mapped);
+        }
+      })
+      .catch(() => {});
+
+    // 2. Storage event listener for cross-tab updates from Dashboard
+    const handleSync = () => {
+      try {
+        const saved =
+          localStorage.getItem('stylex_tirur_v6_services') ||
+          localStorage.getItem('stylex_services');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const hiddenIds = new Set(
+              parsed.filter((p: any) => p.showOnWebsite === false || p.isActive === false).map((p: any) => p.id)
+            );
+            setMenuServices((prev) => prev.filter((s) => !hiddenIds.has(s.id)));
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', handleSync);
+    return () => window.removeEventListener('storage', handleSync);
+  }, []);
+
+  const filteredServices = menuServices.filter((srv) => {
+    const matchesGender = srv.gender === selectedGender || srv.gender === 'both';
     const matchesCategory = selectedFilter === 'all' || srv.category === selectedFilter;
     return matchesGender && matchesCategory;
   });

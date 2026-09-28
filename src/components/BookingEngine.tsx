@@ -50,38 +50,63 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [selectedService, setSelectedService] = useState(defaultHeading);
 
   // Live stylists synchronized with Dashboard / Backend
+  // Start empty – populated from /api/stylists so only real dashboard stylists show
   const [stylistsList, setStylistsList] = useState<any[]>(() => {
     try {
       const saved =
-        localStorage.getItem('stylex_tirur_v6_stylists') ||
-        localStorage.getItem('stylex_stylists');
+        localStorage.getItem('stylex_stylists') ||
+        localStorage.getItem('stylex_tirur_v6_stylists');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Exclude any old placeholder role names
+          return parsed.filter(
+            (p: any) =>
+              p.name &&
+              !p.name.includes("Master Barber & Men's Grooming Lead") &&
+              !p.name.includes("Senior Men's Stylist") &&
+              !p.name.includes("Master Stylist & Creative Director") &&
+              !p.name.includes("Senior Hair Artisan")
+          );
+        }
       }
     } catch {}
-    return MASTER_ARTISANS;
+    return [];
   });
 
   const [liveBlockedSlots, setLiveBlockedSlots] = useState<any[]>([]);
 
   useEffect(() => {
     let isMounted = true;
+
+    const sanitizeStylists = (list: any[]) => {
+      return list
+        .filter(
+          (s: any) =>
+            s.name &&
+            !s.name.includes("Master Barber & Men's Grooming Lead") &&
+            !s.name.includes("Senior Men's Stylist") &&
+            !s.name.includes("Master Stylist & Creative Director") &&
+            !s.name.includes("Senior Hair Artisan")
+        )
+        .map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          role: s.role || 'Senior Stylist',
+          specialty: s.specialty || s.role || 'Hair & Styling',
+          gender: s.gender || 'any',
+          imageUrl: s.imageUrl || s.avatar,
+          rating: s.rating || 4.9,
+        }));
+    };
+
     // Fetch live stylists added in dashboard
     fetch('/api/stylists')
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (!isMounted) return;
         if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
-          const mapped = json.data.map((s: any) => ({
-            id: s.id,
-            name: s.name,
-            role: s.role || 'Senior Stylist',
-            specialty: s.specialty || s.role || 'Hair & Styling',
-            gender: s.gender || 'any',
-            imageUrl: s.imageUrl,
-            rating: s.rating || 4.9,
-          }));
+          const mapped = sanitizeStylists(json.data);
           setStylistsList(mapped);
           try {
             localStorage.setItem('stylex_stylists', JSON.stringify(mapped));
@@ -91,6 +116,22 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       .catch((err) => {
         console.warn('Could not fetch /api/stylists:', err);
       });
+
+    // Cross-tab storage sync
+    const handleStorageSync = () => {
+      try {
+        const saved =
+          localStorage.getItem('stylex_stylists') ||
+          localStorage.getItem('stylex_tirur_v6_stylists');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setStylistsList(sanitizeStylists(parsed));
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', handleStorageSync);
 
     // Fetch live blocked slots
     fetch('/api/blocked-slots')
@@ -107,6 +148,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
     return () => {
       isMounted = false;
+      window.removeEventListener('storage', handleStorageSync);
     };
   }, []);
 
@@ -453,6 +495,11 @@ interface SlotOccupancyInfo {
       return;
     }
 
+    const yyyy = currentYear;
+    const mm = String(currentMonthIndex + 1).padStart(2, '0');
+    const dd = String(selectedDay).padStart(2, '0');
+    const isoDateStr = `${yyyy}-${mm}-${dd}`;
+
     const currentOccupancy = slotOccupancy[selectedTime];
     if (currentOccupancy && (!currentOccupancy.isAvailable || currentOccupancy.status === 'full' || currentOccupancy.bookedCount >= 3)) {
       alert(`The ${selectedGender === 'ladies' ? 'Ladies' : 'Gents'} Section has reached its maximum capacity of 3 concurrent appointments for ${selectedTime} on ${isoDateStr}. Please select an adjacent time slot.`);
@@ -460,11 +507,6 @@ interface SlotOccupancyInfo {
     }
 
     setIsSubmitting(true);
-
-    const yyyy = currentYear;
-    const mm = String(currentMonthIndex + 1).padStart(2, '0');
-    const dd = String(selectedDay).padStart(2, '0');
-    const isoDateStr = `${yyyy}-${mm}-${dd}`;
 
     const cleanStylist =
       selectedArtisan && selectedArtisan !== 'Any Stylist' && selectedArtisan !== 'Any Master Artisan'
@@ -981,16 +1023,16 @@ interface SlotOccupancyInfo {
                                         ? 'Filling Fast'
                                         : 'Available'
                                     }
-                                    className={`py-2.5 px-1 rounded-xl text-[12px] font-semibold transition-all text-center relative select-none ${
+                                    className={`py-2.5 px-1 rounded-xl text-[12px] font-semibold transition-all duration-150 text-center relative select-none ${
                                       isFull
-                                        ? 'bg-red-50/70 dark:bg-red-950/20 text-red-600/80 dark:text-red-400/80 border-2 border-red-200 dark:border-red-900/50 cursor-not-allowed opacity-75 shadow-2xs'
+                                        ? 'bg-red-50/70 text-red-500/80 border-2 border-red-200/80 cursor-not-allowed opacity-70'
                                         : isFillingFast
                                         ? isSelected
                                           ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 border-2 border-[#fe753c] cursor-pointer'
-                                          : 'bg-amber-50/80 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 font-bold border-2 border-amber-400/80 dark:border-amber-500/70 hover:bg-amber-100/70 cursor-pointer shadow-2xs'
+                                          : 'bg-white text-amber-700 border-2 border-amber-400 hover:bg-amber-500 hover:text-white hover:border-amber-500 cursor-pointer'
                                         : isSelected
                                         ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 border-2 border-[#fe753c] cursor-pointer'
-                                        : 'bg-white dark:bg-[#15231c] text-[#185341] dark:text-[#a0aba2] border-2 border-emerald-500/70 dark:border-emerald-500/60 hover:border-emerald-600 hover:bg-emerald-50/50 cursor-pointer shadow-2xs'
+                                        : 'bg-white text-[#185341] border-2 border-emerald-600/50 hover:bg-[#185341] hover:text-white hover:border-[#185341] cursor-pointer'
                                     }`}
                                     type="button"
                                   >
@@ -1001,18 +1043,18 @@ interface SlotOccupancyInfo {
                             </div>
 
                             {/* Status Legend */}
-                            <div className="flex items-center justify-between pt-1 px-1 text-[11px] font-medium text-[#424844] dark:text-[#a0aba2]">
+                            <div className="flex items-center justify-between pt-1 px-1 text-[11px] font-medium text-[#424844]">
                               <div className="flex items-center gap-1.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600" />
-                                <span className="text-[#185341] dark:text-emerald-400 font-semibold">Available</span>
+                                <span className="text-[#185341] font-semibold">Available</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500" />
-                                <span className="text-amber-800 dark:text-amber-300 font-semibold">Filling Fast</span>
+                                <span className="text-amber-800 font-semibold">Filling Fast</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
-                                <span className="text-red-700 dark:text-red-400 font-semibold">Fully Booked</span>
+                                <span className="text-red-700 font-semibold">Fully Booked</span>
                               </div>
                             </div>
                           </div>
@@ -1033,9 +1075,9 @@ interface SlotOccupancyInfo {
                       <select
                         value={selectedArtisan}
                         onChange={(e) => setSelectedArtisan(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#15231c] border border-[#c2c8c2]/50 dark:border-[#2a3c31] text-[#181d1b] dark:text-[#e1e9e3] font-body-md text-[13px] focus:outline-none focus:border-[#112e20] cursor-pointer"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border-2 border-emerald-600/50 text-[#181d1b] font-body-md text-[13px] hover:border-[#185341] hover:bg-emerald-50/20 focus:outline-none focus:border-[#185341] cursor-pointer transition-colors shadow-xs"
                       >
-                        <option value="Any Stylist">Any Stylist</option>
+                        <option value="Any Stylist" className="bg-white text-[#181d1b] font-medium">Any Stylist</option>
                         {availableArtisans.map((a) => {
                           const leaveStatus = getStylistLeaveStatus(a.name, a.id);
                           return (
@@ -1043,7 +1085,7 @@ interface SlotOccupancyInfo {
                               key={a.id || a.name}
                               value={a.name}
                               disabled={leaveStatus.isUnavailable}
-                              className={leaveStatus.isUnavailable ? 'text-gray-400 bg-gray-100 italic' : ''}
+                              className={leaveStatus.isUnavailable ? 'text-gray-400 bg-gray-100 italic' : 'bg-white text-[#181d1b]'}
                             >
                               {a.name} ({a.specialty || a.role}){leaveStatus.isUnavailable ? ` • ⚠️ [${leaveStatus.notice}]` : ''}
                             </option>

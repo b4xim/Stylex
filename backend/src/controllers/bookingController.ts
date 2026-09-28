@@ -400,4 +400,28 @@ export class BookingController {
       next(error);
     }
   }
+
+  /**
+   * Admin: Permanently delete a booking record
+   */
+  public static async deleteBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+
+      const booking = await prisma.booking.findUnique({ where: { id } });
+      if (!booking) {
+        res.status(404).json({ success: false, message: 'Booking not found' });
+        return;
+      }
+
+      await prisma.booking.delete({ where: { id } });
+
+      res.status(200).json({
+        success: true,
+        message: 'Booking permanently deleted',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

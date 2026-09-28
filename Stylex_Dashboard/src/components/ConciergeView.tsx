@@ -45,7 +45,7 @@ export const ConciergeView: React.FC<ConciergeViewProps> = ({
             Concierge Desk
           </h1>
           <p className="text-sm text-[#424844] dark:text-[#a0aca4] mt-1">
-            Direct VIP guest communications, private buyout inquiries, and custom requests.
+            Direct guest communications, appointment inquiries, and custom requests.
           </p>
         </div>
 
@@ -83,11 +83,6 @@ export const ConciergeView: React.FC<ConciergeViewProps> = ({
                 <span className="font-serif text-xl text-[#112e20] dark:text-white font-semibold">
                   {item.clientName}
                 </span>
-                {item.clientTier && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-[#284435]/10 dark:bg-emerald-950/60 text-[#112e20] dark:text-emerald-300 font-bold uppercase tracking-wider border border-transparent dark:border-emerald-500/25">
-                    {item.clientTier}
-                  </span>
-                )}
                 <span className="text-xs text-[#727973] dark:text-[#a0aca4]">{item.phone}</span>
               </div>
 

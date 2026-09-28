@@ -108,10 +108,6 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
             </span>
             <div className="text-[#424844] dark:text-[#a0aca4] flex items-center gap-2 flex-wrap">
               <span className="font-medium text-[#181d1b] dark:text-white">{appointment.clientPhone}</span>
-              <span>•</span>
-              <span className="font-semibold text-[#9b4521] dark:text-[#ff9266]">
-                {appointment.clientTier || 'Standard Guest'}
-              </span>
             </div>
             {appointment.clientEmail && (
               <div className="flex items-center gap-1.5 text-xs text-[#2d6a4f] dark:text-[#86efac] font-medium mt-0.5">

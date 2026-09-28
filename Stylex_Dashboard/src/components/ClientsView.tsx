@@ -13,7 +13,6 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
   onBookClient,
   globalSearchQuery = '',
 }) => {
-  const [filterTier, setFilterTier] = useState<string>('all');
   const [localSearch, setLocalSearch] = useState('');
 
   const effectiveSearch = (globalSearchQuery || localSearch).toLowerCase().trim();
@@ -21,13 +20,12 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
   const safeClients = Array.isArray(clients) ? clients : [];
 
   const filtered = safeClients.filter((c) => {
-    if (filterTier !== 'all' && c.tier !== filterTier) return false;
     if (!effectiveSearch) return true;
     return (
       c.name.toLowerCase().includes(effectiveSearch) ||
       c.phone.toLowerCase().includes(effectiveSearch) ||
       c.email.toLowerCase().includes(effectiveSearch) ||
-      c.favoriteRitual.toLowerCase().includes(effectiveSearch)
+      (c.favoriteRitual || '').toLowerCase().includes(effectiveSearch)
     );
   });
 
@@ -37,10 +35,10 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#c2c8c2]/30 dark:border-white/10 pb-6">
         <div>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#112e20] dark:text-white tracking-tight">
-            Clients & VIP Directory
+            Clients Directory
           </h1>
           <p className="text-sm text-[#424844] dark:text-[#a0aca4] mt-1">
-            Personalized guest preferences, formula notes, and VIP concierge tier statuses.
+            Guest preferences, contact information, and appointment history.
           </p>
         </div>
 
@@ -52,26 +50,9 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-full bg-white dark:bg-[#192720] text-[#181d1b] dark:text-white placeholder:text-[#424844] dark:placeholder:text-[#7d9085] text-sm outline-none shadow-xs border border-[#c2c8c2]/30 dark:border-[#2a3c31] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-400"
-            placeholder="Search VIP clients, phone, ritual..."
+            placeholder="Search clients by name, phone, email..."
           />
         </div>
-      </div>
-
-      {/* Filter Chips */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {['all', 'VIP Platinum', 'VIP Gold', 'VIP Member'].map((tier) => (
-          <button
-            key={tier}
-            onClick={() => setFilterTier(tier)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              filterTier === tier
-                ? 'bg-[#112e20] dark:bg-[#203a2c] text-white shadow-xs'
-                : 'bg-[#eaefeb] dark:bg-[#1f2d25] text-[#181d1b] dark:text-[#d3ded8] hover:bg-[#e5e9e6] dark:hover:bg-[#293c31]'
-            }`}
-          >
-            {tier === 'all' ? 'All Clients' : tier}
-          </button>
-        ))}
       </div>
 
       {/* Clients Table */}
@@ -81,10 +62,9 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
             <thead>
               <tr className="bg-[#f0f5f1] dark:bg-[#1a2520] text-[#424844] dark:text-[#a0aca4] text-[11px] uppercase tracking-wider font-semibold border-b border-[#c2c8c2]/30 dark:border-white/10">
                 <th className="py-3.5 px-6">Client</th>
-                <th className="py-3.5 px-4">Tier</th>
                 <th className="py-3.5 px-4">Preferred Stylist & Favorite Ritual</th>
                 <th className="py-3.5 px-4">Visits</th>
-                <th className="py-3.5 px-4">Concierge Notes</th>
+                <th className="py-3.5 px-4">Notes</th>
                 <th className="py-3.5 px-6 text-right">Action</th>
               </tr>
             </thead>
@@ -124,20 +104,6 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                         </div>
                       </div>
                     </div>
-                  </td>
-
-                  <td className="py-4 px-4 align-middle">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border ${
-                        client.tier === 'VIP Platinum'
-                          ? 'bg-[#284435] text-white border-transparent'
-                          : client.tier === 'VIP Gold'
-                          ? 'bg-[#ffe088] dark:bg-amber-950/60 text-[#241a00] dark:text-amber-300 border-transparent dark:border-amber-500/30'
-                          : 'bg-[#ffdbcf] dark:bg-orange-950/60 text-[#380d00] dark:text-orange-300 border-transparent dark:border-orange-500/30'
-                      }`}
-                    >
-                      {client.tier}
-                    </span>
                   </td>
 
                   <td className="py-4 px-4 align-middle">

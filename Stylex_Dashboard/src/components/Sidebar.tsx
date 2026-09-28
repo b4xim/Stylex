@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'artisans-and-stylists', label: 'Stylists', icon: 'content_cut' },
     { id: 'service-menu', label: 'Service Menu', icon: 'spa' },
     { id: 'promotions', label: 'Promotions', icon: 'auto_awesome' },
-    { id: 'clients-and-vip', label: 'Clients & VIP', icon: 'stars' },
+    { id: 'clients-and-vip', label: 'Clients', icon: 'group' },
     {
       id: 'concierge-desk',
       label: 'Concierge Desk',

@@ -847,8 +847,6 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                           </a>
                         </div>
                         <div className="text-xs text-[#424844] dark:text-[#a0aca4] flex items-center gap-1.5 flex-wrap">
-                          <span>{apt.clientTier || 'Guest'}</span>
-                          <span>•</span>
                           <span>{apt.clientPhone}</span>
                           {apt.clientEmail && (
                             <>

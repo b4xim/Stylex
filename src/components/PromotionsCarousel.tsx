@@ -34,32 +34,49 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
   });
 
   useEffect(() => {
+    const applyBanners = (list: any[]) => {
+      const active = list.filter((b: any) => b.isActive !== false);
+      if (active.length > 0) {
+        setSlides(
+          active.map((b: any, idx: number) => ({
+            id: b.id || `promo-${idx + 1}`,
+            title: b.title,
+            subtitle: b.subtitle || b.validity || 'Limited Time Privilege',
+            tag: b.badge || b.tag || 'Special Offer',
+            imageUrl: b.imageUrl,
+            offerText: b.subtitle || b.validity || 'Limited Time Privilege',
+            primaryService: b.title,
+            primaryPrice: 'Signature Privilege',
+            secondaryService: 'Consultation',
+            secondaryPrice: 'Included',
+          }))
+        );
+      }
+    };
+
+    // 1. Fetch live banners from backend API
+    fetch('/api/promotions/banners')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+          applyBanners(data.data);
+        }
+      })
+      .catch(() => {});
+
+    // 2. Storage event listener for cross-tab updates
     const handleSync = () => {
       try {
-        const saved = localStorage.getItem('stylex_tirur_v6_banners');
+        const saved =
+          localStorage.getItem('stylex_tirur_v6_banners') ||
+          localStorage.getItem('stylex_banners');
         if (saved) {
           const parsed = JSON.parse(saved);
-          const active = parsed.filter((b: any) => b.isActive !== false);
-          if (active.length > 0) {
-            setSlides(
-              active.map((b: any, idx: number) => ({
-                id: b.id || `promo-${idx + 1}`,
-                title: b.title,
-                subtitle: b.validity,
-                tag: b.tag || 'Special Offer',
-                imageUrl: b.imageUrl,
-                offerText: b.validity,
-                primaryService: b.title,
-                primaryPrice: 'Signature Privilege',
-                secondaryService: 'Consultation',
-                secondaryPrice: 'Included',
-              }))
-            );
+          if (Array.isArray(parsed)) {
+            applyBanners(parsed);
           }
         }
-      } catch {
-        // fallback
-      }
+      } catch {}
     };
     window.addEventListener('storage', handleSync);
     return () => window.removeEventListener('storage', handleSync);

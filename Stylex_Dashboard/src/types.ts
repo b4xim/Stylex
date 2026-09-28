@@ -62,6 +62,7 @@ export interface ServiceItem {
   durationMin: number;
   description: string;
   showOnWebsite: boolean;
+  gender?: 'gents' | 'ladies' | 'both' | 'unisex';
 }
 
 export interface PromoCode {
@@ -107,7 +108,6 @@ export interface PortfolioWork {
   isActive?: boolean;
 }
 
-
 export interface Stylist {
   id: string;
   name: string;
@@ -120,6 +120,7 @@ export interface Stylist {
   reviewsCount: number;
   bio?: string;
   isAvailableToday: boolean;
+  gender?: string;
 }
 
 export type LeaveDuration = 'FULL_DAY' | 'FIRST_HALF' | 'SECOND_HALF';
@@ -140,12 +141,15 @@ export interface VIPClient {
   initials: string;
   phone: string;
   email: string;
-  tier: 'VIP Platinum' | 'VIP Gold' | 'VIP Member';
-  preferredStylist: string;
+  tier?: string;
+  preferredStylist?: string;
   totalVisits: number;
-  favoriteRitual: string;
-  notes: string;
+  favoriteRitual?: string;
+  notes?: string;
   lastVisit: string;
+  spent?: string;
+  favArtisan?: string;
+  visits?: number;
 }
 
 export interface ConciergeInquiry {

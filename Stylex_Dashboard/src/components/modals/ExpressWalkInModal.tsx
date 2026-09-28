@@ -52,7 +52,6 @@ export const ExpressWalkInModal: React.FC<ExpressWalkInModalProps> = ({
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim() || '+91 96561 11149',
       clientInitials: initials,
-      clientTier: 'New Guest',
       serviceName: selectedService ? selectedService.name : 'Express Styling Ritual',
       station: selectedStylist ? selectedStylist.station : 'Styling Station Chair 1',
       stylistName: selectedStylist ? selectedStylist.name : 'Niya',

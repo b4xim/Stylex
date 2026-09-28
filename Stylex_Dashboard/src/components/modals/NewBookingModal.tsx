@@ -25,7 +25,6 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  const [clientTier, setClientTier] = useState<Appointment['clientTier']>('VIP Platinum');
   const [selectedServiceId, setSelectedServiceId] = useState(services[0]?.id || '');
   const [selectedStylistId, setSelectedStylistId] = useState(stylists[0]?.id || '');
   const [time, setTime] = useState('11:00 AM');
@@ -108,7 +107,6 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
       clientPhone: clientPhone.trim() || '+91 96561 11149',
       clientEmail: clientEmail.trim() || undefined,
       clientInitials: initials,
-      clientTier,
       serviceName: selectedService ? selectedService.name : 'Custom Atelier Ritual',
       station: selectedStylist ? selectedStylist.station : 'Styling Station Chair 1',
       stylistName: selectedStylist ? selectedStylist.name : 'Niya',
@@ -184,22 +182,6 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 placeholder="guest@example.com"
                 className="w-full px-3.5 py-2.5 rounded-lg bg-[#f0f5f1] border border-[#c2c8c2]/40 text-sm focus:bg-white focus:ring-1 focus:ring-[#112e20] outline-none"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-[#181d1b] mb-1">
-                Client Distinction
-              </label>
-              <select
-                value={clientTier}
-                onChange={(e) => setClientTier(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-[#f0f5f1] border border-[#c2c8c2]/40 text-sm focus:bg-white focus:ring-1 focus:ring-[#112e20] outline-none"
-              >
-                <option value="VIP Platinum">VIP Platinum</option>
-                <option value="VIP Gold">VIP Gold</option>
-                <option value="VIP Member">VIP Member</option>
-                <option value="New Guest">New Guest</option>
-                <option value="Standard">Standard Client</option>
-              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#181d1b] mb-1">

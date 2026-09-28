@@ -11,6 +11,7 @@ router.post('/', BookingController.createBooking);
 // Dashboard endpoints (resilient auth)
 router.get('/', optionalAuthenticateToken, BookingController.listBookings);
 router.patch('/:id/status', optionalAuthenticateToken, BookingController.updateBookingStatus);
+router.delete('/:id', optionalAuthenticateToken, BookingController.deleteBooking);
 router.post('/:id/resend-whatsapp', optionalAuthenticateToken, BookingController.resendWhatsApp);
 
 export default router;

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ServiceController } from '../controllers/serviceController';
-import { authenticateToken } from '../middleware/auth';
+import { optionalAuthenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -8,9 +8,9 @@ const router = Router();
 router.get('/', ServiceController.listServices);
 router.get('/:id', ServiceController.getServiceById);
 
-// Admin protected
-router.post('/', authenticateToken, ServiceController.createService);
-router.put('/:id', authenticateToken, ServiceController.updateService);
-router.delete('/:id', authenticateToken, ServiceController.deleteService);
+// Admin / Dashboard management
+router.post('/', optionalAuthenticateToken, ServiceController.createService);
+router.put('/:id', optionalAuthenticateToken, ServiceController.updateService);
+router.delete('/:id', optionalAuthenticateToken, ServiceController.deleteService);
 
 export default router;
