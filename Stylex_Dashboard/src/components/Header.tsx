@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X_LOGO_URL } from '../mockData';
+import { X_LOGO_URL } from '../constants';
 import { UserAccount } from '../types';
 
 interface HeaderProps {

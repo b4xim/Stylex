@@ -1,6 +1,6 @@
 import React from 'react';
 import { Appointment } from '../../types';
-import { LOGO_URL } from '../../mockData';
+import { LOGO_URL } from '../../constants';
 
 interface RunSheetModalProps {
   isOpen: boolean;

@@ -27,7 +27,7 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
     const clean = identifier.trim().toLowerCase();
 
     try {
-      // 1. Attempt live API login to acquire production JWT token
+      // Production live API login against PostgreSQL database
       const res = await DashboardApi.login(clean, password);
       if (res?.success && res?.data?.user) {
         const apiUser = res.data.user;
@@ -37,15 +37,15 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
             (u.email && u.email.trim().toLowerCase() === clean)
         );
 
-        const authenticatedUser: UserAccount = matchedLocal || {
+        const authenticatedUser: UserAccount = {
           id: apiUser.id,
           name: apiUser.name,
           username: apiUser.username || clean,
           email: apiUser.email,
           role: (apiUser.role === 'ADMIN' ? 'Admin' : apiUser.role === 'DEVELOPER' ? 'Developer' : 'Manager'),
-          roleTitle: apiUser.role === 'DEVELOPER' ? 'Lead Developer & Tech' : 'Salon Administrator',
+          roleTitle: matchedLocal?.roleTitle || (apiUser.role === 'DEVELOPER' ? 'Lead Developer & Tech' : 'Salon Administrator'),
           initials: (apiUser.name || 'AD').split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase(),
-          password,
+          password: '', // Never store plaintext password in browser state
           createdAt: new Date().toISOString().split('T')[0],
         };
 
@@ -54,36 +54,18 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
         return;
       }
     } catch (apiErr: any) {
-      console.warn('Backend API login check:', apiErr?.message);
-      // If error specifically says invalid credentials, show error
-      if (apiErr?.message?.includes('Invalid credentials') || apiErr?.message?.includes('401')) {
-        setIsLoading(false);
+      setIsLoading(false);
+      const msg = apiErr?.message || '';
+      if (msg.includes('Invalid credentials') || msg.includes('401') || msg.includes('deactivated')) {
         setErrorMessage('Invalid username/email or password. Please verify and try again.');
-        return;
+      } else {
+        setErrorMessage(msg || 'Unable to connect to salon authentication service. Please verify network connectivity.');
       }
-    }
-
-    // 2. Offline / Local fallback
-    const matchedUser = users.find(
-      (u) =>
-        (u.username && u.username.toLowerCase() === clean) ||
-        (u.email && u.email.trim().toLowerCase() === clean)
-    );
-
-    if (!matchedUser) {
-      setIsLoading(false);
-      setErrorMessage('No staff account found with this username or email.');
-      return;
-    }
-
-    if (matchedUser.password !== password) {
-      setIsLoading(false);
-      setErrorMessage('Incorrect password. Please verify and try again.');
       return;
     }
 
     setIsLoading(false);
-    onSignInSuccess(matchedUser);
+    setErrorMessage('Authentication failed. Please verify credentials.');
   };
 
   return (

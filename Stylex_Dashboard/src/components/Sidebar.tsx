@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavTab } from '../types';
-import { LOGO_URL } from '../mockData';
+import { LOGO_URL } from '../constants';
 
 interface SidebarProps {
   currentTab: NavTab;
