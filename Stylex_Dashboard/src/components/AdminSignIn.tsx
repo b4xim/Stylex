@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserAccount } from '../types';
 import { DashboardApi } from '../services/api';
+import { X_LOGO_URL } from '../constants';
 
 interface AdminSignInProps {
   onSignInSuccess: (user: UserAccount) => void;
@@ -83,8 +84,12 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
           )}
 
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#caead5]/50 dark:bg-[#1a382a] text-[#112e20] dark:text-[#7cebb0] mb-2 shadow-xs">
-              <span className="material-symbols-outlined text-[24px]">spa</span>
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#caead5]/50 dark:bg-[#1a382a] p-2.5 mb-2 shadow-xs border border-[#112e20]/10 dark:border-emerald-500/20">
+              <img
+                src={X_LOGO_URL}
+                alt="StyleX"
+                className="w-8 h-8 object-contain"
+              />
             </div>
             <p className="text-[11px] uppercase tracking-widest text-[#9b4521] dark:text-[#ff9266] font-bold mb-1">
               StyleX Signature Salon
