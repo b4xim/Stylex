@@ -65,11 +65,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             </div>
 
             <div className="flex justify-between items-center text-[12px] pt-1 border-t border-white/10 text-[#d4ebe1]">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[15px] text-[#fe753c]">person</span>
-                Stylist: {booking.stylist}
-              </span>
-              <span className="flex items-center gap-1">
+              {booking.stylist && !booking.stylist.toLowerCase().includes('any') ? (
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[15px] text-[#fe753c]">person</span>
+                  Stylist: {booking.stylist}
+                </span>
+              ) : null}
+              <span className={`flex items-center gap-1 ${booking.stylist && !booking.stylist.toLowerCase().includes('any') ? '' : 'ml-auto'}`}>
                 <span className="material-symbols-outlined text-[15px] text-[#fe753c]">timelapse</span>
                 {booking.duration} min
               </span>

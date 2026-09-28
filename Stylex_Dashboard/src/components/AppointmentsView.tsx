@@ -871,16 +871,23 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                     </td>
 
                     <td className="py-4 px-4 align-middle">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          className="w-8 h-8 rounded-full object-cover shadow-2xs border border-[#c2c8c2]/40 dark:border-white/10"
-                          src={apt.stylistAvatar}
-                          alt={apt.stylistName}
-                        />
-                        <span className="text-sm font-medium text-[#181d1b] dark:text-white">
-                          {apt.stylistName}
+                      {apt.stylistName && !apt.stylistName.toLowerCase().includes('any') ? (
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            className="w-8 h-8 rounded-full object-cover shadow-2xs border border-[#c2c8c2]/40 dark:border-white/10"
+                            src={apt.stylistAvatar}
+                            alt={apt.stylistName}
+                          />
+                          <span className="text-sm font-medium text-[#181d1b] dark:text-white">
+                            {apt.stylistName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f0f5f1] dark:bg-white/5 text-[#424844] dark:text-[#a0aca4] text-xs font-medium border border-[#c2c8c2]/30 dark:border-white/10">
+                          <span className="material-symbols-outlined text-[13px]">person_outline</span>
+                          Any Stylist
                         </span>
-                      </div>
+                      )}
                     </td>
 
                     <td className="py-4 px-4 align-middle">

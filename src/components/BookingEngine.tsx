@@ -137,7 +137,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     };
   });
 
+  const isCurrentOrPastMonth =
+    currentYear < now.getFullYear() ||
+    (currentYear === now.getFullYear() && currentMonthIndex <= now.getMonth());
+
   const handlePrevMonth = () => {
+    if (isCurrentOrPastMonth) return;
     if (currentMonthIndex === 0) {
       setCurrentMonthIndex(11);
       setCurrentYear((y) => y - 1);
@@ -627,8 +632,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={handlePrevMonth}
+                          disabled={isCurrentOrPastMonth}
                           aria-label="Previous Month"
-                          className="w-7 h-7 rounded-full border border-[#c2c8c2]/50 flex items-center justify-center text-[#181d1b] hover:bg-[#eaefeb] transition-colors cursor-pointer"
+                          className={`w-7 h-7 rounded-full border border-[#c2c8c2]/50 flex items-center justify-center transition-colors ${
+                            isCurrentOrPastMonth
+                              ? 'text-neutral-300 dark:text-neutral-600 opacity-30 cursor-not-allowed border-transparent'
+                              : 'text-[#181d1b] hover:bg-[#eaefeb] cursor-pointer'
+                          }`}
                           type="button"
                         >
                           <span className="material-symbols-outlined text-[16px]">chevron_left</span>
@@ -673,22 +683,32 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         const isSelected = selectedDay === dayNum;
                         const dayBlackout = getBlackoutStatus(dayNum);
                         const isDayClosed = dayBlackout.isFullDayClosed;
+
+                        const todayObj = new Date();
+                        todayObj.setHours(0, 0, 0, 0);
+                        const cellDateObj = new Date(currentYear, currentMonthIndex, dayNum);
+                        cellDateObj.setHours(0, 0, 0, 0);
+                        const isPast = cellDateObj.getTime() < todayObj.getTime();
+
                         return (
                           <button
                             key={dayNum}
-                            onClick={() => setSelectedDay(dayNum)}
-                            title={isDayClosed ? 'Salon Closed' : undefined}
-                            className={`h-8 rounded-lg flex items-center justify-center font-medium transition-colors cursor-pointer relative ${
-                              isSelected
-                                ? 'bg-[#112e20] text-white font-bold shadow-sm ring-2 ring-[#112e20]'
+                            onClick={() => !isPast && !isDayClosed && setSelectedDay(dayNum)}
+                            disabled={isPast || isDayClosed}
+                            title={isPast ? 'Past date cannot be booked' : isDayClosed ? 'Salon Closed' : undefined}
+                            className={`h-8 rounded-lg flex items-center justify-center font-medium transition-colors relative ${
+                              isPast
+                                ? 'text-neutral-400/40 bg-neutral-100/30 cursor-not-allowed line-through opacity-40 select-none'
+                                : isSelected
+                                ? 'bg-[#112e20] text-white font-bold shadow-sm ring-2 ring-[#112e20] cursor-pointer'
                                 : isDayClosed
-                                ? 'text-red-500 bg-red-50/70 font-semibold border border-red-200/50'
-                                : 'text-[#181d1b] hover:bg-[#eaefeb]'
+                                ? 'text-red-500 bg-red-50/70 font-semibold border border-red-200/50 cursor-not-allowed'
+                                : 'text-[#181d1b] hover:bg-[#eaefeb] cursor-pointer'
                             }`}
                             type="button"
                           >
                             {dayNum}
-                            {isDayClosed && (
+                            {isDayClosed && !isPast && (
                               <span className="w-1 h-1 rounded-full bg-red-500 absolute bottom-1" />
                             )}
                           </button>
