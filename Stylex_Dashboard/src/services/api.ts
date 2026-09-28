@@ -79,9 +79,14 @@ export class DashboardApi {
   }
 
   /**
-   * Silent auto-login using stored staff profile or default admin account
+   * Silent session refresh only if user has an active authenticated session
    */
   public static async silentLogin(): Promise<boolean> {
+    const sessionActive = localStorage.getItem('stylex_session_active');
+    if (sessionActive !== 'true') {
+      return false; // User has not signed in or has logged out
+    }
+
     try {
       const savedEmail = localStorage.getItem('stylex_current_user_email_v2') || 'admin@stylexsalon.in';
       const accountsStr = localStorage.getItem('stylex_user_accounts_v2');

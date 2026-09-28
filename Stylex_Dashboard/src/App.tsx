@@ -64,7 +64,11 @@ import { StylistModal } from './components/modals/StylistModal';
 export default function App() {
   // Navigation & Authentication
   const [currentTab, setCurrentTab] = useState<NavTab>('overview');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const token = localStorage.getItem('stylex_admin_token');
+    const sessionActive = localStorage.getItem('stylex_session_active');
+    return !!(token && sessionActive === 'true');
+  });
 
   // User Accounts & Authentication (Dynamic Staff Directory)
   const [users, setUsers] = useState<UserAccount[]>(() => {
@@ -972,6 +976,7 @@ export default function App() {
   // Login & Logout
   const handleLogout = () => {
     DashboardApi.clearToken();
+    localStorage.removeItem('stylex_session_active');
     setIsAuthenticated(false);
     addToast('info', 'Signed Out', `Signed out of ${currentUser.name} account.`);
   };
@@ -979,6 +984,7 @@ export default function App() {
   const handleSignInSuccess = (user: UserAccount) => {
     setCurrentUser(user);
     localStorage.setItem('stylex_current_user_email_v2', user.email);
+    localStorage.setItem('stylex_session_active', 'true');
     setIsAuthenticated(true);
     addToast(
       'success',
