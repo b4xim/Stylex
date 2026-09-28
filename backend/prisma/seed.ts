@@ -89,66 +89,20 @@ async function main() {
   }
   console.log(`✅ Salon settings seeded`);
 
-  // 3. Seed Stylists / Artisans
-  const stylists = [
-    {
-      id: 'niya-mathew',
-      name: 'Niya Mathew',
-      role: 'Master Hair Artisan',
-      gender: 'female',
-      specialty: 'French Balayage & Creative Coloring',
-      bio: 'L\'Oréal Professionnel Certified color specialist with over 9 years designing signature tones for high-profile clients.',
-      imageUrl: 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&q=80&w=600',
-      rating: 4.95,
-      experience: '9+ Years',
-      orderIndex: 1,
-    },
-    {
-      id: 'saneesh-kumar',
-      name: 'Saneesh Kumar',
-      role: 'Senior Barber & Sculptor',
-      gender: 'male',
-      specialty: 'Precision Fades, Beard Architecture & Hot Towel Shaves',
-      bio: 'Acclaimed barber master celebrated for meticulous razor detailing, custom facial hair contouring, and classic English shaves.',
-      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600',
-      rating: 4.9,
-      experience: '8+ Years',
-      orderIndex: 2,
-    },
-    {
-      id: 'abhirami-p',
-      name: 'Abhirami P',
-      role: 'Bridal & Aesthetics Director',
-      gender: 'female',
-      specialty: 'Bridal Makeovers, HD Glow & Keratin Architecture',
-      bio: 'Leading bridal stylist in Malappuram specializing in long-lasting bridal beauty, glass skin facials, and anti-frizz ceremonies.',
-      imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
-      rating: 4.98,
-      experience: '11+ Years',
-      orderIndex: 3,
-    },
-    {
-      id: 'rahul-raj',
-      name: 'Rahul Raj',
-      role: 'Creative Stylist & Texture Specialist',
-      gender: 'male',
-      specialty: 'Nano Plastia, Botox & Modern Layering',
-      bio: 'Expert in modern styling, hair restructuring, and scalp therapy treatments.',
-      imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=600',
-      rating: 4.88,
-      experience: '7+ Years',
-      orderIndex: 4,
-    },
-  ];
-
-  for (const st of stylists) {
-    await prisma.stylist.upsert({
-      where: { id: st.id },
-      update: st,
-      create: st,
-    });
-  }
-  console.log(`✅ ${stylists.length} Stylists seeded`);
+  // 3. Stylists / Artisans - Do NOT auto-seed stylists on redeploy.
+  // Stylists are dynamically created and managed via the salon management dashboard.
+  // Clean up legacy auto-seeded mock stylists from previous deployments if any exist:
+  const legacySeedStylistIds = ['niya-mathew', 'saneesh-kumar', 'abhirami-p', 'rahul-raj'];
+  await prisma.booking.updateMany({
+    where: { stylistId: { in: legacySeedStylistIds } },
+    data: { stylistId: null },
+  });
+  await prisma.blockedSlot.deleteMany({
+    where: { stylistId: { in: legacySeedStylistIds } },
+  });
+  await prisma.stylist.deleteMany({
+    where: { id: { in: legacySeedStylistIds } },
+  });
 
   // 4. Seed Services
   const services = [
