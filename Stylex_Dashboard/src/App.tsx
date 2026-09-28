@@ -930,6 +930,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_banners', JSON.stringify(nextBanners));
       safeSetItem('stylex_banners', JSON.stringify(nextBanners));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Banner Updated', `Homepage carousel banner is now ${nextActive ? 'active' : 'hidden'}.`);
 
@@ -947,6 +948,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
       safeSetItem('stylex_banners', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('success', 'Promotion Slide Saved', `"${banner.title}" saved.`);
 
@@ -977,6 +979,7 @@ export default function App() {
     try {
       safeSetItem('stylex_tirur_v6_banners', JSON.stringify(updated));
       safeSetItem('stylex_banners', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
     addToast('info', 'Slide Removed', 'Carousel promotion slide removed.');
 
