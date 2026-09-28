@@ -16,11 +16,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
   const handleDoneClick = () => {
     if (isCompleting) return;
     setIsCompleting(true);
-    // Allow the modern green animation & draw checkmark to display before closing
+    // Allow the modern green animation & draw checkmark to stay for 2.6 seconds before closing
     setTimeout(() => {
       onClose();
       setIsCompleting(false);
-    }, 1300);
+    }, 2600);
   };
 
   return (
@@ -80,6 +80,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
             <div className="mt-6 flex items-center gap-1.5 text-[11px] text-emerald-300/70 relative z-10">
               <span className="material-symbols-outlined text-[15px] text-emerald-400">spa</span>
               <span>StyleX Signature Salon • Tirur Outlet</span>
+            </div>
+
+            {/* Elegant completion progress bar */}
+            <div className="w-36 h-1 bg-emerald-950/80 rounded-full mt-4 overflow-hidden border border-emerald-500/20 relative z-10">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-400 to-teal-200 rounded-full transition-all duration-[2600ms] ease-out"
+                style={{ width: isCompleting ? '100%' : '0%' }}
+              />
             </div>
           </div>
         ) : (
