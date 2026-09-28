@@ -164,3 +164,69 @@
 .stylex-standard-tile-layer {
   filter: saturate(1.05) contrast(1.02) !important;
 }
+
+/* Booking Confirmation Celebration Keyframes */
+@keyframes checkBounce {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkStroke {
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes greenGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 35px rgba(52, 211, 153, 0.45), 0 0 80px rgba(16, 185, 129, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 65px rgba(52, 211, 153, 0.75), 0 0 120px rgba(16, 185, 129, 0.5);
+  }
+}
+
+@keyframes rippleSpread {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.animate-check-bounce {
+  animation: checkBounce 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-check-stroke {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: checkStroke 0.5s ease-in-out 0.2s forwards;
+}
+
+.animate-green-glow {
+  animation: greenGlowPulse 2s infinite ease-in-out;
+}
+
+.animate-ripple {
+  animation: rippleSpread 1.6s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
