@@ -39,6 +39,28 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     }
   }, [isOpen, initialDate]);
 
+  const [slotOccupancy, setSlotOccupancy] = useState<Record<string, { bookedCount: number; maxCapacity: number; status: 'available' | 'filling_fast' | 'full'; isAvailable: boolean }>>({});
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const fetchSlots = async () => {
+      try {
+        const gender = selectedService?.gender || 'gents';
+        const res = await fetch(`/api/bookings/slots?date=${targetDateYMD}&gender=${gender}`);
+        if (!res.ok) return;
+        const json = await res.json().catch(() => null);
+        if (json?.success && Array.isArray(json?.data)) {
+          const map: Record<string, any> = {};
+          json.data.forEach((s: any) => {
+            map[s.timeSlot] = s;
+          });
+          setSlotOccupancy(map);
+        }
+      } catch {}
+    };
+    fetchSlots();
+  }, [isOpen, targetDateYMD, selectedServiceId]);
+
   if (!isOpen) return null;
 
   const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
@@ -295,29 +317,64 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 '12:00 AM',
               ].map((slot) => {
                 const isBlocked = !!fullDayClosure || blockedSlotsList.includes(slot);
+                const occ = slotOccupancy[slot];
+                const bookedCount = occ?.bookedCount || 0;
+                const isFull = isBlocked || (occ ? !occ.isAvailable || occ.status === 'full' || bookedCount >= 3 : false);
+                const isFillingFast = !isFull && (occ ? occ.status === 'filling_fast' || bookedCount === 2 : false);
+
                 return (
                   <button
                     type="button"
                     key={slot}
-                    disabled={isBlocked}
+                    disabled={isFull}
                     onClick={() => setTime(slot)}
+                    title={
+                      isFull
+                        ? `Fully Booked (${bookedCount}/3)`
+                        : isFillingFast
+                        ? `Filling Fast (${bookedCount}/3)`
+                        : undefined
+                    }
                     className={`py-2 px-1 text-xs rounded-lg font-medium transition-all relative text-center ${
-                      isBlocked
-                        ? 'bg-red-50 text-red-400 border border-red-200 line-through cursor-not-allowed opacity-60'
+                      isFull
+                        ? 'bg-red-50 text-red-700 border-2 border-red-300 cursor-not-allowed opacity-85'
+                        : isFillingFast
+                        ? time === slot
+                          ? 'bg-amber-500 text-white font-bold ring-2 ring-amber-400'
+                          : 'bg-amber-50 text-amber-900 border-2 border-amber-400 hover:bg-amber-100 cursor-pointer'
                         : time === slot
                         ? 'bg-[#112e20] text-white shadow-xs font-bold'
-                        : 'bg-[#f0f5f1] text-[#181d1b] hover:bg-[#eaefeb]'
+                        : 'bg-[#f0f5f1] text-[#181d1b] hover:bg-[#eaefeb] cursor-pointer'
                     }`}
                   >
-                    <span>{slot}</span>
-                    {isBlocked && (
-                      <span className="block text-[8px] font-bold text-red-600 no-underline tracking-tighter">
-                        Blocked
+                    <span className={isBlocked ? 'line-through' : ''}>{slot}</span>
+                    {isFull ? (
+                      <span className="block text-[8px] font-bold text-red-600 no-underline tracking-tighter mt-0.5">
+                        {isBlocked ? 'Blocked' : 'Full (3/3)'}
                       </span>
-                    )}
+                    ) : isFillingFast ? (
+                      <span className={`block text-[8px] font-bold tracking-tighter mt-0.5 ${time === slot ? 'text-amber-100' : 'text-amber-700'}`}>
+                        2/3 Booked
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
+            </div>
+            {/* Status Legend */}
+            <div className="flex items-center gap-3 pt-1 text-[10px] text-[#424844]">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                Available
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-400 border border-amber-500" />
+                2 Booked (Yellow)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-500 border border-red-600" />
+                3/3 Full (Red)
+              </span>
             </div>
           </div>
 

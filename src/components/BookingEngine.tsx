@@ -99,9 +99,20 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [selectedDay, setSelectedDay] = useState<number>(now.getDate());
 
+interface SlotOccupancyInfo {
+  timeSlot: string;
+  isAvailable: boolean;
+  bookedCount: number;
+  maxCapacity: number;
+  status: 'available' | 'filling_fast' | 'full';
+  reason?: string;
+}
+
   // Time selection
   const timeSlots = TIME_SLOTS;
   const [selectedTime, setSelectedTime] = useState<string>(TIME_SLOTS[0]);
+  const [slotOccupancy, setSlotOccupancy] = useState<Record<string, SlotOccupancyInfo>>({});
+  const [, setIsLoadingSlots] = useState<boolean>(false);
 
   // Notes & Submission
   const [notes, setNotes] = useState('');
@@ -252,6 +263,64 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     };
   };
 
+  // Fetch real-time slot occupancy from backend
+  useEffect(() => {
+    let isCancelled = false;
+    const yyyy = currentYear;
+    const mm = String(currentMonthIndex + 1).padStart(2, '0');
+    const dd = String(selectedDay).padStart(2, '0');
+    const isoDateStr = `${yyyy}-${mm}-${dd}`;
+
+    const fetchSlots = async () => {
+      setIsLoadingSlots(true);
+      try {
+        const queryParams = new URLSearchParams({
+          date: isoDateStr,
+          gender: selectedGender,
+        });
+        if (selectedArtisan && selectedArtisan !== 'Any Stylist' && selectedArtisan !== 'Any Master Artisan') {
+          queryParams.set('stylistId', selectedArtisan);
+        }
+
+        const res = await fetch(`/api/bookings/slots?${queryParams.toString()}`);
+        if (!res.ok) return;
+        const json = await res.json().catch(() => null);
+        if (json?.success && Array.isArray(json?.data) && !isCancelled) {
+          const map: Record<string, SlotOccupancyInfo> = {};
+          json.data.forEach((slot: SlotOccupancyInfo) => {
+            map[slot.timeSlot] = slot;
+          });
+          setSlotOccupancy(map);
+
+          // If current selected time is full (3/3), auto-select first available time slot
+          const currentSlot = map[selectedTime];
+          if (currentSlot && (!currentSlot.isAvailable || currentSlot.status === 'full' || currentSlot.bookedCount >= 3)) {
+            const firstAvailable = TIME_SLOTS.find((s) => {
+              const occ = map[s];
+              return !occ || (occ.isAvailable && occ.status !== 'full' && occ.bookedCount < 3);
+            });
+            if (firstAvailable) {
+              setSelectedTime(firstAvailable);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Real-time slot occupancy load notice:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingSlots(false);
+        }
+      }
+    };
+
+    fetchSlots();
+    const interval = setInterval(fetchSlots, 20000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [selectedDay, currentMonthIndex, currentYear, selectedGender, selectedArtisan]);
+
   const handleSubmit = async () => {
     // Full Name is compulsory
     const cleanName = fullName.trim();
@@ -288,6 +357,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     }
     if (currentBlackout.blockedSlots.includes(selectedTime)) {
       alert(`The selected time slot (${selectedTime}) is blocked. Please select another slot.`);
+      return;
+    }
+
+    const currentOccupancy = slotOccupancy[selectedTime];
+    if (currentOccupancy && (!currentOccupancy.isAvailable || currentOccupancy.status === 'full' || currentOccupancy.bookedCount >= 3)) {
+      alert(`The ${selectedGender === 'ladies' ? 'Ladies' : 'Gents'} Section has reached its maximum capacity of 3 concurrent appointments for ${selectedTime} on ${isoDateStr}. Please select an adjacent time slot.`);
       return;
     }
 
@@ -353,6 +428,22 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       const createdBooking = json.data.booking;
       const serverRef = createdBooking.bookingRef;
       const assignedStylistName = createdBooking.stylist?.name || selectedArtisan;
+
+      // Re-sync slot occupancy after successful booking
+      setSlotOccupancy((prev) => {
+        const existing = prev[selectedTime];
+        const newCount = (existing?.bookedCount || 0) + 1;
+        return {
+          ...prev,
+          [selectedTime]: {
+            timeSlot: selectedTime,
+            bookedCount: newCount,
+            maxCapacity: 3,
+            isAvailable: newCount < 3,
+            status: newCount >= 3 ? 'full' : newCount === 2 ? 'filling_fast' : 'available',
+          },
+        };
+      });
 
       onConfirmBooking({
         bookingRef: serverRef,
@@ -775,33 +866,83 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         }
 
                         return (
-                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                            {timeSlots.map((slot) => {
-                              const isSelected = selectedTime === slot;
-                              const isSlotBlocked = currentBlackout.blockedSlots.includes(slot);
-                              return (
-                                <button
-                                  key={slot}
-                                  disabled={isSlotBlocked}
-                                  onClick={() => setSelectedTime(slot)}
-                                  className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-semibold transition-all text-center relative ${
-                                    isSlotBlocked
-                                      ? 'bg-red-50 text-red-400 line-through cursor-not-allowed border border-red-200/70 opacity-60'
-                                      : isSelected
-                                      ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 cursor-pointer'
-                                      : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb] cursor-pointer'
-                                  }`}
-                                  type="button"
-                                >
-                                  <span>{slot}</span>
-                                  {isSlotBlocked && (
-                                    <span className="block text-[8px] font-bold text-red-600 no-underline uppercase tracking-tight">
-                                      Blocked
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                              {timeSlots.map((slot) => {
+                                const isSelected = selectedTime === slot;
+                                const isSlotBlocked = currentBlackout.blockedSlots.includes(slot);
+                                const occ = slotOccupancy[slot];
+                                const bookedCount = occ?.bookedCount || 0;
+                                const isFull = isSlotBlocked || (occ ? !occ.isAvailable || occ.status === 'full' || bookedCount >= 3 : false);
+                                const isFillingFast = !isFull && (occ ? occ.status === 'filling_fast' || bookedCount === 2 : false);
+
+                                return (
+                                  <button
+                                    key={slot}
+                                    disabled={isFull}
+                                    onClick={() => setSelectedTime(slot)}
+                                    title={
+                                      isFull
+                                        ? `Fully Booked (${bookedCount}/3 spots filled)`
+                                        : isFillingFast
+                                        ? `Filling Fast (${bookedCount}/3 spots filled - 1 spot left)`
+                                        : `${bookedCount}/3 spots filled`
+                                    }
+                                    className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-semibold transition-all text-center relative select-none ${
+                                      isFull
+                                        ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-2 border-red-300 dark:border-red-800 cursor-not-allowed opacity-85 shadow-2xs'
+                                        : isFillingFast
+                                        ? isSelected
+                                          ? 'bg-amber-500 text-white font-bold shadow-md ring-2 ring-amber-400/60 border-2 border-amber-500 cursor-pointer'
+                                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-2 border-amber-400 dark:border-amber-600 hover:bg-amber-100 hover:border-amber-500 cursor-pointer shadow-2xs'
+                                        : isSelected
+                                        ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 cursor-pointer'
+                                        : 'bg-[#f0f5f1] dark:bg-[#15231c] text-[#181d1b] dark:text-[#e1e9e3] border border-[#c2c8c2]/50 dark:border-[#2a3c31] hover:bg-[#eaefeb] cursor-pointer'
+                                    }`}
+                                    type="button"
+                                  >
+                                    <span className={isSlotBlocked ? 'line-through' : ''}>{slot}</span>
+                                    {isFull ? (
+                                      <span className="block text-[8px] font-bold text-red-600 dark:text-red-400 uppercase tracking-tight mt-0.5">
+                                        {isSlotBlocked ? 'Blocked' : 'Full (3/3)'}
+                                      </span>
+                                    ) : isFillingFast ? (
+                                      <span
+                                        className={`block text-[8px] font-bold uppercase tracking-tight mt-0.5 ${
+                                          isSelected ? 'text-amber-100' : 'text-amber-700 dark:text-amber-400'
+                                        }`}
+                                      >
+                                        2/3 Booked
+                                      </span>
+                                    ) : bookedCount === 1 ? (
+                                      <span
+                                        className={`block text-[8px] font-medium tracking-tight mt-0.5 ${
+                                          isSelected ? 'text-white/80' : 'text-[#185341] dark:text-[#78c99e]'
+                                        }`}
+                                      >
+                                        1 Booked
+                                      </span>
+                                    ) : null}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Status Legend */}
+                            <div className="flex items-center justify-between pt-1 px-1 text-[10px] font-medium text-[#424844] dark:text-[#a0aba2]">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-[#185341] dark:bg-[#78c99e]" />
+                                <span>Available</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-amber-400 border border-amber-500" />
+                                <span className="text-amber-800 dark:text-amber-400 font-semibold">2 Booked (Yellow)</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-red-500 border border-red-600" />
+                                <span className="text-red-700 dark:text-red-400 font-semibold">3/3 Full (Red)</span>
+                              </div>
+                            </div>
                           </div>
                         );
                       })()}

@@ -1,19 +1,31 @@
 import { prisma } from '../config/db';
 import { AppError } from '../middleware/errorHandler';
 
-// Standard operational slots for StyleX Salon (30-min intervals)
+// Standard operational slots for StyleX Salon (10:00 AM – 1:00 AM)
 export const SALON_DAILY_SLOTS = [
-  '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
-  '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
-  '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
-  '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM',
-  '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM',
-  '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
+  '10:00 AM', '10:30 AM',
+  '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM',
+  '01:00 PM', '01:30 PM',
+  '02:00 PM', '02:30 PM',
+  '03:00 PM', '03:30 PM',
+  '04:00 PM', '04:30 PM',
+  '05:00 PM', '05:30 PM',
+  '06:00 PM', '06:30 PM',
+  '07:00 PM', '07:30 PM',
+  '08:00 PM', '08:30 PM',
+  '09:00 PM', '09:30 PM',
+  '10:00 PM', '10:30 PM',
+  '11:00 PM', '11:30 PM',
+  '12:00 AM',
 ];
 
 export interface SlotAvailability {
   timeSlot: string;
   isAvailable: boolean;
+  bookedCount: number;
+  maxCapacity: number;
+  status: 'available' | 'filling_fast' | 'full';
   reason?: string;
 }
 
@@ -106,10 +118,22 @@ export class SlotService {
     const allDayBlocked = blockedSlotMap.has('ALL_DAY');
 
     return SALON_DAILY_SLOTS.map((slot) => {
+      const gentsCount = gentsSlotCounts.get(slot) || 0;
+      const ladiesCount = ladiesSlotCounts.get(slot) || 0;
+      const bookedCount =
+        normalizedGender === 'ladies'
+          ? ladiesCount
+          : normalizedGender === 'gents'
+          ? gentsCount
+          : Math.max(gentsCount, ladiesCount);
+
       if (allDayBlocked) {
         return {
           timeSlot: slot,
           isAvailable: false,
+          bookedCount,
+          maxCapacity: 3,
+          status: 'full',
           reason: blockedSlotMap.get('ALL_DAY') || 'Salon closed for the day',
         };
       }
@@ -118,6 +142,9 @@ export class SlotService {
         return {
           timeSlot: slot,
           isAvailable: false,
+          bookedCount,
+          maxCapacity: 3,
+          status: 'full',
           reason: blockedSlotMap.get(slot),
         };
       }
@@ -129,45 +156,64 @@ export class SlotService {
           return {
             timeSlot: slot,
             isAvailable: false,
+            bookedCount: 3,
+            maxCapacity: 3,
+            status: 'full',
             reason: 'Stylist already reserved for this slot',
           };
         }
       }
 
-      const gentsCount = gentsSlotCounts.get(slot) || 0;
-      const ladiesCount = ladiesSlotCounts.get(slot) || 0;
-
       // Max 3 bookings per timeslot for Gents, 3 bookings for Ladies
+      let isFull = false;
+      let reason: string | undefined = undefined;
+
       if (normalizedGender === 'ladies') {
         if (ladiesCount >= 3) {
-          return {
-            timeSlot: slot,
-            isAvailable: false,
-            reason: 'Ladies section is fully booked for this time slot (3/3)',
-          };
+          isFull = true;
+          reason = 'Ladies section is fully booked for this time slot (3/3)';
         }
       } else if (normalizedGender === 'gents') {
         if (gentsCount >= 3) {
-          return {
-            timeSlot: slot,
-            isAvailable: false,
-            reason: 'Gents section is fully booked for this time slot (3/3)',
-          };
+          isFull = true;
+          reason = 'Gents section is fully booked for this time slot (3/3)';
         }
       } else {
         // If gender not specified, full only if both departments are full (3 gents + 3 ladies)
         if (gentsCount >= 3 && ladiesCount >= 3) {
-          return {
-            timeSlot: slot,
-            isAvailable: false,
-            reason: 'All sections fully booked for this time slot',
-          };
+          isFull = true;
+          reason = 'All sections fully booked for this time slot';
         }
+      }
+
+      if (isFull) {
+        return {
+          timeSlot: slot,
+          isAvailable: false,
+          bookedCount,
+          maxCapacity: 3,
+          status: 'full',
+          reason,
+        };
+      }
+
+      if (bookedCount === 2) {
+        return {
+          timeSlot: slot,
+          isAvailable: true,
+          bookedCount,
+          maxCapacity: 3,
+          status: 'filling_fast',
+          reason: '2 of 3 spots reserved (Filling fast)',
+        };
       }
 
       return {
         timeSlot: slot,
         isAvailable: true,
+        bookedCount,
+        maxCapacity: 3,
+        status: 'available',
       };
     });
   }
