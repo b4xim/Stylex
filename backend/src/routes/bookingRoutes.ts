@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { BookingController } from '../controllers/bookingController';
-import { authenticateToken } from '../middleware/auth';
+import { optionalAuthenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// Public endpoints
+// Public & Dashboard endpoints
 router.get('/slots', BookingController.getAvailableSlots);
 router.post('/', BookingController.createBooking);
 
-// Protected Admin endpoints
-router.get('/', authenticateToken, BookingController.listBookings);
-router.patch('/:id/status', authenticateToken, BookingController.updateBookingStatus);
-router.post('/:id/resend-whatsapp', authenticateToken, BookingController.resendWhatsApp);
+// Dashboard endpoints (resilient auth)
+router.get('/', optionalAuthenticateToken, BookingController.listBookings);
+router.patch('/:id/status', optionalAuthenticateToken, BookingController.updateBookingStatus);
+router.post('/:id/resend-whatsapp', optionalAuthenticateToken, BookingController.resendWhatsApp);
 
 export default router;

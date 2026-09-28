@@ -329,6 +329,21 @@ export class DashboardApi {
 // Data Mappers (PostgreSQL DB Record -> Dashboard State Object)
 // ============================================================================
 
+function normalizeToYMD(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  const trimmed = String(dateStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  if (trimmed.toLowerCase() === 'today') return new Date().toISOString().split('T')[0];
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  return trimmed;
+}
+
 export function mapBackendBookingToAppointment(b: any): Appointment {
   const name = b.customer?.name || 'Guest Client';
   const initials = name
@@ -370,7 +385,7 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
     stylistName: b.stylist?.name || 'Any Available Stylist',
     stylistAvatar: b.stylist?.imageUrl || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&q=80&w=200',
     status,
-    dateStr: b.date,
+    dateStr: normalizeToYMD(b.date),
     notes: b.notes ? `[Ref: ${b.bookingRef}] ${b.notes}` : `Ref: ${b.bookingRef}`,
   };
 }

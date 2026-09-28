@@ -65,9 +65,7 @@ export default function App() {
   // Navigation & Authentication
   const [currentTab, setCurrentTab] = useState<NavTab>('overview');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    const token = localStorage.getItem('stylex_admin_token');
-    const sessionActive = localStorage.getItem('stylex_session_active');
-    return !!(token && sessionActive === 'true');
+    return localStorage.getItem('stylex_session_active') === 'true';
   });
 
   // User Accounts & Authentication (Dynamic Staff Directory)

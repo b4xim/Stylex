@@ -288,6 +288,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
     setIsSubmitting(true);
 
+    const yyyy = currentYear;
+    const mm = String(currentMonthIndex + 1).padStart(2, '0');
+    const dd = String(selectedDay).padStart(2, '0');
+    const isoDateStr = `${yyyy}-${mm}-${dd}`;
+
+    const cleanStylist =
+      selectedArtisan && selectedArtisan !== 'Any Stylist' && selectedArtisan !== 'Any Master Artisan'
+        ? selectedArtisan
+        : undefined;
+
     try {
       const payload = {
         customerName: cleanName,
@@ -295,8 +305,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         countryCode: phoneCountryCode,
         customerEmail: email.trim() || undefined,
         serviceId: selectedService.id,
-        stylistId: selectedArtisan !== 'Any Master Artisan' ? selectedArtisan : undefined,
-        date: dateString,
+        stylistId: cleanStylist,
+        date: isoDateStr,
         timeSlot: selectedTime,
         notes: notes.trim() || undefined,
         source: 'WEBSITE',

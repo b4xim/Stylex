@@ -55,6 +55,29 @@ export class BookingController {
         throw new AppError('Name, phone, service, date, and time slot are required', 400);
       }
 
+      // Normalize date to standard ISO YYYY-MM-DD
+      let normalizedDate = String(date).trim();
+      if (normalizedDate.toLowerCase() === 'today') {
+        normalizedDate = new Date().toISOString().split('T')[0];
+      } else {
+        const parsedD = new Date(normalizedDate);
+        if (!isNaN(parsedD.getTime()) && !/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate)) {
+          const y = parsedD.getFullYear();
+          const m = String(parsedD.getMonth() + 1).padStart(2, '0');
+          const d = String(parsedD.getDate()).padStart(2, '0');
+          normalizedDate = `${y}-${m}-${d}`;
+        }
+      }
+
+      // Clean stylistId (ignore 'Any Stylist', 'Any Master Artisan')
+      let cleanStylistId: string | undefined = undefined;
+      if (stylistId && typeof stylistId === 'string') {
+        const lower = stylistId.toLowerCase();
+        if (!lower.includes('any') && !lower.includes('master artisan')) {
+          cleanStylistId = stylistId;
+        }
+      }
+
       // 1. Fetch primary service details (resilient lookup)
       let primaryService = await prisma.service.findFirst({
         where: {
@@ -104,12 +127,12 @@ export class BookingController {
 
       // Optional stylist
       let stylist = null;
-      if (stylistId) {
+      if (cleanStylistId) {
         stylist = await prisma.stylist.findFirst({
           where: {
             OR: [
-              { id: stylistId },
-              { name: { contains: stylistId, mode: 'insensitive' } },
+              { id: cleanStylistId },
+              { name: { contains: cleanStylistId, mode: 'insensitive' } },
             ],
           },
         });
@@ -119,7 +142,7 @@ export class BookingController {
       const total = subtotal;
 
       // 2. Concurrency Guard: Verify slot availability
-      await SlotService.assertSlotAvailable(date, timeSlot, stylistId);
+      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, cleanStylistId);
 
       // 3. Generate unique Reference
       const bookingRef = await SlotService.generateBookingRef();
@@ -161,7 +184,7 @@ export class BookingController {
             secondaryService: secondaryService?.name,
             secondaryPrice: secondaryService ? secondaryPrice : null,
             stylistId: stylist?.id,
-            date,
+            date: normalizedDate,
             timeSlot,
             status: 'CONFIRMED',
             subtotal,

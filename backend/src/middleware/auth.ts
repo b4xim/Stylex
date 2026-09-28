@@ -41,6 +41,25 @@ export const authenticateToken = (
   }
 };
 
+export const optionalAuthenticateToken = (
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_SECRET) as AuthUser;
+      req.user = decoded;
+    } catch {
+      // Ignored for optional routes
+    }
+  }
+  next();
+};
+
 export const requireRole = (roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
