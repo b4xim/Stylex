@@ -16,14 +16,41 @@ echo -e "${BLUE}================================================================
 echo -e "${GREEN}   StyleX Signature Salon - OCI Cloud Production Deployment    ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 
-# 1. Stop any legacy webserver running on host (e.g. Launching Soon page)
-echo -e "\n${YELLOW}[1/7] Clearing legacy web servers (freeing ports 80 & 443)...${NC}"
+# 1. Stop any legacy webserver or background repo running on host (e.g. Launching Soon page)
+echo -e "\n${YELLOW}[1/7] Clearing legacy web servers & freeing ports 80 & 443...${NC}"
+# Stop system web servers
 sudo systemctl stop nginx 2>/dev/null || true
 sudo systemctl disable nginx 2>/dev/null || true
 sudo systemctl stop apache2 2>/dev/null || true
 sudo systemctl disable apache2 2>/dev/null || true
 sudo systemctl stop httpd 2>/dev/null || true
 sudo systemctl disable httpd 2>/dev/null || true
+
+# Stop PM2 processes if old repo used PM2
+if command -v pm2 &> /dev/null; then
+  echo "Clearing PM2 processes..."
+  pm2 stop all 2>/dev/null || true
+  pm2 delete all 2>/dev/null || true
+  pm2 save --force 2>/dev/null || true
+fi
+
+# Stop any non-StyleX containers occupying port 80/443
+if command -v docker &> /dev/null; then
+  OLD_CONTAINERS=$(docker ps -q --filter "publish=80" 2>/dev/null || true)
+  if [ -n "$OLD_CONTAINERS" ]; then
+    echo "Stopping existing containers on port 80: $OLD_CONTAINERS"
+    docker stop $OLD_CONTAINERS 2>/dev/null || true
+  fi
+  OLD_CONTAINERS_SSL=$(docker ps -q --filter "publish=443" 2>/dev/null || true)
+  if [ -n "$OLD_CONTAINERS_SSL" ]; then
+    echo "Stopping existing containers on port 443: $OLD_CONTAINERS_SSL"
+    docker stop $OLD_CONTAINERS_SSL 2>/dev/null || true
+  fi
+fi
+
+# Force kill any remaining rogue processes on ports 80 or 443
+sudo fuser -k 80/tcp 2>/dev/null || true
+sudo fuser -k 443/tcp 2>/dev/null || true
 
 # 2. Configure Host Firewall (OCI iptables / ufw)
 echo -e "${YELLOW}[2/7] Configuring host firewall rules for HTTP (80) & HTTPS (443)...${NC}"
