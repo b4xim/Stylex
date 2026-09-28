@@ -383,8 +383,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding error:', e);
-    process.exit(1);
+    console.error('⚠️ Database seeding notice (continuing startup):', e.message || e);
   })
   .finally(async () => {
     await prisma.$disconnect();

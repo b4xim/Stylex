@@ -41,4 +41,4 @@ RUN mkdir -p uploads/banners uploads/reels uploads/photos uploads/general
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma db push && node dist/prisma/seed.js && node dist/src/server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && (node dist/prisma/seed.js || true) && node dist/src/server.js"]

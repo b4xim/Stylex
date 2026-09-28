@@ -239,7 +239,7 @@ export class SlotService {
         timeSlot,
         status: { in: ['CONFIRMED', 'PENDING'] },
         service: {
-          gender: targetDepartment,
+          gender: { contains: targetDepartment, mode: 'insensitive' },
         },
       },
     });

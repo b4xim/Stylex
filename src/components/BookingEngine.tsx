@@ -324,12 +324,27 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const json = await res.json().catch(() => null);
+      let json: any = null;
+      try {
+        const text = await res.text();
+        try {
+          json = JSON.parse(text);
+        } catch {
+          console.warn('Server response was not JSON:', text.slice(0, 200));
+        }
+      } catch (e) {
+        console.error('Failed to read server response body:', e);
+      }
 
       if (!res.ok || !json?.success || !json?.data?.booking) {
-        const errorMsg =
-          json?.message ||
-          'Unable to complete your reservation. Please try another time slot or contact our concierge directly at +91 96561 11149.';
+        let errorMsg = json?.message;
+        if (!errorMsg) {
+          if (res.status === 502 || res.status === 503 || res.status === 504) {
+            errorMsg = 'Reservation system is currently synchronizing. Please try again in a few moments, or contact our concierge directly at +91 96561 11149.';
+          } else {
+            errorMsg = `Unable to complete your reservation (HTTP ${res.status}). Please try another time slot or contact our concierge directly at +91 96561 11149.`;
+          }
+        }
         console.error('Booking submission rejected by server:', res.status, json);
         alert(errorMsg);
         return;
