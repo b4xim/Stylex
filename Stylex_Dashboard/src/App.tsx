@@ -378,7 +378,7 @@ export default function App() {
       addToast(
         'success',
         'Live Data Synchronized',
-        'Successfully fetched latest appointments and salon records from PostgreSQL.'
+        'Successfully fetched latest appointments and salon records.'
       );
     } catch {
       addToast('info', 'Synced', 'Salon records refreshed.');
