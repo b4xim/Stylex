@@ -34,6 +34,7 @@ import {
 } from './mockData';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { DashboardApi, mapBackendBookingToAppointment } from './services/api';
 import { OverviewView } from './components/OverviewView';
@@ -123,6 +124,7 @@ export default function App() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState<boolean>(false);
   const [userToEdit, setUserToEdit] = useState<UserAccount | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Sync users to localStorage
   useEffect(() => {
@@ -1736,20 +1738,26 @@ export default function App() {
         onTabChange={(tab) => {
           setCurrentTab(tab);
           setGlobalSearchQuery('');
+          setIsMobileMenuOpen(false);
         }}
         todayAppointmentsCount={todayAppointmentsCount}
         unreadConciergeCount={unreadInquiriesCount}
         onLogout={handleLogout}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Content Pane */}
-      <div className="pl-72">
+      <div className="pl-0 lg:pl-72 min-h-screen transition-all">
         <Header
           onOpenNewBooking={() => setIsNewBookingOpen(true)}
           searchQuery={globalSearchQuery}
           onSearchChange={setGlobalSearchQuery}
           currentUser={currentUser}
-          onNavigateToSettings={() => setCurrentTab('atelier-settings')}
+          onNavigateToSettings={() => {
+            setCurrentTab('atelier-settings');
+            setIsMobileMenuOpen(false);
+          }}
           onOpenChangePassword={() => setIsChangePasswordOpen(true)}
           onLogout={handleLogout}
           unreadCount={unreadInquiriesCount}
@@ -1757,9 +1765,10 @@ export default function App() {
           onToggleDarkMode={() => handleToggleDarkMode(!settings.darkMode)}
           onRefresh={handleRefreshData}
           isRefreshing={isRefreshing}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         />
 
-        <main className="relative pt-20 bg-[#f6faf7] min-h-screen px-6 sm:px-8 py-8">
+        <main className="relative pt-16 sm:pt-20 pb-28 lg:pb-8 bg-[#f6faf7] dark:bg-[#0d1611] min-h-screen px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
           {currentTab === 'overview' && (
             <OverviewView
               appointments={appointments}
@@ -2042,6 +2051,21 @@ export default function App() {
         }}
         onSave={handleSaveUser}
         existingEmails={users.map((u) => u.email)}
+      />
+
+      {/* Mobile PWA Bottom Navigation Bar */}
+      <MobileBottomNav
+        currentTab={currentTab}
+        onTabChange={(tab) => {
+          setCurrentTab(tab);
+          setGlobalSearchQuery('');
+          setIsMobileMenuOpen(false);
+        }}
+        todayAppointmentsCount={todayAppointmentsCount}
+        unreadConciergeCount={unreadInquiriesCount}
+        onOpenNewBooking={() => setIsNewBookingOpen(true)}
+        onToggleMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+        isMenuOpen={isMobileMenuOpen}
       />
     </div>
   );

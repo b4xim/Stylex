@@ -70,9 +70,9 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#f6faf7] dark:bg-[#0f1713] flex items-center justify-center p-6 antialiased">
+    <div className="min-h-screen bg-[#f6faf7] dark:bg-[#0f1713] flex items-center justify-center p-4 sm:p-6 antialiased">
       <main className="w-full max-w-md mx-auto">
-        <div className="bg-white dark:bg-[#15201a] rounded-2xl shadow-xl p-8 sm:p-10 border border-[#c2c8c2]/40 dark:border-[#2b3a32] relative">
+        <div className="bg-white dark:bg-[#15201a] rounded-2xl shadow-xl p-6 sm:p-10 border border-[#c2c8c2]/40 dark:border-[#2b3a32] relative">
           {onCancel && (
             <button
               onClick={onCancel}

@@ -15,6 +15,7 @@ interface HeaderProps {
   onToggleDarkMode?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onToggleMobileMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   unreadCount = 2,
   onRefresh,
   isRefreshing = false,
+  onToggleMobileMenu,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -69,13 +71,25 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="fixed top-0 left-72 right-0 h-20 bg-[#f6faf7]/90 dark:bg-[#121c17]/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-4 lg:px-6 border-b border-[#dfe4e0]/60 dark:border-[#24332a] gap-2 lg:gap-4">
+    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 sm:h-20 bg-[#f6faf7]/90 dark:bg-[#121c17]/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-3 sm:px-4 lg:px-6 border-b border-[#dfe4e0]/60 dark:border-[#24332a] gap-2 lg:gap-4 transition-all">
       {/* Left zone: Brand Status */}
-      <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 min-w-0">
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 xl:gap-4 shrink-0 min-w-0">
+        {/* Mobile Menu Hamburger */}
+        {onToggleMobileMenu && (
+          <button
+            type="button"
+            onClick={onToggleMobileMenu}
+            aria-label="Open navigation menu"
+            className="lg:hidden p-1.5 sm:p-2 -ml-1 rounded-xl text-[#112e20] dark:text-white hover:bg-[#eaefeb] dark:hover:bg-[#1f2d25] transition-colors cursor-pointer shrink-0"
+          >
+            <span className="material-symbols-outlined text-[24px]">menu</span>
+          </button>
+        )}
+
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <img alt="StyleX X Logo" className="h-7 w-7 sm:h-8 sm:w-8 object-contain shrink-0" src={X_LOGO_URL} />
           <span className="font-semibold text-sm sm:text-base text-[#112e20] dark:text-white whitespace-nowrap">
-            StyleX Admin Portal
+            <span className="hidden xs:inline">StyleX </span>Admin<span className="hidden md:inline"> Portal</span>
           </span>
         </div>
 
@@ -95,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right zone: Actions & Profile */}
-      <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 min-w-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 xl:gap-4 shrink-0 min-w-0">
         {/* Search */}
         <div className="relative hidden lg:flex items-center shrink min-w-0">
           <span className="material-symbols-outlined absolute left-3 text-[#424844] dark:text-[#88998f] text-[18px] pointer-events-none shrink-0">
@@ -124,11 +138,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full bg-[#f0f5f1] dark:bg-[#192720] text-[#112e20] dark:text-[#caead5] border border-[#c2c8c2]/50 dark:border-[#2a3c31] text-[13px] font-medium hover:bg-[#e2ebe4] dark:hover:bg-[#22352b] transition-all cursor-pointer shadow-2xs group active:scale-95 disabled:opacity-60 shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-[#f0f5f1] dark:bg-[#192720] text-[#112e20] dark:text-[#caead5] border border-[#c2c8c2]/50 dark:border-[#2a3c31] text-[13px] font-medium hover:bg-[#e2ebe4] dark:hover:bg-[#22352b] transition-all cursor-pointer shadow-2xs group active:scale-95 disabled:opacity-60 shrink-0 whitespace-nowrap"
             title="Refresh live appointments & records from database"
           >
             <span
-              className={`material-symbols-outlined text-[19px] text-[#112e20] dark:text-[#7cebb0] shrink-0 ${
+              className={`material-symbols-outlined text-[18px] sm:text-[19px] text-[#112e20] dark:text-[#7cebb0] shrink-0 ${
                 isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'
               }`}
             >
@@ -143,10 +157,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* New Booking CTA */}
         <button
           onClick={onOpenNewBooking}
-          className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 xl:px-5 py-2 sm:py-2.5 rounded-full bg-[#9b4521] text-white text-xs sm:text-[13px] font-semibold shadow-sm hover:bg-[#752906] transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shrink-0 whitespace-nowrap"
+          className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 xl:px-5 py-1.5 sm:py-2.5 rounded-full bg-[#9b4521] text-white text-xs sm:text-[13px] font-semibold shadow-sm hover:bg-[#752906] transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shrink-0 whitespace-nowrap"
         >
-          <span className="material-symbols-outlined text-[18px] shrink-0">add</span>
-          <span className="whitespace-nowrap">New Booking</span>
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px] shrink-0">add</span>
+          <span className="hidden sm:inline whitespace-nowrap">New Booking</span>
+          <span className="sm:hidden whitespace-nowrap">New</span>
         </button>
 
         {/* Notifications */}

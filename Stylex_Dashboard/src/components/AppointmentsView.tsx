@@ -436,7 +436,7 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
               {/* Custom High-End Calendar Popover Dropdown */}
               {isCalendarOpen && (
                 <div
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-76 sm:w-80 bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl border border-[#c2c8c2]/50 dark:border-white/15 z-50 p-3 animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[calc(100vw-2.5rem)] max-w-xs sm:w-80 bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl border border-[#c2c8c2]/50 dark:border-white/15 z-50 p-3 animate-in fade-in zoom-in-95 duration-150"
                   role="dialog"
                   aria-label="Calendar Date Picker"
                 >
@@ -602,20 +602,20 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
       </div>
 
       {/* Modern 7-Day Horizontal Timeline Strip */}
-      <div className="bg-white dark:bg-[#15201a] rounded-2xl p-3 border border-[#c2c8c2]/35 dark:border-white/10 shadow-2xs">
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-white dark:bg-[#15201a] rounded-2xl p-2 sm:p-3 border border-[#c2c8c2]/35 dark:border-white/10 shadow-2xs">
+        <div className="flex items-center justify-between gap-1 sm:gap-2">
           {/* Week Shift Back */}
           <button
             onClick={() => handleStepWeek(-1)}
             aria-label="Previous Week"
             title="Step 1 week back"
-            className="p-2 rounded-xl text-[#424844] dark:text-[#a0aca4] hover:text-[#112e20] dark:hover:text-white hover:bg-[#f0f5f1] dark:hover:bg-white/10 transition-colors cursor-pointer flex-shrink-0"
+            className="p-1.5 sm:p-2 rounded-xl text-[#424844] dark:text-[#a0aca4] hover:text-[#112e20] dark:hover:text-white hover:bg-[#f0f5f1] dark:hover:bg-white/10 transition-colors cursor-pointer flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-[20px]">keyboard_double_arrow_left</span>
+            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">keyboard_double_arrow_left</span>
           </button>
 
           {/* 7 Days Cards */}
-          <div className="grid grid-cols-7 gap-2 flex-1">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1">
             {stripDays.map((day) => {
               const isCardSelected = !showAllDates && day.isSelected;
               return (
@@ -625,7 +625,7 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                     setSelectedDate(day.ymd);
                     setShowAllDates(false);
                   }}
-                  className={`flex flex-col items-center justify-center pt-3.5 pb-2 px-1 sm:px-2 rounded-xl transition-all cursor-pointer relative group text-center ${
+                  className={`flex flex-col items-center justify-center pt-2.5 sm:pt-3.5 pb-1.5 sm:pb-2 px-0.5 sm:px-2 rounded-xl transition-all cursor-pointer relative group text-center ${
                     isCardSelected
                       ? 'bg-[#112e20] dark:bg-[#1f3a2c] text-white shadow-md shadow-[#112e20]/15 dark:shadow-black/40 ring-2 ring-[#112e20]/25 dark:ring-[#caead5]/30'
                       : 'bg-[#f8faf8] dark:bg-[#1a2520] hover:bg-[#eaefeb] dark:hover:bg-[#223329] text-[#181d1b] dark:text-white border border-[#eaefeb] dark:border-white/5'

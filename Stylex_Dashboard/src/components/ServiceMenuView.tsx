@@ -51,8 +51,8 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-64 sm:w-72">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
             <span className="material-symbols-outlined absolute left-3.5 top-2.5 text-[#424844] text-[18px]">
               search
             </span>
@@ -76,13 +76,13 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
           {!isViewOnly ? (
             <button
               onClick={onOpenAddService}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#9b4521] text-white text-[13px] font-semibold shadow-sm hover:bg-[#752906] transition-all hover:-translate-y-0.5 active:translate-y-0 shrink-0 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#9b4521] text-white text-[13px] font-semibold shadow-sm hover:bg-[#752906] transition-all hover:-translate-y-0.5 active:translate-y-0 shrink-0 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               <span>+ Add Service</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500 text-xs font-medium">
+            <div className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500 text-xs font-medium">
               <span className="material-symbols-outlined text-[15px]">visibility</span>
               <span>View-Only Mode</span>
             </div>
@@ -115,14 +115,16 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
       </div>
 
       {/* Clean Service Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#c2c8c2]/30 overflow-hidden">
-        {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-[#f0f5f1] border-b border-[#c2c8c2]/30 text-[#424844] text-[11px] uppercase tracking-wider font-semibold select-none">
-          <div className="col-span-8">Service & Description</div>
-          <div className="col-span-2 text-center">Duration</div>
-          <div className="col-span-1 text-center">Website Display</div>
-          <div className="col-span-1 text-right">Actions</div>
-        </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-[#c2c8c2]/30 overflow-hidden">
+        <div className="overflow-x-auto min-w-full">
+          <div className="min-w-[680px]">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-[#f0f5f1] border-b border-[#c2c8c2]/30 text-[#424844] text-[11px] uppercase tracking-wider font-semibold select-none">
+              <div className="col-span-8">Service & Description</div>
+              <div className="col-span-2 text-center">Duration</div>
+              <div className="col-span-1 text-center">Website Display</div>
+              <div className="col-span-1 text-right">Actions</div>
+            </div>
 
         {/* Items List */}
         <div className="divide-y divide-[#eaefeb]">
@@ -214,6 +216,8 @@ export const ServiceMenuView: React.FC<ServiceMenuViewProps> = ({
               </div>
             ))
           )}
+            </div>
+          </div>
         </div>
       </div>
 

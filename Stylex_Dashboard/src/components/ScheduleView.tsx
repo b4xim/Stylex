@@ -56,7 +56,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       {/* Top Header & Master Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#c2c8c2]/30">
         <div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#112e20] tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-[#112e20] tracking-tight">
             Schedule Control
           </h1>
           <p className="text-sm text-[#424844] mt-1">
@@ -81,7 +81,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       </div>
 
       {/* Weekly Working Hours Card */}
-      <div className="bg-white rounded-2xl border border-[#c2c8c2]/30 p-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-[#c2c8c2]/30 p-4 sm:p-6 shadow-xs">
         <div className="flex items-center justify-between pb-5 border-b border-[#c2c8c2]/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#f0f5f1] flex items-center justify-center text-[#112e20]">
@@ -102,9 +102,9 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           {weekSchedule.map((day, idx) => (
             <div
               key={day.dayName}
-              className="flex items-center justify-between py-4 px-2 hover:bg-[#f0f5f1]/50 rounded-xl transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between py-3.5 sm:py-4 px-2 hover:bg-[#f0f5f1]/50 rounded-xl transition-colors gap-2 sm:gap-4"
             >
-              <div className="flex items-center gap-4 w-44">
+              <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 w-full sm:w-44">
                 <span className="text-base font-semibold text-[#112e20]">{day.dayName}</span>
                 <span
                   className={`px-2 py-0.5 rounded text-[11px] font-medium ${
@@ -168,7 +168,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       </div>
 
       {/* Blocked Dates & Time Slots Card */}
-      <div className="bg-white rounded-2xl border border-[#c2c8c2]/30 p-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-[#c2c8c2]/30 p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#c2c8c2]/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-100/70 text-amber-800 flex items-center justify-center">

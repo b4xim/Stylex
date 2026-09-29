@@ -113,7 +113,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   return (
     <div className="flex flex-col w-full gap-8">
       {/* 1. Header & Quick Operations Ribbon */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-[#9b4521] uppercase tracking-widest font-bold">
@@ -124,13 +124,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               Tirur Outlet • Station Sync 10:42 AM
             </span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#112e20] tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-[#112e20] tracking-tight">
             Admin Operations & Bookings Control
           </h1>
         </div>
 
         {/* Quick Operations Ribbon */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-[#f0f5f1] dark:bg-[#142e20] border border-transparent dark:border-white/10 shadow-xs">
             <div className="flex items-center gap-2">
               <span
@@ -187,9 +187,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       </div>
 
       {/* 2. Top KPI Metric Cards (Grid of 3) */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
         {/* Card 1 */}
-        <div className="rounded-xl bg-white p-6 shadow-sm flex flex-col justify-between border border-[#c2c8c2]/30">
+        <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm flex flex-col justify-between border border-[#c2c8c2]/30">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-[#424844] uppercase tracking-wider font-bold">
               Today's Appointments
@@ -209,7 +209,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Card 2 */}
-        <div className="rounded-xl bg-white p-6 shadow-sm flex flex-col justify-between border border-[#c2c8c2]/30">
+        <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm flex flex-col justify-between border border-[#c2c8c2]/30">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-[#424844] uppercase tracking-wider font-bold">
               Online Booking Gateway
@@ -248,7 +248,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Card 3: Completed Rituals */}
-        <div className="rounded-xl bg-white p-6 shadow-sm flex flex-col justify-between border border-[#c2c8c2]/30">
+        <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm flex flex-col justify-between border border-[#c2c8c2]/30 sm:col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-[#424844] uppercase tracking-wider font-bold">
               Completed Rituals
@@ -269,7 +269,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       </section>
 
       {/* 3. Date Availability & Schedule Blocking Control Panel */}
-      <section className="rounded-xl bg-white p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30">
+      <section className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="font-serif text-xl sm:text-2xl text-[#112e20]">
@@ -357,7 +357,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       </section>
 
       {/* 4. Live Bookings & Reservations Ledger Table */}
-      <section className="rounded-xl bg-white p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30">
+      <section className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-2.5 h-6 rounded-full bg-[#112e20]"></div>
@@ -370,7 +370,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </p>
             </div>
           </div>
-          <div className="relative flex items-center">
+          <div className="relative flex items-center w-full sm:w-auto">
             <span className="material-symbols-outlined absolute left-3 text-[#424844] text-[18px]">
               search
             </span>
@@ -378,7 +378,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Search client or ritual..."
-              className="pl-9 pr-4 py-1.5 w-64 rounded-full bg-[#f0f5f1] dark:bg-white/5 text-[#181d1b] dark:text-white placeholder:text-[#424844] text-sm outline-none focus:bg-white dark:focus:bg-[#1a2520] focus:ring-1 focus:ring-[#112e20] border border-transparent focus:border-[#112e20]/20 transition-all"
+              className="pl-9 pr-4 py-1.5 w-full sm:w-64 rounded-full bg-[#f0f5f1] dark:bg-white/5 text-[#181d1b] dark:text-white placeholder:text-[#424844] text-sm outline-none focus:bg-white dark:focus:bg-[#1a2520] focus:ring-1 focus:ring-[#112e20] border border-transparent focus:border-[#112e20]/20 transition-all"
             />
           </div>
         </div>

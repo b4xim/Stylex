@@ -42,7 +42,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#c2c8c2]/30 dark:border-white/10 pb-6">
         <div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#112e20] dark:text-white tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-[#112e20] dark:text-white tracking-tight">
             Clients Directory
           </h1>
           <p className="text-sm text-[#424844] dark:text-[#a0aca4] mt-1">
@@ -50,7 +50,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
           </p>
         </div>
 
-        <div className="relative w-72">
+        <div className="relative w-full sm:w-72">
           <span className="material-symbols-outlined absolute left-3.5 top-2.5 text-[#424844] dark:text-[#88998f] text-[18px]">
             search
           </span>
