@@ -29,27 +29,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const permissions = useMemo(() => getRolePermissions(currentUser?.role || 'Normal User'), [currentUser?.role]);
   const isSettingsDisabled = !permissions.canEditSettings;
   const isDeveloper = currentUser?.role === 'Developer' || currentUser?.username === 'developer';
-  const visibleUsers = useMemo(() => (Array.isArray(users) ? users.filter((u) => !u.isSecret) : []), [users]);
+  const visibleUsers = useMemo(() => {
+    if (!Array.isArray(users)) return [];
+    const nonSecret = users.filter((u) => !u.isSecret);
+    const seen = new Set<string>();
+    const deduped: UserAccount[] = [];
+    for (const u of nonSecret) {
+      const isDev = u.role === 'Developer' || u.username?.toLowerCase() === 'developer' || u.email?.toLowerCase() === 'dev@stylexsalon.in';
+      const key = isDev ? 'role_developer_singleton' : (u.email?.toLowerCase().trim() || u.username?.toLowerCase().trim() || u.id);
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(u);
+      }
+    }
+    return deduped;
+  }, [users]);
 
   const [formData, setFormData] = useState<SalonSettings>({ ...settings });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null);
 
-  // Synchronize formData when external settings change (e.g. initial load or after save)
+  // Synchronize formData when external settings change (e.g. initial load, live backend fetch, or after save)
   useEffect(() => {
     setFormData((prev) => {
-      const isCurrentlyDirty =
+      const isTextDirty =
         prev.salonName !== settings.salonName ||
         prev.phone !== settings.phone ||
         prev.email !== settings.email ||
-        prev.address !== settings.address ||
-        Boolean(prev.reschedulePolicy24h) !== Boolean(settings.reschedulePolicy24h) ||
-        Boolean(prev.smsWhatsappReminders) !== Boolean(settings.smsWhatsappReminders) ||
-        Boolean(prev.emailCalendarInvites) !== Boolean(settings.emailCalendarInvites) ||
-        Boolean(prev.maintenanceMode) !== Boolean(settings.maintenanceMode);
+        prev.address !== settings.address;
 
-      if (isCurrentlyDirty) {
-        return { ...prev, darkMode: settings.darkMode };
+      if (isTextDirty) {
+        return {
+          ...prev,
+          darkMode: settings.darkMode,
+          maintenanceMode: settings.maintenanceMode,
+        };
       }
       return { ...settings };
     });

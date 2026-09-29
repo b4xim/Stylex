@@ -73,6 +73,29 @@ function safeParse<T>(key: string, fallback: T): T {
   return safeGetItem<T>(key, fallback);
 }
 
+// User account deduplication helper: ensures only 1 developer account exists
+export const deduplicateUsers = (userList: UserAccount[]): UserAccount[] => {
+  if (!Array.isArray(userList)) return [];
+  const seenKeys = new Set<string>();
+  const result: UserAccount[] = [];
+
+  for (const u of userList) {
+    if (!u) continue;
+    const cleanUsername = (u.username || '').trim().toLowerCase();
+    const cleanEmail = (u.email || '').trim().toLowerCase();
+    const isDev = u.role === 'Developer' || cleanUsername === 'developer' || cleanEmail === 'dev@stylexsalon.in';
+
+    // Unique key: developer accounts always resolve to a single singleton slot
+    const key = isDev ? 'role_developer_singleton' : (cleanEmail || cleanUsername || u.id);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      result.push(u);
+    }
+  }
+
+  return result;
+};
+
 export default function App() {
   // Navigation & Authentication
   const [currentTab, setCurrentTab] = useState<NavTab>('overview');
@@ -84,9 +107,9 @@ export default function App() {
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const parsed = safeParse<UserAccount[]>('stylex_user_accounts_v2', INITIAL_USERS);
     const safeList = Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_USERS;
-    const hasBladeoski = safeList.some((u) => u?.username === 'bladeoski' || u?.id === 'user-bladeoski');
-    const hasDev = safeList.some((u) => u?.username === 'developer' || u?.id === 'user-dev');
-    const hasAdmin = safeList.some((u) => u?.username === 'admin' || u?.id === 'user-admin' || u?.id === 'user-1');
+    const hasBladeoski = safeList.some((u) => u?.username?.toLowerCase() === 'bladeoski' || u?.email?.toLowerCase() === 'bladeoski@stylex.com');
+    const hasDev = safeList.some((u) => u?.role === 'Developer' || u?.username?.toLowerCase() === 'developer' || u?.email?.toLowerCase() === 'dev@stylexsalon.in');
+    const hasAdmin = safeList.some((u) => (u?.role === 'Admin' && u?.username?.toLowerCase() === 'admin') || u?.email?.toLowerCase() === 'admin@stylexsalon.in');
     let merged = [...safeList];
     if (!hasBladeoski) {
       const blade = INITIAL_USERS.find((u) => u.username === 'bladeoski');
@@ -100,7 +123,11 @@ export default function App() {
       const adm = INITIAL_USERS.find((u) => u.username === 'admin');
       if (adm) merged.push(adm);
     }
-    return merged;
+    const clean = deduplicateUsers(merged);
+    try {
+      safeSetItem('stylex_user_accounts_v2', JSON.stringify(clean));
+    } catch {}
+    return clean;
   });
 
   const [currentUser, setCurrentUser] = useState<UserAccount>(() => {
@@ -204,8 +231,14 @@ export default function App() {
   });
 
   const [notifications, setNotifications] = useState<AdminNotification[]>(() => {
-    const parsed = safeParse<AdminNotification[]>('stylex_admin_notifications_v2', INITIAL_NOTIFICATIONS);
-    return Array.isArray(parsed) ? parsed : INITIAL_NOTIFICATIONS;
+    const parsed = safeParse<AdminNotification[]>('stylex_admin_notifications_v2', []);
+    const valid = Array.isArray(parsed) ? parsed : [];
+    // Purge any legacy mock notifications (notif-1, notif-2)
+    const clean = valid.filter((n) => n.id !== 'notif-1' && n.id !== 'notif-2');
+    try {
+      safeSetItem('stylex_admin_notifications_v2', JSON.stringify(clean));
+    } catch {}
+    return clean;
   });
 
   const isInitialDataLoadedRef = useRef<boolean>(false);
@@ -665,10 +698,37 @@ export default function App() {
       // 8. Fetch live salon settings
       try {
         const liveSettings: any = await DashboardApi.getSettings();
-        if (liveSettings && typeof liveSettings.bookingEngineActive !== 'undefined') {
-          const isActive = liveSettings.bookingEngineActive === true || liveSettings.bookingEngineActive === 'true';
-          setIsEngineActive(isActive);
-          safeSetItem('stylex_booking_engine_active', String(isActive));
+        if (liveSettings) {
+          if (typeof liveSettings.bookingEngineActive !== 'undefined') {
+            const isActive = liveSettings.bookingEngineActive === true || liveSettings.bookingEngineActive === 'true';
+            setIsEngineActive(isActive);
+            safeSetItem('stylex_booking_engine_active', String(isActive));
+          }
+
+          if (typeof liveSettings.maintenanceMode !== 'undefined') {
+            const isMaint = liveSettings.maintenanceMode === true || liveSettings.maintenanceMode === 'true';
+            safeSetItem('stylex_maintenance_mode', String(isMaint));
+            setSettings((prev) => ({ ...prev, maintenanceMode: isMaint }));
+          }
+
+          setSettings((prev) => {
+            const updated = { ...prev };
+            if (typeof liveSettings.maintenanceMode !== 'undefined') {
+              updated.maintenanceMode = liveSettings.maintenanceMode === true || liveSettings.maintenanceMode === 'true';
+            }
+            if (liveSettings.salonName) updated.salonName = liveSettings.salonName;
+            if (liveSettings.phone) updated.phone = liveSettings.phone;
+            if (liveSettings.email) updated.email = liveSettings.email;
+            if (liveSettings.address) updated.address = liveSettings.address;
+            if (typeof liveSettings.smsWhatsappReminders !== 'undefined') {
+              updated.smsWhatsappReminders = liveSettings.smsWhatsappReminders === true || liveSettings.smsWhatsappReminders === 'true';
+            }
+            if (typeof liveSettings.emailCalendarInvites !== 'undefined') {
+              updated.emailCalendarInvites = liveSettings.emailCalendarInvites === true || liveSettings.emailCalendarInvites === 'true';
+            }
+            safeSetItem('stylex_tirur_v6_settings', JSON.stringify(updated));
+            return updated;
+          });
         }
       } catch (e) {
         console.warn('Live settings fetch:', e);
@@ -776,6 +836,23 @@ export default function App() {
               playNotificationChime();
             }
           }
+
+          // 3. Live Salon Settings (e.g. Maintenance Mode sync across devices & sessions)
+          try {
+            const liveSettings: any = await DashboardApi.getSettings();
+            if (liveSettings) {
+              if (typeof liveSettings.maintenanceMode !== 'undefined') {
+                const isMaint = liveSettings.maintenanceMode === true || liveSettings.maintenanceMode === 'true';
+                safeSetItem('stylex_maintenance_mode', String(isMaint));
+                setSettings((prev) => (prev.maintenanceMode !== isMaint ? { ...prev, maintenanceMode: isMaint } : prev));
+              }
+              if (typeof liveSettings.bookingEngineActive !== 'undefined') {
+                const isActive = liveSettings.bookingEngineActive === true || liveSettings.bookingEngineActive === 'true';
+                safeSetItem('stylex_booking_engine_active', String(isActive));
+                setIsEngineActive((prev) => (prev !== isActive ? isActive : prev));
+              }
+            }
+          } catch {}
         } catch {}
       }, 15000);
       return () => clearInterval(interval);
@@ -1962,14 +2039,27 @@ export default function App() {
   const handleSignInSuccess = (user: UserAccount) => {
     setCurrentUser(user);
     setUsers((prev) => {
-      const exists = prev.some((u) => u.id === user.id || u.username === user.username);
+      const isDev = user.role === 'Developer' || user.username?.toLowerCase() === 'developer' || user.email?.toLowerCase() === 'dev@stylexsalon.in';
+      const exists = prev.some((u) => 
+        u.id === user.id || 
+        (u.username && u.username.toLowerCase() === user.username.toLowerCase()) ||
+        (u.email && u.email.toLowerCase() === user.email.toLowerCase()) ||
+        (isDev && (u.role === 'Developer' || u.username?.toLowerCase() === 'developer' || u.email?.toLowerCase() === 'dev@stylexsalon.in'))
+      );
       const next = exists
-        ? prev.map((u) => (u.id === user.id || u.username === user.username ? { ...u, ...user } : u))
+        ? prev.map((u) => {
+            const isMatch = u.id === user.id || 
+              (u.username && u.username.toLowerCase() === user.username.toLowerCase()) ||
+              (u.email && u.email.toLowerCase() === user.email.toLowerCase()) ||
+              (isDev && (u.role === 'Developer' || u.username?.toLowerCase() === 'developer' || u.email?.toLowerCase() === 'dev@stylexsalon.in'));
+            return isMatch ? { ...u, ...user } : u;
+          })
         : [...prev, user];
+      const deduped = deduplicateUsers(next);
       try {
-        safeSetItem('stylex_user_accounts_v2', JSON.stringify(next));
+        safeSetItem('stylex_user_accounts_v2', JSON.stringify(deduped));
       } catch {}
-      return next;
+      return deduped;
     });
     safeSetItem('stylex_current_user_email_v2', user.email);
     safeSetItem('stylex_session_active', 'true');

@@ -31,23 +31,27 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
       // Production live API login against PostgreSQL database
       const res = await DashboardApi.login(clean, password);
       if (res?.success && res?.data?.user) {
-        const apiUser = res.data.user;
+        const isApiDev = apiUser.role === 'DEVELOPER' || clean === 'dev@stylexsalon.in' || clean === 'developer';
+        const isApiAdmin = apiUser.role === 'ADMIN' || clean === 'admin@stylexsalon.in' || clean === 'admin';
+
         const matchedLocal = users.find(
           (u) =>
             (u.username && u.username.toLowerCase() === clean) ||
-            (u.email && u.email.trim().toLowerCase() === clean)
+            (u.email && u.email.trim().toLowerCase() === clean) ||
+            (isApiDev && (u.role === 'Developer' || u.username?.toLowerCase() === 'developer' || u.email?.toLowerCase() === 'dev@stylexsalon.in')) ||
+            (isApiAdmin && (u.username?.toLowerCase() === 'admin' || u.email?.toLowerCase() === 'admin@stylexsalon.in'))
         );
 
         const authenticatedUser: UserAccount = {
-          id: apiUser.id,
-          name: apiUser.name,
-          username: apiUser.username || clean,
-          email: apiUser.email,
-          role: (apiUser.role === 'ADMIN' ? 'Admin' : apiUser.role === 'DEVELOPER' ? 'Developer' : 'Manager'),
-          roleTitle: matchedLocal?.roleTitle || (apiUser.role === 'DEVELOPER' ? 'Lead Developer & Tech' : 'Salon Administrator'),
-          initials: (apiUser.name || 'AD').split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase(),
+          id: matchedLocal?.id || (isApiDev ? 'user-dev' : isApiAdmin ? 'user-admin' : apiUser.id),
+          name: apiUser.name || matchedLocal?.name || (isApiDev ? 'Developer' : 'Admin'),
+          username: isApiDev ? 'developer' : isApiAdmin ? 'admin' : (matchedLocal?.username || apiUser.username || clean),
+          email: isApiDev ? 'dev@stylexsalon.in' : isApiAdmin ? 'admin@stylexsalon.in' : (apiUser.email || clean),
+          role: (isApiDev || apiUser.role === 'DEVELOPER') ? 'Developer' : (isApiAdmin || apiUser.role === 'ADMIN') ? 'Admin' : 'Manager',
+          roleTitle: matchedLocal?.roleTitle || (isApiDev ? 'Lead Developer & Tech' : 'Salon Administrator'),
+          initials: (apiUser.name || matchedLocal?.name || (isApiDev ? 'DV' : 'AD')).split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase(),
           password: password,
-          createdAt: new Date().toISOString().split('T')[0],
+          createdAt: matchedLocal?.createdAt || new Date().toISOString().split('T')[0],
         };
 
         setIsLoading(false);
