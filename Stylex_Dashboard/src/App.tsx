@@ -1748,7 +1748,7 @@ export default function App() {
       />
 
       {/* Main Content Pane */}
-      <div className="pl-0 lg:pl-72 min-h-screen transition-all">
+      <div className="pl-0 lg:pl-56 xl:pl-60 2xl:pl-72 min-h-screen transition-all duration-300">
         <Header
           onOpenNewBooking={() => setIsNewBookingOpen(true)}
           searchQuery={globalSearchQuery}
@@ -1768,7 +1768,7 @@ export default function App() {
           onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         />
 
-        <main className="relative pt-16 sm:pt-20 pb-28 lg:pb-8 bg-[#f6faf7] dark:bg-[#0d1611] min-h-screen px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main className="relative pt-16 xl:pt-20 pb-28 lg:pb-8 bg-[#f6faf7] dark:bg-[#0d1611] min-h-screen px-3 sm:px-5 lg:px-6 2xl:px-8 py-4 sm:py-6 2xl:py-8 transition-all">
           {currentTab === 'overview' && (
             <OverviewView
               appointments={appointments}

@@ -52,7 +52,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full pt-2 pb-12 flex flex-col gap-8">
+    <div className="max-w-5xl mx-auto w-full pt-1 pb-12 flex flex-col gap-6 xl:gap-8">
       {/* Top Header & Master Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#c2c8c2]/30">
         <div>

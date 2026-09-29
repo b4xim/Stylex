@@ -310,7 +310,7 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   return (
     <div className="flex flex-col w-full gap-6">
       {/* Editorial Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-[#c2c8c2]/30 dark:border-white/10 pb-6">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-[#c2c8c2]/30 dark:border-white/10 pb-5">
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#9b4521] dark:text-[#ff9266]">
@@ -325,7 +325,7 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                 : `${statusCounts.ALL} reservation${statusCounts.ALL === 1 ? '' : 's'} on this date`}
             </span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#112e20] dark:text-white tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-[#112e20] dark:text-white tracking-tight">
             Appointments
           </h1>
           <p className="text-sm text-[#424844] dark:text-[#a0aca4] mt-1">
@@ -336,7 +336,7 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
         </div>
 
         {/* Modern Date Navigation & Actions */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 xl:gap-2.5">
           {/* Quick "Today" Button */}
           <button
             onClick={() => {

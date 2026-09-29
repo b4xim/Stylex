@@ -288,11 +288,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3 xl:gap-3.5 mt-2">
           {weekSchedule.map((item, idx) => (
             <div
               key={item.dayName}
-              className={`rounded-xl p-4 flex flex-col justify-between gap-3 border border-[#c2c8c2]/20 transition-all ${
+              className={`rounded-xl p-3 xl:p-4 flex flex-col justify-between gap-2.5 xl:gap-3 border border-[#c2c8c2]/20 transition-all ${
                 item.isOpen ? 'bg-[#f0f5f1]' : 'bg-[#e5e9e6]'
               }`}
             >
