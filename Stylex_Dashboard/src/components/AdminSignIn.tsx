@@ -31,6 +31,7 @@ export const AdminSignIn: React.FC<AdminSignInProps> = ({
       // Production live API login against PostgreSQL database
       const res = await DashboardApi.login(clean, password);
       if (res?.success && res?.data?.user) {
+        const apiUser = res.data.user;
         const isApiDev = apiUser.role === 'DEVELOPER' || clean === 'dev@stylexsalon.in' || clean === 'developer';
         const isApiAdmin = apiUser.role === 'ADMIN' || clean === 'admin@stylexsalon.in' || clean === 'admin';
 
