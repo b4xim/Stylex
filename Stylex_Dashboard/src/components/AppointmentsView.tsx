@@ -797,10 +797,167 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[900px] border-collapse">
-              <thead>
-                <tr className="bg-[#f0f5f1] dark:bg-[#1a2520] text-[#424844] dark:text-[#a0aca4] text-[11px] uppercase tracking-wider font-semibold border-b border-[#c2c8c2]/30 dark:border-white/10 select-none">
+          <>
+            {/* MOBILE VIEW: Modern App-Style Appointment Cards */}
+            <div className="md:hidden flex flex-col divide-y divide-[#eaefeb] dark:divide-white/10">
+              {filteredAppointments.map((apt) => (
+                <div key={apt.id} className="p-3.5 flex flex-col gap-2.5 bg-white dark:bg-[#15201a]">
+                  {/* Top: Time, Date & Status */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-[#112e20] dark:text-white">
+                        {apt.time}
+                      </span>
+                      <span className="text-[11px] text-[#727973] dark:text-[#a0aca4]">
+                        ({apt.durationMin} mins)
+                      </span>
+                      {showAllDates && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#eaefeb] dark:bg-white/10 text-[#112e20] dark:text-[#caead5]">
+                          {formatAptDateLabel(apt.dateStr)}
+                        </span>
+                      )}
+                      {isDateMatching(apt.dateStr, todayYMD) && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                          Today
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Status badge */}
+                    <div className="shrink-0">
+                      {apt.status === 'IN_PROGRESS' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#9b4521] text-white text-[10px] tracking-wider uppercase font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                          In Progress
+                        </span>
+                      ) : apt.status === 'COMPLETED' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e5e9e6] dark:bg-[#1a3828] text-[#112e20] dark:text-[#caead5] text-[10px] tracking-wider uppercase font-semibold border border-transparent dark:border-[#caead5]/25">
+                          Completed
+                        </span>
+                      ) : apt.status === 'CANCELLED' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ffdad6] dark:bg-[#3d1414] text-[#ba1a1a] dark:text-[#fca5a5] text-[10px] tracking-wider uppercase font-semibold border border-transparent dark:border-[#fca5a5]/30">
+                          Cancelled
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#caead5] dark:bg-[#103a22] text-[#042014] dark:text-[#86efac] text-[10px] tracking-wider uppercase font-semibold border border-transparent dark:border-[#86efac]/35">
+                          Booked
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Client Info with WhatsApp CTA */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-[#181d1b] dark:text-white truncate">
+                        {apt.clientName}
+                      </div>
+                      <div className="text-xs text-[#424844] dark:text-[#a0aca4] flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span>{apt.clientPhone}</span>
+                        {apt.clientEmail && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#2d6a4f] dark:text-[#86efac] truncate max-w-[120px]">{apt.clientEmail}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <a
+                      href={getWhatsAppUrl(apt.clientPhone, apt.clientName, apt.serviceName, apt.dateStr, apt.time)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#25D366]/15 hover:bg-[#25D366] text-[#0f7a37] dark:text-[#4ade80] hover:text-white dark:hover:text-white border border-[#25D366]/30 transition-all text-[11px] font-semibold cursor-pointer shadow-2xs group/wa shrink-0"
+                      title={`Chat with ${apt.clientName} on WhatsApp`}
+                    >
+                      <WhatsAppIcon className="w-3 h-3 text-[#25D366] group-hover/wa:text-white transition-colors shrink-0" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+
+                  {/* Service & Stylist Tag */}
+                  <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-[#f8faf8] dark:bg-[#192720] border border-[#c2c8c2]/20 dark:border-white/5">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold text-[#181d1b] dark:text-white block truncate">
+                        {apt.serviceName}
+                      </span>
+                      <span className="text-[11px] text-[#526058] dark:text-[#a0aca4] block truncate">
+                        Station: {apt.station}
+                      </span>
+                    </div>
+
+                    {apt.stylistName && !apt.stylistName.toLowerCase().includes('any') ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <img
+                          className="w-5 h-5 rounded-full object-cover border border-[#c2c8c2]/40 dark:border-white/10"
+                          src={apt.stylistAvatar}
+                          alt={apt.stylistName}
+                        />
+                        <span className="text-xs text-[#181d1b] dark:text-white font-medium">
+                          {apt.stylistName}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-[#727973] dark:text-[#a0aca4] shrink-0">
+                        Any Stylist
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action Row */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#dfe4e0]/50 dark:border-white/10">
+                    <div className="flex-1">
+                      {!isViewOnly ? (
+                        <>
+                          {apt.status === 'IN_PROGRESS' ? (
+                            <button
+                              onClick={() => onCompleteSession(apt.id)}
+                              className="w-full py-1.5 rounded-lg bg-[#112e20] dark:bg-emerald-600 text-white text-xs font-semibold shadow-2xs active:scale-[0.98] transition-all cursor-pointer"
+                            >
+                              Complete Session
+                            </button>
+                          ) : apt.status === 'COMPLETED' ? (
+                            <span className="inline-block text-xs font-medium text-[#727973] dark:text-neutral-400 py-1">
+                              Finished ✓
+                            </span>
+                          ) : apt.status === 'CANCELLED' ? (
+                            <span className="inline-block text-xs font-medium text-[#ba1a1a] dark:text-rose-400 py-1">
+                              Cancelled
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => onCheckIn(apt.id)}
+                              className="w-full py-1.5 rounded-lg bg-[#112e20] dark:bg-emerald-700 text-white text-xs font-semibold shadow-2xs active:scale-[0.98] transition-all cursor-pointer"
+                            >
+                              Check In Guest
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-[#727973] dark:text-[#a0aca4]">
+                          View Only
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => onManageBooking(apt)}
+                      className="p-1.5 rounded-lg bg-white dark:bg-white/10 text-[#424844] dark:text-white border border-[#c2c8c2]/30 dark:border-white/10 shadow-2xs hover:bg-[#eaefeb] transition-all cursor-pointer shrink-0"
+                      title="Manage Booking"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">tune</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* DESKTOP VIEW: Full Manifest Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left min-w-[900px] border-collapse">
+                <thead>
+                  <tr className="bg-[#f0f5f1] dark:bg-[#1a2520] text-[#424844] dark:text-[#a0aca4] text-[11px] uppercase tracking-wider font-semibold border-b border-[#c2c8c2]/30 dark:border-white/10 select-none">
                   <th className="py-3.5 px-6">{showAllDates ? 'Date & Time' : 'Time & Duration'}</th>
                   <th className="py-3.5 px-4">Guest Name</th>
                   <th className="py-3.5 px-4">Service & Station</th>
@@ -967,7 +1124,8 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
               </tbody>
             </table>
           </div>
-        )}
+        </>
+      )}
 
         {/* Footer */}
         <div className="p-4 bg-[#f0f5f1]/40 dark:bg-[#1a2520]/60 flex items-center justify-between border-t border-[#c2c8c2]/30 dark:border-white/10 text-[#424844] dark:text-[#a0aca4] text-xs">

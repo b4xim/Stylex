@@ -63,9 +63,104 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         </div>
       </div>
 
-      {/* Clients Table */}
+      {/* Clients Container */}
       <div className="bg-white dark:bg-[#15201a] rounded-2xl shadow-sm border border-[#c2c8c2]/30 dark:border-white/10 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* MOBILE VIEW: Clean Native-Style Client Cards */}
+        <div className="md:hidden flex flex-col divide-y divide-[#eaefeb] dark:divide-white/10">
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#727973] dark:text-[#a0aca4]">
+              No clients found matching your search.
+            </div>
+          ) : (
+            filtered.map((client) => (
+              <div key={client.id} className="p-3.5 flex flex-col gap-2.5">
+                {/* Header: Avatar, Name & WhatsApp */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-[#112e20] dark:bg-[#1f3a2c] text-white flex items-center justify-center font-bold text-sm shadow-xs border border-transparent dark:border-emerald-500/20 shrink-0">
+                      {client.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-[#112e20] dark:text-white truncate">
+                        {client.name}
+                      </div>
+                      <div className="text-xs text-[#424844] dark:text-[#a0aca4] flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span>{client.phone}</span>
+                        {client.email && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#2d6a4f] dark:text-[#86efac] truncate max-w-[120px]">{client.email}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href={getWhatsAppUrl(client.phone, client.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#25D366]/15 hover:bg-[#25D366] text-[#0f7a37] dark:text-[#4ade80] hover:text-white dark:hover:text-white transition-all text-[11px] font-semibold group/wa shadow-2xs shrink-0"
+                    title={`Chat with ${client.name} on WhatsApp`}
+                  >
+                    <WhatsAppIcon className="w-3 h-3 text-[#25D366] group-hover/wa:text-white transition-colors" />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
+
+                {/* Ritual & Visits Info */}
+                <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-[#f8faf8] dark:bg-[#192720] border border-[#c2c8c2]/20 dark:border-white/5">
+                  <div className="min-w-0 pr-2">
+                    <span className="font-semibold text-[#181d1b] dark:text-white block truncate">
+                      {client.favoriteRitual}
+                    </span>
+                    <span className="text-[11px] text-[#526058] dark:text-[#a0aca4] block truncate">
+                      Stylist: {client.preferredStylist}
+                    </span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="font-bold text-[#112e20] dark:text-[#caead5] text-xs">
+                      {client.totalVisits} sessions
+                    </span>
+                    <span className="text-[10px] text-[#727973] dark:text-[#88998f] block">
+                      Last: {client.lastVisit}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notes (if present) */}
+                {client.notes && (
+                  <p className="text-[11px] text-[#526058] dark:text-[#a0aca4] italic bg-white dark:bg-[#131d17] p-2 rounded-lg border border-[#c2c8c2]/20 dark:border-white/5 line-clamp-2">
+                    "{client.notes}"
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#dfe4e0]/50 dark:border-white/10">
+                  <button
+                    onClick={() => onBookClient(client.name, client.phone)}
+                    className="flex-1 py-1.5 rounded-lg bg-[#9b4521] hover:bg-[#752906] text-white text-xs font-semibold shadow-2xs active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">calendar_add_on</span>
+                    <span>Book Session</span>
+                  </button>
+                  {onDeleteClient && (
+                    <button
+                      onClick={() => setClientToDelete(client)}
+                      title={`Delete ${client.name}`}
+                      className="p-1.5 rounded-lg text-[#727973] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* DESKTOP VIEW: Full Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[760px]">
             <thead>
               <tr className="bg-[#f0f5f1] dark:bg-[#1a2520] text-[#424844] dark:text-[#a0aca4] text-[11px] uppercase tracking-wider font-semibold border-b border-[#c2c8c2]/30 dark:border-white/10">

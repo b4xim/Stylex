@@ -167,14 +167,13 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* New Booking CTA */}
+        {/* New Booking CTA - on mobile, MobileBottomNav has the primary elevated + Book button */}
         <button
           onClick={onOpenNewBooking}
-          className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 xl:px-5 py-1.5 sm:py-2.5 rounded-full bg-[#9b4521] text-white text-xs sm:text-[13px] font-semibold shadow-sm hover:bg-[#752906] transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shrink-0 whitespace-nowrap"
+          className="hidden sm:flex items-center gap-1.5 sm:gap-2 px-3.5 xl:px-5 py-2 sm:py-2.5 rounded-full bg-[#9b4521] text-white text-xs sm:text-[13px] font-semibold shadow-sm hover:bg-[#752906] transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shrink-0 whitespace-nowrap"
         >
           <span className="material-symbols-outlined text-[16px] sm:text-[18px] shrink-0">add</span>
-          <span className="hidden sm:inline whitespace-nowrap">New Booking</span>
-          <span className="sm:hidden whitespace-nowrap">New</span>
+          <span className="whitespace-nowrap">New Booking</span>
         </button>
 
         {/* Notifications */}
