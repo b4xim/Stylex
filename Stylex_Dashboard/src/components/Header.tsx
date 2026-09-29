@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 lg:left-56 xl:left-60 2xl:left-72 right-0 h-16 xl:h-20 bg-[#f6faf7]/90 dark:bg-[#121c17]/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-3 sm:px-4 lg:px-6 border-b border-[#dfe4e0]/60 dark:border-[#24332a] gap-2 lg:gap-4 transition-all duration-300">
+    <header className="fixed top-0 left-0 lg:left-56 xl:left-60 2xl:left-72 right-0 h-16 xl:h-20 bg-[#f6faf7]/90 dark:bg-[#121c17]/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex flex-nowrap items-center justify-between px-3 sm:px-4 lg:px-6 border-b border-[#dfe4e0]/60 dark:border-[#24332a] gap-2 lg:gap-4 transition-all duration-300">
       {/* Left zone: Brand Status */}
       <div className="flex items-center gap-1.5 sm:gap-3 xl:gap-4 shrink-0 min-w-0">
         {/* Mobile Menu Hamburger */}
