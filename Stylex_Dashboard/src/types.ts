@@ -192,3 +192,14 @@ export interface UserAccount {
   createdAt: string;
   isSecret?: boolean;
 }
+
+export interface AdminNotification {
+  id: string;
+  type: 'booking' | 'concierge' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  read: boolean;
+  linkTab?: NavTab;
+  createdAt: number;
+}

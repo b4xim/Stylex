@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X_LOGO_URL } from '../constants';
-import { UserAccount } from '../types';
+import { UserAccount, AdminNotification } from '../types';
 
 interface HeaderProps {
   onOpenNewBooking: () => void;
@@ -10,6 +10,10 @@ interface HeaderProps {
   onNavigateToSettings: () => void;
   onOpenChangePassword: () => void;
   onLogout: () => void;
+  notifications?: AdminNotification[];
+  onDeleteNotification?: (id: string) => void;
+  onClearAllNotifications?: () => void;
+  onSelectNotification?: (notif: AdminNotification) => void;
   unreadCount?: number;
   darkMode?: boolean;
   onToggleDarkMode?: () => void;
@@ -26,6 +30,10 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateToSettings,
   onOpenChangePassword,
   onLogout,
+  notifications,
+  onDeleteNotification,
+  onClearAllNotifications,
+  onSelectNotification,
   unreadCount = 2,
   onRefresh,
   isRefreshing = false,
@@ -36,6 +44,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const activeNotifications = notifications ?? [];
+  const unreadNotificationsCount = notifications
+    ? notifications.filter((n) => !n.read).length
+    : (unreadCount ?? 0);
 
   // Close menus on outside click or Escape key
   useEffect(() => {
@@ -172,31 +185,121 @@ export const Header: React.FC<HeaderProps> = ({
             className="relative p-2 sm:p-2.5 rounded-full hover:bg-[#eaefeb] dark:hover:bg-[#1f2d25] transition-colors cursor-pointer text-[#181d1b] dark:text-white shrink-0"
           >
             <span className="material-symbols-outlined text-[20px] sm:text-[22px]">notifications</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 h-2.5 w-2.5 rounded-full bg-[#ff4d15] dark:bg-[#ff7a45] ring-2 ring-white dark:ring-[#121c17] shadow-[0_0_10px_rgba(255,100,50,0.95)] animate-pulse"></span>
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff4d15] text-[10px] font-bold text-white flex items-center justify-center ring-2 ring-white dark:ring-[#121c17] shadow-[0_0_10px_rgba(255,100,50,0.8)] animate-pulse">
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+              </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#15201a] rounded-xl shadow-xl border border-[#c2c8c2]/50 dark:border-[#2d3a33] p-4 z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl border border-[#c2c8c2]/50 dark:border-[#2d3a33] p-3 sm:p-4 z-50 animate-in fade-in zoom-in-95">
               <div className="flex items-center justify-between pb-3 border-b border-[#eaefeb] dark:border-[#243029]">
-                <h4 className="font-semibold text-sm text-[#112e20] dark:text-white">Admin Notifications</h4>
-                <span className="text-[11px] text-[#ff7a45] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff7a45]/15 dark:bg-[#ff7a45]/25">
-                  2 New
-                </span>
-              </div>
-              <div className="divide-y divide-[#eaefeb] dark:divide-[#243029] text-xs">
-                <div className="py-2.5">
-                  <p className="font-medium text-[#181d1b] dark:text-white">VIP Bridal Suite Session</p>
-                  <p className="text-[#424844] dark:text-[#97a59d] mt-0.5">Pre-bridal consultation scheduled for 2:00 PM</p>
-                  <span className="text-[10px] text-[#727973] dark:text-[#7f8f86] mt-1 block">15 min ago</span>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-sm text-[#112e20] dark:text-white">Notifications</h4>
+                  {unreadNotificationsCount > 0 && (
+                    <span className="text-[10px] text-[#ff7a45] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff7a45]/15 dark:bg-[#ff7a45]/25">
+                      {unreadNotificationsCount} New
+                    </span>
+                  )}
                 </div>
-                <div className="py-2.5">
-                  <p className="font-medium text-[#181d1b] dark:text-white">New VIP Inquiry: Fatima Zahra</p>
-                  <p className="text-[#424844] dark:text-[#97a59d] mt-0.5">Bridal suite inquiry for 5 guests</p>
-                  <span className="text-[10px] text-[#727973] dark:text-[#7f8f86] mt-1 block">35 min ago</span>
-                </div>
+                {activeNotifications.length > 0 && onClearAllNotifications && (
+                  <button
+                    type="button"
+                    onClick={() => onClearAllNotifications()}
+                    className="flex items-center gap-1 text-[11px] text-[#727973] hover:text-rose-600 dark:text-[#8e9e95] dark:hover:text-rose-400 font-medium px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    title="Clear all notifications"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                    <span>Clear All</span>
+                  </button>
+                )}
               </div>
+
+              {activeNotifications.length === 0 ? (
+                <div className="py-8 px-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#eaefeb] dark:bg-[#1f2d25] flex items-center justify-center mx-auto mb-2 text-[#727973] dark:text-[#88998f]">
+                    <span className="material-symbols-outlined text-[24px]">notifications_off</span>
+                  </div>
+                  <p className="text-xs font-semibold text-[#181d1b] dark:text-white">No notifications</p>
+                  <p className="text-[11px] text-[#727973] dark:text-[#8e9e95] mt-1 max-w-[220px] mx-auto leading-relaxed">
+                    You're all caught up! New bookings and concierge inquiries will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#eaefeb] dark:divide-[#243029] max-h-80 sm:max-h-96 overflow-y-auto mt-1 custom-scrollbar">
+                  {activeNotifications.map((notif) => {
+                    const isBooking = notif.type === 'booking';
+                    const isConcierge = notif.type === 'concierge';
+                    return (
+                      <div
+                        key={notif.id}
+                        onClick={() => {
+                          if (onSelectNotification) {
+                            onSelectNotification(notif);
+                          }
+                          setShowNotifications(false);
+                        }}
+                        className={`group relative p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-3 my-1 ${
+                          !notif.read
+                            ? 'bg-[#f4f8f5] dark:bg-[#18261e] hover:bg-[#ebf2ed] dark:hover:bg-[#1f3127]'
+                            : 'hover:bg-[#f6faf7] dark:hover:bg-[#19251f]'
+                        }`}
+                      >
+                        <div
+                          className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center mt-0.5 ${
+                            isBooking
+                              ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300'
+                              : isConcierge
+                              ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[17px]">
+                            {isBooking ? 'calendar_month' : isConcierge ? 'chat_bubble' : 'notifications'}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0 pr-6">
+                          <div className="flex items-center gap-1.5">
+                            <p
+                              className={`text-xs truncate ${
+                                !notif.read
+                                  ? 'font-semibold text-[#112e20] dark:text-white'
+                                  : 'font-medium text-[#181d1b] dark:text-[#d5ded8]'
+                              }`}
+                            >
+                              {notif.title}
+                            </p>
+                            {!notif.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff4d15] shrink-0"></span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#424844] dark:text-[#97a59d] mt-0.5 line-clamp-2 leading-relaxed">
+                            {notif.description}
+                          </p>
+                          <span className="text-[10px] text-[#727973] dark:text-[#7f8f86] mt-1 block">
+                            {notif.timestamp}
+                          </span>
+                        </div>
+                        {onDeleteNotification && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteNotification(notif.id);
+                            }}
+                            title="Delete notification"
+                            aria-label="Delete notification"
+                            className="absolute top-2.5 right-2.5 p-1 rounded-md text-[#727973] hover:text-rose-600 dark:text-[#88998f] dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">close</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

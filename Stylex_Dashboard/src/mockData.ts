@@ -12,6 +12,7 @@ import {
   SalonSettings,
   StylistLeave,
   UserAccount,
+  AdminNotification,
 } from './types';
 import {
   LOGO_URL,
@@ -164,3 +165,26 @@ export const INITIAL_SETTINGS: SalonSettings = {
   whatsappBotPhone: "+91 96561 11149",
   maintenanceMode: false,
 };
+
+export const INITIAL_NOTIFICATIONS: AdminNotification[] = [
+  {
+    id: 'notif-1',
+    type: 'booking',
+    title: 'VIP Bridal Suite Session',
+    description: 'Pre-bridal consultation scheduled for 2:00 PM',
+    timestamp: '15 min ago',
+    read: false,
+    linkTab: 'appointments',
+    createdAt: Date.now() - 15 * 60 * 1000,
+  },
+  {
+    id: 'notif-2',
+    type: 'concierge',
+    title: 'New VIP Inquiry: Fatima Zahra',
+    description: 'Bridal suite inquiry for 5 guests',
+    timestamp: '35 min ago',
+    read: false,
+    linkTab: 'concierge-desk',
+    createdAt: Date.now() - 35 * 60 * 1000,
+  },
+];

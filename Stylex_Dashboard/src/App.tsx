@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   NavTab,
   Appointment,
@@ -15,6 +15,7 @@ import {
   StylistLeave,
   UserAccount,
   SystemRole,
+  AdminNotification,
 } from './types';
 import {
   INITIAL_APPOINTMENTS,
@@ -30,6 +31,7 @@ import {
   INITIAL_SETTINGS,
   INITIAL_STYLIST_LEAVES,
   INITIAL_USERS,
+  INITIAL_NOTIFICATIONS,
   getRelativeDateStr,
 } from './mockData';
 import { Sidebar } from './components/Sidebar';
@@ -201,6 +203,97 @@ export default function App() {
     return Array.isArray(parsed) ? parsed : INITIAL_CONCIERGE_INQUIRIES;
   });
 
+  const [notifications, setNotifications] = useState<AdminNotification[]>(() => {
+    const parsed = safeParse<AdminNotification[]>('stylex_admin_notifications_v2', INITIAL_NOTIFICATIONS);
+    return Array.isArray(parsed) ? parsed : INITIAL_NOTIFICATIONS;
+  });
+
+  const isInitialDataLoadedRef = useRef<boolean>(false);
+  const knownBookingIdsRef = useRef<Set<string>>(new Set());
+  const knownInquiryIdsRef = useRef<Set<string>>(new Set());
+
+  // Synthesizer chime fallback
+  const playNotificationChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch {}
+  };
+
+  // Dedicated MP3 notification sound for bookings
+  const playBookingNotificationSound = () => {
+    try {
+      const audio = new Audio('/Sound/Chord-Apple-SnapYT.App.mp3');
+      audio.volume = 0.9;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Audio play restricted by browser policy; using fallback chime:', err);
+          playNotificationChime();
+        });
+      }
+    } catch {
+      playNotificationChime();
+    }
+  };
+
+  // Pre-unlock audio on user interaction so background alerts will play without blocking
+  useEffect(() => {
+    const unlockAudio = () => {
+      try {
+        const audio = new Audio('/Sound/Chord-Apple-SnapYT.App.mp3');
+        audio.volume = 0;
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }).catch(() => {});
+      } catch {}
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, []);
+
+  const handleDeleteNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const handleClearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  const handleSelectNotification = (notif: AdminNotification) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
+    );
+    if (notif.linkTab) {
+      setCurrentTab(notif.linkTab);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   const [settings, setSettings] = useState<SalonSettings>(() => {
     const parsed = safeParse<SalonSettings>('stylex_tirur_v6_settings', INITIAL_SETTINGS);
     const maintenanceSaved = localStorage.getItem('stylex_maintenance_mode');
@@ -312,6 +405,10 @@ export default function App() {
     }
   }, [settings.darkMode]);
 
+  useEffect(() => {
+    safeSetItem('stylex_admin_notifications_v2', JSON.stringify(notifications));
+  }, [notifications]);
+
   // Real-time cross-tab storage sync (e.g. concierge inquiries from website)
   useEffect(() => {
     const handleStorageSync = () => {
@@ -328,6 +425,13 @@ export default function App() {
           const parsed = JSON.parse(savedClients);
           if (Array.isArray(parsed)) {
             setVipClients(parsed);
+          }
+        }
+        const savedNotifs = localStorage.getItem('stylex_admin_notifications_v2');
+        if (savedNotifs) {
+          const parsed = JSON.parse(savedNotifs);
+          if (Array.isArray(parsed)) {
+            setNotifications(parsed);
           }
         }
       } catch {}
@@ -352,6 +456,40 @@ export default function App() {
         if (Array.isArray(liveBookings)) {
           const mappedAppointments = liveBookings.map(mapBackendBookingToAppointment);
           setAppointments(mappedAppointments);
+
+          if (!isInitialDataLoadedRef.current) {
+            mappedAppointments.forEach((apt) => {
+              if (apt.id) knownBookingIdsRef.current.add(String(apt.id));
+            });
+          } else {
+            const brandNewBookings = mappedAppointments.filter(
+              (apt) => apt.id && !knownBookingIdsRef.current.has(String(apt.id))
+            );
+            if (brandNewBookings.length > 0) {
+              const newNotifs: AdminNotification[] = brandNewBookings.map((apt) => {
+                knownBookingIdsRef.current.add(String(apt.id));
+                return {
+                  id: `booking-${apt.id}-${Date.now()}`,
+                  type: 'booking',
+                  title: `New Booking: ${apt.clientName || 'Guest'}`,
+                  description: `${apt.serviceName || 'Ritual'} booked for ${apt.time || ''} on ${apt.dateStr || 'Upcoming'}`.trim(),
+                  timestamp: 'Just now',
+                  read: false,
+                  linkTab: 'appointments',
+                  createdAt: Date.now(),
+                };
+              });
+              setNotifications((prev) => [...newNotifs, ...prev]);
+              brandNewBookings.forEach((apt) => {
+                addToast(
+                  'info',
+                  'New Booking Received',
+                  `${apt.clientName || 'Guest'} reserved ${apt.serviceName || 'an appointment'}.`
+                );
+              });
+              playBookingNotificationSound();
+            }
+          }
         }
       } catch (e) {
         console.warn('Live bookings fetch:', e);
@@ -481,6 +619,44 @@ export default function App() {
         if (Array.isArray(liveInquiries)) {
           setInquiries(liveInquiries);
           safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(liveInquiries));
+
+          if (!isInitialDataLoadedRef.current) {
+            liveInquiries.forEach((inq) => {
+              if (inq.id) knownInquiryIdsRef.current.add(String(inq.id));
+            });
+          } else {
+            const brandNewInquiries = liveInquiries.filter(
+              (inq) => inq.id && !knownInquiryIdsRef.current.has(String(inq.id))
+            );
+            if (brandNewInquiries.length > 0) {
+              const newNotifs: AdminNotification[] = brandNewInquiries.map((inq) => {
+                knownInquiryIdsRef.current.add(String(inq.id));
+                return {
+                  id: `inquiry-${inq.id}-${Date.now()}`,
+                  type: 'concierge',
+                  title: `Concierge Inquiry: ${inq.clientName || 'Client'}`,
+                  description: inq.message
+                    ? inq.message.length > 70
+                      ? inq.message.substring(0, 67) + '...'
+                      : inq.message
+                    : inq.serviceRequested || 'New concierge inquiry received',
+                  timestamp: 'Just now',
+                  read: false,
+                  linkTab: 'concierge-desk',
+                  createdAt: Date.now(),
+                };
+              });
+              setNotifications((prev) => [...newNotifs, ...prev]);
+              brandNewInquiries.forEach((inq) => {
+                addToast(
+                  'info',
+                  'New Concierge Message',
+                  `${inq.clientName || 'Client'} sent an inquiry.`
+                );
+              });
+              playNotificationChime();
+            }
+          }
         }
       } catch (e) {
         console.warn('Live inquiries fetch:', e);
@@ -497,6 +673,9 @@ export default function App() {
       } catch (e) {
         console.warn('Live settings fetch:', e);
       }
+
+      // Mark initial load completed
+      isInitialDataLoadedRef.current = true;
     } catch (err) {
       console.warn('Live data sync encountered an error:', err);
     }
@@ -521,16 +700,84 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated) {
       loadRealData();
-      // Only poll bookings every 20s (not banners/services/stylists to avoid overwriting user toggles)
+      // Poll bookings & inquiries every 15s to notify admin in real-time
       const interval = setInterval(async () => {
         try {
           if (!DashboardApi.getToken()) await DashboardApi.silentLogin();
+
+          // 1. Live Bookings
           const liveBookings = await DashboardApi.getBookings();
           if (Array.isArray(liveBookings)) {
-            setAppointments(liveBookings.map(mapBackendBookingToAppointment));
+            const mappedAppointments = liveBookings.map(mapBackendBookingToAppointment);
+            setAppointments(mappedAppointments);
+            const brandNewBookings = mappedAppointments.filter(
+              (apt) => apt.id && !knownBookingIdsRef.current.has(String(apt.id))
+            );
+            if (brandNewBookings.length > 0) {
+              const newNotifs: AdminNotification[] = brandNewBookings.map((apt) => {
+                knownBookingIdsRef.current.add(String(apt.id));
+                return {
+                  id: `booking-${apt.id}-${Date.now()}`,
+                  type: 'booking',
+                  title: `New Booking: ${apt.clientName || 'Guest'}`,
+                  description: `${apt.serviceName || 'Ritual'} booked for ${apt.time || ''} on ${apt.dateStr || 'Upcoming'}`.trim(),
+                  timestamp: 'Just now',
+                  read: false,
+                  linkTab: 'appointments',
+                  createdAt: Date.now(),
+                };
+              });
+              setNotifications((prev) => [...newNotifs, ...prev]);
+              brandNewBookings.forEach((apt) => {
+                addToast(
+                  'info',
+                  'New Booking Received',
+                  `${apt.clientName || 'Guest'} reserved ${apt.serviceName || 'an appointment'}.`
+                );
+              });
+              playBookingNotificationSound();
+            }
+          }
+
+          // 2. Live Concierge Inquiries
+          const liveInquiries = await DashboardApi.getInquiries();
+          if (Array.isArray(liveInquiries)) {
+            setInquiries(liveInquiries);
+            safeSetItem('stylex_tirur_v6_inquiries', JSON.stringify(liveInquiries));
+            const brandNewInquiries = liveInquiries.filter(
+              (inq) => inq.id && !knownInquiryIdsRef.current.has(String(inq.id))
+            );
+            if (brandNewInquiries.length > 0) {
+              const newNotifs: AdminNotification[] = brandNewInquiries.map((inq) => {
+                knownInquiryIdsRef.current.add(String(inq.id));
+                return {
+                  id: `inquiry-${inq.id}-${Date.now()}`,
+                  type: 'concierge',
+                  title: `Concierge Inquiry: ${inq.clientName || 'Client'}`,
+                  description: inq.message
+                    ? inq.message.length > 70
+                      ? inq.message.substring(0, 67) + '...'
+                      : inq.message
+                    : inq.serviceRequested || 'New concierge inquiry received',
+                  timestamp: 'Just now',
+                  read: false,
+                  linkTab: 'concierge-desk',
+                  createdAt: Date.now(),
+                };
+              });
+              setNotifications((prev) => [...newNotifs, ...prev]);
+              brandNewInquiries.forEach((inq) => {
+                addToast(
+                  'info',
+                  'New Concierge Message',
+                  `${inq.clientName || 'Client'} sent an inquiry.`
+                );
+              });
+              playNotificationChime();
+            }
           }
         } catch {}
-      }, 20000);
+      }, 15000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
@@ -578,11 +825,26 @@ export default function App() {
 
   const handleAddBooking = async (newBooking: Appointment) => {
     setAppointments((prev) => [newBooking, ...prev]);
+    knownBookingIdsRef.current.add(String(newBooking.id));
+
+    const notif: AdminNotification = {
+      id: `booking-${newBooking.id}-${Date.now()}`,
+      type: 'booking',
+      title: `New Booking: ${newBooking.clientName}`,
+      description: `${newBooking.serviceName} at ${newBooking.time} (${newBooking.dateStr})`,
+      timestamp: 'Just now',
+      read: false,
+      linkTab: 'appointments',
+      createdAt: Date.now(),
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
     addToast(
       'success',
       'Booking Reservation Confirmed',
       `${newBooking.clientName} booked for ${newBooking.serviceName} at ${newBooking.time}.`
     );
+    playBookingNotificationSound();
 
     try {
       const selectedService = services.find((s) => s.name === newBooking.serviceName) || services[0];
@@ -602,6 +864,7 @@ export default function App() {
 
       if (res?.data?.booking) {
         const liveApt = mapBackendBookingToAppointment(res.data.booking);
+        knownBookingIdsRef.current.add(String(liveApt.id));
         setAppointments((prev) => prev.map((a) => (a.id === newBooking.id ? liveApt : a)));
       }
     } catch (err) {
@@ -611,11 +874,26 @@ export default function App() {
 
   const handleAddWalkIn = async (walkIn: Appointment) => {
     setAppointments((prev) => [walkIn, ...prev]);
+    knownBookingIdsRef.current.add(String(walkIn.id));
+
+    const notif: AdminNotification = {
+      id: `walkin-${walkIn.id}-${Date.now()}`,
+      type: 'booking',
+      title: `Express Walk-In: ${walkIn.clientName}`,
+      description: `${walkIn.serviceName} seated in ${walkIn.station}`,
+      timestamp: 'Just now',
+      read: false,
+      linkTab: 'appointments',
+      createdAt: Date.now(),
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
     addToast(
       'success',
       'Express Walk-In Seated',
       `${walkIn.clientName} seated in ${walkIn.station} for ${walkIn.serviceName}.`
     );
+    playBookingNotificationSound();
 
     try {
       const todayYMD = new Date().toISOString().split('T')[0];
@@ -635,6 +913,7 @@ export default function App() {
 
       if (res?.data?.booking) {
         const liveApt = mapBackendBookingToAppointment(res.data.booking);
+        knownBookingIdsRef.current.add(String(liveApt.id));
         setAppointments((prev) => prev.map((a) => (a.id === walkIn.id ? liveApt : a)));
       }
     } catch (err) {
@@ -1760,7 +2039,10 @@ export default function App() {
           }}
           onOpenChangePassword={() => setIsChangePasswordOpen(true)}
           onLogout={handleLogout}
-          unreadCount={unreadInquiriesCount}
+          notifications={notifications}
+          onDeleteNotification={handleDeleteNotification}
+          onClearAllNotifications={handleClearAllNotifications}
+          onSelectNotification={handleSelectNotification}
           darkMode={settings.darkMode}
           onToggleDarkMode={() => handleToggleDarkMode(!settings.darkMode)}
           onRefresh={handleRefreshData}
