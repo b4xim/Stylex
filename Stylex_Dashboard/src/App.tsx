@@ -2050,7 +2050,7 @@ export default function App() {
           onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         />
 
-        <main className="relative pt-20 sm:pt-24 xl:pt-28 pb-32 lg:pb-12 bg-[#f6faf7] dark:bg-[#0d1611] min-h-screen px-3 sm:px-5 lg:px-6 2xl:px-8 transition-all">
+        <main className="relative pt-[72px] sm:pt-[76px] xl:pt-[92px] pb-32 lg:pb-12 bg-[#f6faf7] dark:bg-[#0d1611] min-h-screen px-3 sm:px-5 lg:px-6 2xl:px-8 transition-all">
           {currentTab === 'overview' && (
             <OverviewView
               appointments={appointments}
