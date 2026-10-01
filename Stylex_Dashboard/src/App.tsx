@@ -349,7 +349,12 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') return parsed;
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...parsed,
+            isActive: parsed.isActive === true || parsed.isActive === 'true',
+          };
+        }
       } catch {}
     }
     return {
@@ -755,8 +760,12 @@ export default function App() {
           }
 
           if (liveSettings.storeNotice && typeof liveSettings.storeNotice === 'object') {
-            setStoreNotice(liveSettings.storeNotice);
-            safeSetItem('stylex_store_notice', JSON.stringify(liveSettings.storeNotice));
+            const normalized = {
+              ...liveSettings.storeNotice,
+              isActive: liveSettings.storeNotice.isActive === true || liveSettings.storeNotice.isActive === 'true',
+            };
+            setStoreNotice(normalized);
+            safeSetItem('stylex_store_notice', JSON.stringify(normalized));
           }
         }
       } catch (e) {
@@ -889,10 +898,14 @@ export default function App() {
                 }
               }
               if (liveSettings.storeNotice && typeof liveSettings.storeNotice === 'object') {
+                const normalized = {
+                  ...liveSettings.storeNotice,
+                  isActive: liveSettings.storeNotice.isActive === true || liveSettings.storeNotice.isActive === 'true',
+                };
                 const currentStr = localStorage.getItem('stylex_store_notice');
-                const newStr = JSON.stringify(liveSettings.storeNotice);
+                const newStr = JSON.stringify(normalized);
                 if (currentStr !== newStr) {
-                  setStoreNotice(liveSettings.storeNotice);
+                  setStoreNotice(normalized);
                   safeSetItem('stylex_store_notice', newStr);
                 }
               }

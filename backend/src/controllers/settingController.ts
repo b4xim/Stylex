@@ -50,6 +50,9 @@ export class SettingController {
           badge: 'Announcement',
           buttonText: 'Got It',
         };
+      } else {
+        settingsMap.storeNotice.isActive =
+          settingsMap.storeNotice.isActive === true || settingsMap.storeNotice.isActive === 'true';
       }
 
       res.status(200).json({ success: true, data: settingsMap });

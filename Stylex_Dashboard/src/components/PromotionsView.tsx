@@ -58,7 +58,7 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
 
   // Store Notice State
   const [noticeForm, setNoticeForm] = useState<StoreNotice>(() => ({
-    isActive: storeNotice?.isActive ?? false,
+    isActive: storeNotice?.isActive === true || (storeNotice?.isActive as any) === 'true',
     title: storeNotice?.title || 'Outlet Notice',
     message: storeNotice?.message || '',
     badge: storeNotice?.badge || 'Special Notice',
@@ -70,7 +70,7 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
   useEffect(() => {
     if (storeNotice) {
       setNoticeForm({
-        isActive: storeNotice.isActive ?? false,
+        isActive: storeNotice.isActive === true || (storeNotice.isActive as any) === 'true',
         title: storeNotice.title || 'Outlet Notice',
         message: storeNotice.message || '',
         badge: storeNotice.badge || 'Special Notice',
@@ -78,6 +78,17 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
       });
     }
   }, [storeNotice]);
+
+  const handleToggleNotice = () => {
+    const nextActive = !noticeForm.isActive;
+    const updated = { ...noticeForm, isActive: nextActive };
+    setNoticeForm(updated);
+    if (onSaveStoreNotice) {
+      onSaveStoreNotice(updated);
+      setIsNoticeSaved(true);
+      setTimeout(() => setIsNoticeSaved(false), 3000);
+    }
+  };
 
   const handleNoticeSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -888,7 +899,7 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setNoticeForm((prev) => ({ ...prev, isActive: !prev.isActive }))}
+                  onClick={handleToggleNotice}
                   aria-label="Toggle Store Notice"
                   className={`w-12 h-6 rounded-full p-0.5 flex items-center transition-colors cursor-pointer shrink-0 ${
                     noticeForm.isActive ? 'bg-[#112e20] dark:bg-emerald-600 justify-end' : 'bg-[#c2c8c2] dark:bg-neutral-700 justify-start'

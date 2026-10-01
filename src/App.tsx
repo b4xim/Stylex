@@ -45,14 +45,23 @@ export default function App() {
   const [storeNotice, setStoreNotice] = useState<StoreNotice | null>(() => {
     try {
       const saved = localStorage.getItem('stylex_store_notice');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...parsed,
+            isActive: parsed.isActive === true || parsed.isActive === 'true',
+          };
+        }
+      }
     } catch {}
     return null;
   });
   const [isStoreNoticeOpen, setIsStoreNoticeOpen] = useState<boolean>(false);
 
   const evaluateStoreNoticePopup = (notice: StoreNotice | null) => {
-    if (!notice || !notice.isActive || !notice.message?.trim()) {
+    const isActive = notice?.isActive === true || (notice?.isActive as any) === 'true';
+    if (!notice || !isActive || !notice.message?.trim()) {
       setIsStoreNoticeOpen(false);
       return;
     }
@@ -82,8 +91,12 @@ export default function App() {
           const raw = localStorage.getItem('stylex_store_notice');
           if (raw) {
             const parsed = JSON.parse(raw);
-            setStoreNotice(parsed);
-            evaluateStoreNoticePopup(parsed);
+            const notice = {
+              ...parsed,
+              isActive: parsed.isActive === true || parsed.isActive === 'true',
+            };
+            setStoreNotice(notice);
+            evaluateStoreNoticePopup(notice);
           }
         } catch {}
       }
@@ -119,7 +132,10 @@ export default function App() {
           }
 
           if (json?.data?.storeNotice && typeof json.data.storeNotice === 'object') {
-            const notice = json.data.storeNotice;
+            const notice = {
+              ...json.data.storeNotice,
+              isActive: json.data.storeNotice.isActive === true || json.data.storeNotice.isActive === 'true',
+            };
             setStoreNotice(notice);
             localStorage.setItem('stylex_store_notice', JSON.stringify(notice));
             evaluateStoreNoticePopup(notice);
