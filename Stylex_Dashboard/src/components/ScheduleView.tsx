@@ -8,11 +8,63 @@ interface ScheduleViewProps {
   stylistLeaves?: StylistLeave[];
   onToggleEngine: () => void;
   onToggleDay: (index: number) => void;
+  onUpdateDayHours?: (index: number, newHours: string) => void;
   onOpenAddBlackout: () => void;
   onDeleteBlackout: (id: string) => void;
   onOpenScheduleLeave?: () => void;
   onDeleteLeave?: (id: string) => void;
 }
+
+const ALLOWED_START_TIMES = [
+  '10:00 AM',
+  '11:00 AM',
+  '12:00 PM',
+  '01:00 PM',
+  '02:00 PM',
+  '03:00 PM',
+  '04:00 PM',
+  '05:00 PM',
+  '06:00 PM',
+  '07:00 PM',
+  '08:00 PM',
+  '09:00 PM',
+  '10:00 PM',
+  '11:00 PM',
+];
+
+const ALLOWED_END_TIMES = [
+  '11:00 AM',
+  '12:00 PM',
+  '01:00 PM',
+  '02:00 PM',
+  '03:00 PM',
+  '04:00 PM',
+  '05:00 PM',
+  '06:00 PM',
+  '07:00 PM',
+  '08:00 PM',
+  '09:00 PM',
+  '10:00 PM',
+  '11:00 PM',
+  '12:00 AM',
+  '01:00 AM',
+];
+
+const parseTimeToDecimal = (timeStr: string): number => {
+  const match = timeStr.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!match) return 10;
+  let h = parseInt(match[1], 10);
+  const m = match[2] ? parseInt(match[2], 10) : 0;
+  const meridian = (match[3] || '').toUpperCase();
+  if (meridian === 'AM') {
+    if (h === 12) h = 24;
+    else if (h === 1) h = 25;
+    else if (h < 6) h += 24;
+  } else if (meridian === 'PM') {
+    if (h < 12) h += 12;
+  }
+  return h + m / 60;
+};
 
 export const ScheduleView: React.FC<ScheduleViewProps> = ({
   weekSchedule,
@@ -21,13 +73,15 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   stylistLeaves = [],
   onToggleEngine,
   onToggleDay,
+  onUpdateDayHours,
   onOpenAddBlackout,
   onDeleteBlackout,
   onOpenScheduleLeave,
   onDeleteLeave,
 }) => {
   const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null);
-  const [editingHours, setEditingHours] = useState('');
+  const [editingStartTime, setEditingStartTime] = useState<string>('10:00 AM');
+  const [editingEndTime, setEditingEndTime] = useState<string>('01:00 AM');
   const [filterType, setFilterType] = useState<'ALL' | 'FULL_DAY' | 'TIME_SLOTS'>('ALL');
   const [blockToDelete, setBlockToDelete] = useState<BlackoutDate | null>(null);
 
@@ -42,12 +96,31 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   });
 
   const handleStartEdit = (index: number, currentHours: string) => {
+    const parts = (currentHours || '').split(/[–—\-]|(?:\s+to\s+)/i);
+    let start = '10:00 AM';
+    let end = '01:00 AM';
+    if (parts.length >= 2) {
+      const sTrim = parts[0].trim();
+      const eTrim = parts[1].trim();
+      const sVal = parseTimeToDecimal(sTrim);
+      const eVal = parseTimeToDecimal(eTrim);
+      const foundStart = ALLOWED_START_TIMES.find((t) => parseTimeToDecimal(t) === sVal);
+      if (foundStart) start = foundStart;
+      const foundEnd = ALLOWED_END_TIMES.find((t) => parseTimeToDecimal(t) === eVal);
+      if (foundEnd) end = foundEnd;
+    }
     setEditingDayIndex(index);
-    setEditingHours(currentHours);
+    setEditingStartTime(start);
+    setEditingEndTime(end);
   };
 
   const handleSaveEdit = (index: number) => {
-    weekSchedule[index].hours = editingHours;
+    const finalHours = `${editingStartTime} – ${editingEndTime}`;
+    if (onUpdateDayHours) {
+      onUpdateDayHours(index, finalHours);
+    } else {
+      weekSchedule[index].hours = finalHours;
+    }
     setEditingDayIndex(null);
   };
 
@@ -118,18 +191,59 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               </div>
 
               {editingDayIndex === idx ? (
-                <div className="flex items-center gap-2 flex-1 max-w-xs">
-                  <input
-                    value={editingHours}
-                    onChange={(e) => setEditingHours(e.target.value)}
-                    className="px-2 py-1 text-sm border border-[#c2c8c2] rounded bg-white w-full"
-                  />
-                  <button
-                    onClick={() => handleSaveEdit(idx)}
-                    className="px-2 py-1 bg-[#112e20] text-white text-xs rounded"
-                  >
-                    Save
-                  </button>
+                <div className="flex flex-wrap items-center gap-2 flex-1 max-w-md bg-[#f0f5f1] dark:bg-[#1a2520] p-2 sm:p-2.5 rounded-xl border border-[#c2c8c2]/50 dark:border-white/10 shadow-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[#424844] dark:text-neutral-300 uppercase tracking-wider">From:</span>
+                    <select
+                      value={editingStartTime}
+                      onChange={(e) => {
+                        const newStart = e.target.value;
+                        setEditingStartTime(newStart);
+                        const startVal = parseTimeToDecimal(newStart);
+                        const endVal = parseTimeToDecimal(editingEndTime);
+                        if (endVal <= startVal) {
+                          const nextEnd = ALLOWED_END_TIMES.find((t) => parseTimeToDecimal(t) > startVal);
+                          if (nextEnd) setEditingEndTime(nextEnd);
+                        }
+                      }}
+                      className="px-2 py-1 text-xs border border-[#c2c8c2] dark:border-white/20 rounded-lg bg-white dark:bg-[#112e20] font-semibold text-[#112e20] dark:text-white cursor-pointer focus:ring-1 focus:ring-[#112e20]"
+                    >
+                      {ALLOWED_START_TIMES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[#424844] dark:text-neutral-300 uppercase tracking-wider">To:</span>
+                    <select
+                      value={editingEndTime}
+                      onChange={(e) => setEditingEndTime(e.target.value)}
+                      className="px-2 py-1 text-xs border border-[#c2c8c2] dark:border-white/20 rounded-lg bg-white dark:bg-[#112e20] font-semibold text-[#112e20] dark:text-white cursor-pointer focus:ring-1 focus:ring-[#112e20]"
+                    >
+                      {ALLOWED_END_TIMES.filter((t) => parseTimeToDecimal(t) > parseTimeToDecimal(editingStartTime)).map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveEdit(idx)}
+                      className="px-2.5 py-1 bg-[#112e20] text-white text-xs font-semibold rounded-lg hover:bg-[#185341] transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">check</span>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingDayIndex(null)}
+                      className="px-2.5 py-1 bg-[#eaefeb] dark:bg-neutral-800 text-[#424844] dark:text-neutral-300 text-xs font-medium rounded-lg hover:bg-[#d8dfda] transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div

@@ -90,6 +90,35 @@ export const isSlotInPast = (
   return salonNow.getTime() >= slotTimestamp;
 };
 
+export const parseHourToValue = (timeStr: string): number | null => {
+  if (!timeStr) return null;
+  const match = timeStr.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!match) return null;
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
+  const meridian = (match[3] || '').toUpperCase();
+
+  if (meridian === 'AM') {
+    if (hour === 12) hour = 24; // 12:00 AM midnight = 24.0
+    else if (hour === 1) hour = 25; // 01:00 AM next day = 25.0
+    else if (hour < 6) hour += 24;
+  } else if (meridian === 'PM') {
+    if (hour < 12) hour += 12;
+  }
+
+  return hour + minute / 60;
+};
+
+export const parseOperatingHoursRange = (hoursStr: string): { startHour: number; endHour: number } | null => {
+  if (!hoursStr) return null;
+  const parts = hoursStr.split(/[–—\-]|(?:\s+to\s+)/i);
+  if (parts.length < 2) return null;
+  const startHour = parseHourToValue(parts[0]);
+  const endHour = parseHourToValue(parts[1]);
+  if (startHour === null || endHour === null) return null;
+  return { startHour, endHour };
+};
+
 export const BookingEngine: React.FC<BookingEngineProps> = ({
   onConfirmBooking,
   initialServiceId,
@@ -142,6 +171,26 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   });
 
   const [liveBlockedSlots, setLiveBlockedSlots] = useState<any[]>([]);
+
+  // Weekly working hours schedule synced from backend / dashboard
+  const [weekSchedule, setWeekSchedule] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('stylex_tirur_v7_schedule');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [
+      { dayName: 'Monday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+      { dayName: 'Tuesday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+      { dayName: 'Wednesday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+      { dayName: 'Thursday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+      { dayName: 'Friday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+      { dayName: 'Saturday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+      { dayName: 'Sunday', isOpen: true, hours: '10:00 AM – 1:00 AM' },
+    ];
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -196,6 +245,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
             setStylistsList(sanitizeStylists(parsed));
           }
         }
+        const savedSchedule = localStorage.getItem('stylex_tirur_v7_schedule');
+        if (savedSchedule) {
+          const parsed = JSON.parse(savedSchedule);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setWeekSchedule(parsed);
+          }
+        }
       } catch {}
     };
     window.addEventListener('storage', handleStorageSync);
@@ -211,6 +267,22 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       })
       .catch((err) => {
         console.warn('Could not fetch /api/blocked-slots:', err);
+      });
+
+    // Fetch live salon settings including weekly schedule
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!isMounted) return;
+        if (json?.data?.weekSchedule && Array.isArray(json.data.weekSchedule) && json.data.weekSchedule.length > 0) {
+          setWeekSchedule(json.data.weekSchedule);
+          try {
+            localStorage.setItem('stylex_tirur_v7_schedule', JSON.stringify(json.data.weekSchedule));
+          } catch {}
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch /api/settings:', err);
       });
 
     return () => {
@@ -422,12 +494,41 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     return { isUnavailable: false, notice: '' };
   };
 
-  // Check Blackout Dates and Blocked Time Slots from Schedule Control
+  // Check Blackout Dates, Blocked Time Slots, and Weekly Operating Hours
   const getBlackoutStatus = (dayNum?: number) => {
     const yyyy = currentYear;
     const mm = String(currentMonthIndex + 1).padStart(2, '0');
     const dd = String(dayNum || selectedDay).padStart(2, '0');
     const targetDateStr = `${yyyy}-${mm}-${dd}`;
+
+    // Determine Day of Week for target date
+    const cellDate = new Date(currentYear, currentMonthIndex, dayNum || selectedDay);
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const targetDayName = dayNames[cellDate.getDay()];
+    const dayConfig = weekSchedule.find(
+      (d: any) => d.dayName && d.dayName.toLowerCase() === targetDayName.toLowerCase()
+    );
+
+    let isScheduleClosed = false;
+    let scheduleReason = '';
+    const scheduleBlockedSlots: string[] = [];
+
+    if (dayConfig) {
+      if (dayConfig.isOpen === false || dayConfig.isOpen === 'false') {
+        isScheduleClosed = true;
+        scheduleReason = `Closed on ${targetDayName}s`;
+      } else if (dayConfig.hours) {
+        const range = parseOperatingHoursRange(dayConfig.hours);
+        if (range) {
+          TIME_SLOTS.forEach((slot) => {
+            const val = parseHourToValue(slot);
+            if (val !== null && (val < range.startHour || val >= range.endHour)) {
+              scheduleBlockedSlots.push(slot);
+            }
+          });
+        }
+      }
+    }
 
     let blackouts: any[] = [];
     try {
@@ -446,10 +547,12 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     });
 
     let fullDay = matching.find((b) => b.blockType === 'FULL_DAY');
-    const blockedSlots: string[] = [];
+    const blockedSlots: string[] = [...scheduleBlockedSlots];
     matching.forEach((b) => {
       if (b.blockType === 'TIME_SLOTS' && b.slots) {
-        blockedSlots.push(...b.slots);
+        b.slots.forEach((s: string) => {
+          if (!blockedSlots.includes(s)) blockedSlots.push(s);
+        });
       }
     });
 
@@ -467,11 +570,20 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       });
     }
 
+    const isFullDayClosed = isScheduleClosed || !!fullDay;
+    const fullDayTitle = fullDay?.title || (isScheduleClosed ? `Closed on ${targetDayName}s` : '');
+    const fullDayReason = isScheduleClosed
+      ? `Salon reservations are closed every ${targetDayName} according to weekly operating hours.`
+      : fullDay?.title || 'Salon closed on this date';
+
     return {
-      isFullDayClosed: !!fullDay,
-      fullDayTitle: fullDay?.title || '',
+      isFullDayClosed,
+      fullDayTitle,
+      fullDayReason,
       blockedSlots,
-      station: fullDay?.station || 'All',
+      station: fullDay?.station || 'Entire Salon',
+      dayConfig,
+      targetDayName,
     };
   };
 
@@ -577,7 +689,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         setSelectedTime(nextAvailable);
       }
     }
-  }, [selectedDay, currentMonthIndex, currentYear, liveBlockedSlots]);
+  }, [selectedDay, currentMonthIndex, currentYear, liveBlockedSlots, weekSchedule]);
 
   const handleSubmit = async () => {
     if (!isEngineActive) {
@@ -964,9 +1076,24 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     </span>
                     Select Date & Time
                   </h3>
-                  <span className="text-[10.5px] sm:text-[12px] text-[#185341] font-semibold bg-[#072f23]/10 px-2 py-0.5 rounded-full">
-                    Open 10 AM – 1 AM
-                  </span>
+                  {(() => {
+                    const status = getBlackoutStatus(selectedDay);
+                    if (status.isFullDayClosed) {
+                      return (
+                        <span className="text-[10.5px] sm:text-[12px] text-red-700 font-semibold bg-red-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                          Closed on {status.targetDayName}s
+                        </span>
+                      );
+                    }
+                    const hoursText = status.dayConfig?.hours || '10:00 AM – 1:00 AM';
+                    return (
+                      <span className="text-[10.5px] sm:text-[12px] text-[#185341] font-semibold bg-[#072f23]/10 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                        Open {hoursText}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Mobile Quick Date Chips (1-tap Selection) */}
@@ -989,6 +1116,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                   <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                     {next7Days.map((item) => {
                       const isSelected = selectedDay === item.dayNum && currentMonthIndex === item.monthIndex;
+                      const chipStatus = getBlackoutStatus(item.dayNum);
+                      const isChipClosed = chipStatus.isFullDayClosed;
                       return (
                         <button
                           key={`${item.year}-${item.monthIndex}-${item.dayNum}`}
@@ -998,20 +1127,24 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                             setCurrentMonthIndex(item.monthIndex);
                             setCurrentYear(item.year);
                           }}
-                          className={`flex-shrink-0 w-16 py-2 px-1 rounded-xl text-center transition-all cursor-pointer ${
+                          className={`flex-shrink-0 w-16 py-2 px-1 rounded-xl text-center transition-all cursor-pointer relative ${
                             isSelected
                               ? 'bg-[#112e20] text-white shadow-md ring-2 ring-[#fe753c]'
+                              : isChipClosed
+                              ? 'bg-red-50/70 text-red-600 border border-red-200/80 hover:bg-red-100/50'
                               : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb]'
                           }`}
                         >
-                          <div className={`text-[10px] uppercase font-bold ${isSelected ? 'text-[#fe753c]' : 'text-[#424844]/80'}`}>
+                          <div className={`text-[10px] uppercase font-bold ${
+                            isSelected ? 'text-[#fe753c]' : isChipClosed ? 'text-red-600' : 'text-[#424844]/80'
+                          }`}>
                             {item.dayLabel}
                           </div>
                           <div className="text-[14px] font-bold leading-tight mt-0.5">
                             {item.dayNum}
                           </div>
-                          <div className={`text-[9px] ${isSelected ? 'text-[#caead5]' : 'text-[#424844]/60'}`}>
-                            {monthNames[item.monthIndex].slice(0, 3)}
+                          <div className={`text-[9px] ${isSelected ? 'text-[#caead5]' : isChipClosed ? 'text-red-500 font-bold' : 'text-[#424844]/60'}`}>
+                            {isChipClosed ? 'Closed' : monthNames[item.monthIndex].slice(0, 3)}
                           </div>
                         </button>
                       );
@@ -1139,7 +1272,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           Select Time Slot (1-Hour)
                         </label>
                         <span className="text-[11px] text-[#fe753c] font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">schedule</span> 10 AM – 12 AM
+                          <span className="material-symbols-outlined text-[13px]">schedule</span> {getBlackoutStatus(selectedDay).dayConfig?.hours || '10 AM – 1 AM'}
                         </span>
                       </div>
 
@@ -1151,10 +1284,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                             <div className="p-4 bg-red-50/90 border border-red-200 rounded-2xl text-center">
                               <span className="material-symbols-outlined text-[24px] text-red-600 mb-1">block</span>
                               <p className="text-[12.5px] font-bold text-red-900">
-                                Date Closed
+                                {currentBlackout.fullDayTitle || 'Date Closed'}
                               </p>
                               <p className="text-[11px] text-red-700 mt-0.5">
-                                Salon reservations are closed on this date ({currentBlackout.station || 'Entire Salon'}). Please choose an alternative date.
+                                {currentBlackout.fullDayReason || `Salon reservations are closed on this date (${currentBlackout.station || 'Entire Salon'}). Please choose an alternative date.`}
                               </p>
                             </div>
                           );

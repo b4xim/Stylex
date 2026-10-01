@@ -72,6 +72,45 @@ export const isPastSlotInIST = (dateStr: string, slotStr: string): boolean => {
   }
 };
 
+export const DEFAULT_WEEK_SCHEDULE = [
+  { dayName: "Monday", label: "Monday", dateStr: "Mon, Daily", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+  { dayName: "Tuesday", label: "Tuesday", dateStr: "Tue, Daily", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+  { dayName: "Wednesday", label: "Wednesday", dateStr: "Wed, Daily", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+  { dayName: "Thursday", label: "Thursday", dateStr: "Thu, Daily", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+  { dayName: "Friday", label: "Friday", dateStr: "Fri, Weekend", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+  { dayName: "Saturday", label: "Saturday", dateStr: "Sat, Weekend", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+  { dayName: "Sunday", label: "Sunday", dateStr: "Sun, Weekend", isOpen: true, statusText: "Open", subText: "10:00 AM – 1:00 AM", hours: "10:00 AM – 1:00 AM" },
+];
+
+export const parseHourToValue = (timeStr: string): number | null => {
+  if (!timeStr) return null;
+  const match = timeStr.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!match) return null;
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
+  const meridian = (match[3] || '').toUpperCase();
+
+  if (meridian === 'AM') {
+    if (hour === 12) hour = 24; // 12 AM midnight = 24.0
+    else if (hour === 1) hour = 25; // 1 AM next day = 25.0
+    else if (hour < 6) hour += 24;
+  } else if (meridian === 'PM') {
+    if (hour < 12) hour += 12;
+  }
+
+  return hour + minute / 60;
+};
+
+export const parseOperatingHoursRange = (hoursStr: string): { startHour: number; endHour: number } | null => {
+  if (!hoursStr) return null;
+  const parts = hoursStr.split(/[–—\-]|(?:\s+to\s+)/i);
+  if (parts.length < 2) return null;
+  const startHour = parseHourToValue(parts[0]);
+  const endHour = parseHourToValue(parts[1]);
+  if (startHour === null || endHour === null) return null;
+  return { startHour, endHour };
+};
+
 export class SlotService {
   /**
    * Generates a unique salon booking reference (e.g. SX-8291)
@@ -121,6 +160,46 @@ export class SlotService {
         resolvedStylistId = foundStylist.id;
       }
     }
+
+    // 0. Check weekly working hours & day closure from salon settings
+    let targetDayName = '';
+    try {
+      const [yStr, mStr, dStr] = date.split('-');
+      const dObj = new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, parseInt(dStr, 10));
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      targetDayName = dayNames[dObj.getDay()] || '';
+    } catch {}
+
+    let weekSchedule: any[] = DEFAULT_WEEK_SCHEDULE;
+    try {
+      const scheduleRecord = await prisma.salonSetting.findUnique({
+        where: { key: 'weekSchedule' },
+      });
+      if (scheduleRecord && scheduleRecord.value) {
+        const parsed = JSON.parse(scheduleRecord.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          weekSchedule = parsed;
+        }
+      }
+    } catch {}
+
+    const dayConfig = targetDayName
+      ? weekSchedule.find((d: any) => d.dayName && d.dayName.toLowerCase() === targetDayName.toLowerCase())
+      : null;
+
+    // If day is closed in schedule, all slots are completely blocked
+    if (dayConfig && (dayConfig.isOpen === false || dayConfig.isOpen === 'false')) {
+      return SALON_DAILY_SLOTS.map((slot) => ({
+        timeSlot: slot,
+        isAvailable: false,
+        bookedCount: 0,
+        maxCapacity: 3,
+        status: 'full',
+        reason: `Salon closed on ${targetDayName}s according to weekly working hours`,
+      }));
+    }
+
+    const operatingRange = dayConfig?.hours ? parseOperatingHoursRange(dayConfig.hours) : null;
 
     // 1. Fetch active bookings for this date including their service department
     const bookings = await prisma.booking.findMany({
@@ -194,6 +273,21 @@ export class SlotService {
           status: 'full',
           reason: 'Time slot has passed',
         };
+      }
+
+      // Check if slot falls outside weekly operating hours
+      if (operatingRange) {
+        const slotVal = parseHourToValue(slot);
+        if (slotVal !== null && (slotVal < operatingRange.startHour || slotVal >= operatingRange.endHour)) {
+          return {
+            timeSlot: slot,
+            isAvailable: false,
+            bookedCount,
+            maxCapacity: 3,
+            status: 'full',
+            reason: `Outside operational hours (${dayConfig?.hours})`,
+          };
+        }
       }
 
       if (allDayBlocked) {
@@ -318,6 +412,51 @@ export class SlotService {
         `The requested time slot ${timeSlot} on ${date} has already passed. Please select an upcoming slot.`,
         400
       );
+    }
+
+    // 0.1 Check weekly schedule closure & operating hours
+    try {
+      const [yStr, mStr, dStr] = date.split('-');
+      const dObj = new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, parseInt(dStr, 10));
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const targetDayName = dayNames[dObj.getDay()] || '';
+
+      const scheduleRecord = await prisma.salonSetting.findUnique({
+        where: { key: 'weekSchedule' },
+      });
+      let weekSchedule: any[] = DEFAULT_WEEK_SCHEDULE;
+      if (scheduleRecord && scheduleRecord.value) {
+        const parsed = JSON.parse(scheduleRecord.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          weekSchedule = parsed;
+        }
+      }
+
+      const dayConfig = targetDayName
+        ? weekSchedule.find((d: any) => d.dayName && d.dayName.toLowerCase() === targetDayName.toLowerCase())
+        : null;
+
+      if (dayConfig && (dayConfig.isOpen === false || dayConfig.isOpen === 'false')) {
+        throw new AppError(
+          `The salon is closed on ${targetDayName}s according to weekly schedule. Please choose an alternative date.`,
+          409
+        );
+      }
+
+      if (dayConfig?.hours) {
+        const range = parseOperatingHoursRange(dayConfig.hours);
+        if (range) {
+          const slotVal = parseHourToValue(timeSlot);
+          if (slotVal !== null && (slotVal < range.startHour || slotVal >= range.endHour)) {
+            throw new AppError(
+              `The requested slot ${timeSlot} on ${date} is outside salon operating hours (${dayConfig.hours}) for ${targetDayName}. Please select an available slot.`,
+              409
+            );
+          }
+        }
+      }
+    } catch (e: any) {
+      if (e instanceof AppError) throw e;
     }
 
     // 1. Check for blocked slot

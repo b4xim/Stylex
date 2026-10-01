@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db';
 import { WhatsAppService } from '../services/whatsappService';
+import { DEFAULT_WEEK_SCHEDULE } from '../services/slotService';
 
 export class SettingController {
   public static async getSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -35,6 +36,10 @@ export class SettingController {
         settingsMap.bookingEngineActive = true;
       } else if (settingsMap.bookingEngineActive === 'false' || settingsMap.bookingEngineActive === false) {
         settingsMap.bookingEngineActive = false;
+      }
+
+      if (!settingsMap.weekSchedule || !Array.isArray(settingsMap.weekSchedule) || settingsMap.weekSchedule.length === 0) {
+        settingsMap.weekSchedule = DEFAULT_WEEK_SCHEDULE;
       }
 
       res.status(200).json({ success: true, data: settingsMap });

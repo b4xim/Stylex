@@ -729,6 +729,11 @@ export default function App() {
             safeSetItem('stylex_tirur_v6_settings', JSON.stringify(updated));
             return updated;
           });
+
+          if (liveSettings.weekSchedule && Array.isArray(liveSettings.weekSchedule) && liveSettings.weekSchedule.length > 0) {
+            setWeekSchedule(liveSettings.weekSchedule);
+            safeSetItem('stylex_tirur_v7_schedule', JSON.stringify(liveSettings.weekSchedule));
+          }
         }
       } catch (e) {
         console.warn('Live settings fetch:', e);
@@ -851,6 +856,14 @@ export default function App() {
                 safeSetItem('stylex_booking_engine_active', String(isActive));
                 setIsEngineActive((prev) => (prev !== isActive ? isActive : prev));
               }
+              if (liveSettings.weekSchedule && Array.isArray(liveSettings.weekSchedule) && liveSettings.weekSchedule.length > 0) {
+                const currentStr = localStorage.getItem('stylex_tirur_v7_schedule');
+                const newStr = JSON.stringify(liveSettings.weekSchedule);
+                if (currentStr !== newStr) {
+                  setWeekSchedule(liveSettings.weekSchedule);
+                  safeSetItem('stylex_tirur_v7_schedule', newStr);
+                }
+              }
             }
           } catch {}
         } catch {}
@@ -886,17 +899,42 @@ export default function App() {
     const targetDay = weekSchedule[index];
     if (!targetDay) return;
     const nextOpen = !targetDay.isOpen;
-    setWeekSchedule((prev) =>
-      prev.map((day, idx) =>
-        idx === index
-          ? { ...day, isOpen: nextOpen, statusText: nextOpen ? 'Open' : 'Closed' }
-          : day
-      )
+    const nextSchedule = weekSchedule.map((day, idx) =>
+      idx === index
+        ? { ...day, isOpen: nextOpen, statusText: nextOpen ? 'Open' : 'Closed' }
+        : day
     );
+    setWeekSchedule(nextSchedule);
+    safeSetItem('stylex_tirur_v7_schedule', JSON.stringify(nextSchedule));
+    window.dispatchEvent(new Event('storage'));
+    DashboardApi.updateSettings({ weekSchedule: nextSchedule }).catch((err) => {
+      console.warn('Backend API updateSettings weekSchedule error:', err);
+    });
     addToast(
       'info',
-      `${targetDay.dateStr} Availability Changed`,
-      nextOpen ? 'Public booking slots open.' : 'Day marked closed/blackout.'
+      `${targetDay.dayName} Availability Changed`,
+      nextOpen ? `${targetDay.dayName} reservations are now open.` : `${targetDay.dayName} marked closed for public booking.`
+    );
+  };
+
+  const handleUpdateDayHours = (index: number, newHours: string) => {
+    const targetDay = weekSchedule[index];
+    if (!targetDay) return;
+    const nextSchedule = weekSchedule.map((day, idx) =>
+      idx === index
+        ? { ...day, hours: newHours, subText: newHours }
+        : day
+    );
+    setWeekSchedule(nextSchedule);
+    safeSetItem('stylex_tirur_v7_schedule', JSON.stringify(nextSchedule));
+    window.dispatchEvent(new Event('storage'));
+    DashboardApi.updateSettings({ weekSchedule: nextSchedule }).catch((err) => {
+      console.warn('Backend API updateSettings weekSchedule error:', err);
+    });
+    addToast(
+      'success',
+      `${targetDay.dayName} Hours Updated`,
+      `Working hours set to ${newHours}`
     );
   };
 
@@ -2185,6 +2223,7 @@ export default function App() {
               stylistLeaves={stylistLeaves}
               onToggleEngine={handleToggleEngine}
               onToggleDay={handleToggleDaySchedule}
+              onUpdateDayHours={handleUpdateDayHours}
               onOpenAddBlackout={() => setIsAddBlackoutOpen(true)}
               onDeleteBlackout={handleDeleteBlackout}
               onOpenScheduleLeave={() => handleOpenScheduleLeave()}

@@ -82,6 +82,18 @@ async function main() {
       key: 'whatsappQrUrl',
       value: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fwa.me%2F919656111149%3Ftext%3DHi%20StyleX%2C%20I%20would%20like%20to%20enquire%20about%20appointment%20availability.&format=png',
     },
+    {
+      key: 'weekSchedule',
+      value: JSON.stringify([
+        { dayName: 'Monday', label: 'Monday', dateStr: 'Mon, Daily', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+        { dayName: 'Tuesday', label: 'Tuesday', dateStr: 'Tue, Daily', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+        { dayName: 'Wednesday', label: 'Wednesday', dateStr: 'Wed, Daily', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+        { dayName: 'Thursday', label: 'Thursday', dateStr: 'Thu, Daily', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+        { dayName: 'Friday', label: 'Friday', dateStr: 'Fri, Weekend', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+        { dayName: 'Saturday', label: 'Saturday', dateStr: 'Sat, Weekend', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+        { dayName: 'Sunday', label: 'Sunday', dateStr: 'Sun, Weekend', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
+      ]),
+    },
   ];
 
   for (const s of defaultSettings) {
