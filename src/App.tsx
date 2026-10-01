@@ -19,7 +19,8 @@ import { ReelModal } from './components/ReelModal.tsx';
 import { PortfolioModal } from './components/PortfolioModal.tsx';
 import { BookingPage } from './pages/BookingPage.tsx';
 import { MaintenancePage } from './pages/MaintenancePage.tsx';
-import { BookingState, ReelItem, ServiceItem, PortfolioWork } from './types.ts';
+import { StoreNoticeModal } from './components/StoreNoticeModal.tsx';
+import { BookingState, ReelItem, ServiceItem, PortfolioWork, StoreNotice } from './types.ts';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
@@ -39,6 +40,57 @@ export default function App() {
     return localStorage.getItem('stylex_booking_engine_active') !== 'false';
   });
   const [isBookingPausedModalOpen, setIsBookingPausedModalOpen] = useState<boolean>(false);
+
+  // Store Announcement Notice Popup
+  const [storeNotice, setStoreNotice] = useState<StoreNotice | null>(() => {
+    try {
+      const saved = localStorage.getItem('stylex_store_notice');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const [isStoreNoticeOpen, setIsStoreNoticeOpen] = useState<boolean>(false);
+
+  const evaluateStoreNoticePopup = (notice: StoreNotice | null) => {
+    if (!notice || !notice.isActive || !notice.message?.trim()) {
+      setIsStoreNoticeOpen(false);
+      return;
+    }
+    const noticeKey = `${notice.title || ''}_${notice.message || ''}_${notice.updatedAt || ''}`;
+    const dismissed = sessionStorage.getItem('stylex_dismissed_notice_key');
+    if (dismissed !== noticeKey) {
+      setIsStoreNoticeOpen(true);
+    }
+  };
+
+  const handleCloseStoreNotice = () => {
+    setIsStoreNoticeOpen(false);
+    if (storeNotice) {
+      const noticeKey = `${storeNotice.title || ''}_${storeNotice.message || ''}_${storeNotice.updatedAt || ''}`;
+      sessionStorage.setItem('stylex_dismissed_notice_key', noticeKey);
+    }
+  };
+
+  useEffect(() => {
+    evaluateStoreNoticePopup(storeNotice);
+  }, []);
+
+  useEffect(() => {
+    const handleNoticeStorage = (e?: StorageEvent) => {
+      if (!e || e.key === 'stylex_store_notice' || !e.key) {
+        try {
+          const raw = localStorage.getItem('stylex_store_notice');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            setStoreNotice(parsed);
+            evaluateStoreNoticePopup(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleNoticeStorage);
+    return () => window.removeEventListener('storage', handleNoticeStorage);
+  }, []);
 
   // Sync maintenance mode from API and storage events
   useEffect(() => {
@@ -64,6 +116,13 @@ export default function App() {
             const isMaint = json.data.maintenanceMode === true || json.data.maintenanceMode === 'true';
             setIsMaintenanceMode(isMaint);
             localStorage.setItem('stylex_maintenance_mode', String(isMaint));
+          }
+
+          if (json?.data?.storeNotice && typeof json.data.storeNotice === 'object') {
+            const notice = json.data.storeNotice;
+            setStoreNotice(notice);
+            localStorage.setItem('stylex_store_notice', JSON.stringify(notice));
+            evaluateStoreNoticePopup(notice);
           }
         }
       } catch {
@@ -388,6 +447,13 @@ export default function App() {
         item={activePortfolioItem}
         onClose={() => setActivePortfolioItem(null)}
         onBookArtisan={handleBookFromPortfolio}
+      />
+
+      {/* Store Notice / Holiday Announcement Popup */}
+      <StoreNoticeModal
+        notice={storeNotice}
+        isOpen={isStoreNoticeOpen}
+        onClose={handleCloseStoreNotice}
       />
 
 

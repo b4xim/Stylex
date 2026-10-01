@@ -42,6 +42,16 @@ export class SettingController {
         settingsMap.weekSchedule = DEFAULT_WEEK_SCHEDULE;
       }
 
+      if (!settingsMap.storeNotice || typeof settingsMap.storeNotice !== 'object') {
+        settingsMap.storeNotice = {
+          isActive: false,
+          title: 'Special Notice',
+          message: '',
+          badge: 'Announcement',
+          buttonText: 'Got It',
+        };
+      }
+
       res.status(200).json({ success: true, data: settingsMap });
     } catch (error) {
       next(error);

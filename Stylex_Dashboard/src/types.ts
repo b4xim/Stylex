@@ -203,3 +203,12 @@ export interface AdminNotification {
   linkTab?: NavTab;
   createdAt: number;
 }
+
+export interface StoreNotice {
+  isActive: boolean;
+  title: string;
+  message: string;
+  badge?: string;
+  buttonText?: string;
+  updatedAt?: string;
+}

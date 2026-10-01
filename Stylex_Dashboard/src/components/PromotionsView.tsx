@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { CarouselBanner, ReelItem, PortfolioWork, UserAccount } from '../types';
+import React, { useState, useEffect } from 'react';
+import { CarouselBanner, ReelItem, PortfolioWork, UserAccount, StoreNotice } from '../types';
 
-export type PromotionsTab = 'banners' | 'reels' | 'photos';
+export type PromotionsTab = 'banners' | 'reels' | 'photos' | 'notice';
 
 interface PromotionsViewProps {
   banners: CarouselBanner[];
@@ -21,6 +21,9 @@ interface PromotionsViewProps {
   onEditPortfolioWork: (photo: PortfolioWork) => void;
   onDeletePortfolioWork: (id: string) => void;
   onOpenAddPortfolioPhoto: () => void;
+
+  storeNotice?: StoreNotice;
+  onSaveStoreNotice?: (notice: StoreNotice) => void;
 
   currentUser?: UserAccount;
 }
@@ -44,11 +47,53 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
   onDeletePortfolioWork,
   onOpenAddPortfolioPhoto,
 
+  storeNotice,
+  onSaveStoreNotice,
+
   currentUser,
 }) => {
   const isViewOnly = currentUser?.role === 'Staff' || currentUser?.role === 'Normal User';
   const [activeTab, setActiveTab] = useState<PromotionsTab>('banners');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Store Notice State
+  const [noticeForm, setNoticeForm] = useState<StoreNotice>(() => ({
+    isActive: storeNotice?.isActive ?? false,
+    title: storeNotice?.title || 'Outlet Notice',
+    message: storeNotice?.message || '',
+    badge: storeNotice?.badge || 'Special Notice',
+    buttonText: storeNotice?.buttonText || 'Got It',
+  }));
+  const [isNoticePreviewModalOpen, setIsNoticePreviewModalOpen] = useState<boolean>(false);
+  const [isNoticeSaved, setIsNoticeSaved] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (storeNotice) {
+      setNoticeForm({
+        isActive: storeNotice.isActive ?? false,
+        title: storeNotice.title || 'Outlet Notice',
+        message: storeNotice.message || '',
+        badge: storeNotice.badge || 'Special Notice',
+        buttonText: storeNotice.buttonText || 'Got It',
+      });
+    }
+  }, [storeNotice]);
+
+  const handleNoticeSave = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (onSaveStoreNotice) {
+      onSaveStoreNotice(noticeForm);
+      setIsNoticeSaved(true);
+      setTimeout(() => setIsNoticeSaved(false), 3000);
+    }
+  };
+
+  const applyPreset = (preset: { badge: string; title: string; message: string; buttonText: string }) => {
+    setNoticeForm((prev) => ({
+      ...prev,
+      ...preset,
+    }));
+  };
 
   // Stats
   const activeBannersCount = banners.filter((b) => b.isActive).length;
@@ -183,6 +228,31 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
             }`}
           >
             {portfolioWorks.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('notice');
+            setDeleteConfirmId(null);
+          }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'notice'
+              ? 'bg-white dark:bg-[#1f372c] text-[#112e20] dark:text-white shadow-sm'
+              : 'text-[#424844] dark:text-neutral-400 hover:text-[#112e20] dark:hover:text-white'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">campaign</span>
+          <span>Store Notice / Popup</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              noticeForm.isActive
+                ? 'bg-emerald-600 text-white'
+                : 'bg-[#c2c8c2]/40 dark:bg-white/10 text-[#424844] dark:text-neutral-300'
+            }`}
+          >
+            {noticeForm.isActive ? 'Active' : 'Off'}
           </span>
         </button>
       </div>
@@ -750,6 +820,340 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. STORE NOTICE / POPUP TAB */}
+      {/* ========================================================================= */}
+      {activeTab === 'notice' && (
+        <div className="flex flex-col gap-6">
+          {/* Header Card */}
+          <div className="bg-white dark:bg-[#14231b] border border-[#c2c8c2]/40 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#fe753c]/10 text-[#fe753c] border border-[#fe753c]/20 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[26px]">campaign</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="font-serif text-xl sm:text-2xl text-[#112e20] dark:text-white leading-tight">
+                    Website Announcement Popup
+                  </h2>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                      noticeForm.isActive
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300/60'
+                        : 'bg-neutral-100 text-neutral-600 dark:bg-white/10 dark:text-neutral-400 border border-neutral-300/40'
+                    }`}
+                  >
+                    {noticeForm.isActive ? 'Live on Website' : 'Disabled'}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#424844] dark:text-neutral-300 mt-1 max-w-2xl">
+                  Display an interactive popup on the homepage and /booking screen when visitors load the website. Ideal for holiday closures, festive hours, and urgent guest notices.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+              <button
+                type="button"
+                onClick={() => setIsNoticePreviewModalOpen(true)}
+                className="px-4 py-2 rounded-xl border border-[#c2c8c2]/50 dark:border-white/20 text-[#112e20] dark:text-white hover:bg-[#f0f5f1] dark:hover:bg-white/10 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">visibility</span>
+                <span>Preview Popup</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Form Configuration (7 cols) */}
+            <form
+              onSubmit={handleNoticeSave}
+              className="lg:col-span-7 bg-white dark:bg-[#14231b] border border-[#c2c8c2]/40 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col gap-5"
+            >
+              {/* Master Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[#f0f5f1] dark:bg-white/5 border border-[#c2c8c2]/30 dark:border-white/10">
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-[#112e20] dark:text-white">
+                    Enable Website Notice Popup
+                  </span>
+                  <span className="text-xs text-[#424844] dark:text-neutral-400">
+                    When active, visitors will see this modal on first load with an 'X' button to dismiss.
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setNoticeForm((prev) => ({ ...prev, isActive: !prev.isActive }))}
+                  aria-label="Toggle Store Notice"
+                  className={`w-12 h-6 rounded-full p-0.5 flex items-center transition-colors cursor-pointer shrink-0 ${
+                    noticeForm.isActive ? 'bg-[#112e20] dark:bg-emerald-600 justify-end' : 'bg-[#c2c8c2] dark:bg-neutral-700 justify-start'
+                  }`}
+                >
+                  <span className="w-5 h-5 rounded-full bg-white shadow-sm"></span>
+                </button>
+              </div>
+
+              {/* Quick Template Presets */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-[#424844] dark:text-neutral-300 uppercase tracking-wider block">
+                  Quick Presets (1-Tap Fill)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applyPreset({
+                        badge: 'Holiday Closure',
+                        title: 'Outlet Closed This Sunday',
+                        message:
+                          'StyleX Signature Salon Tirur will remain closed this Sunday due to a public holiday.\n\nPublic reservations will resume as usual on Monday from 10:00 AM onwards. Thank you for your understanding!',
+                        buttonText: 'Understood',
+                      })
+                    }
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#eaefeb] dark:bg-white/10 text-[#112e20] dark:text-neutral-200 hover:bg-[#dce4de] transition-colors cursor-pointer"
+                  >
+                    🏖️ Sunday Holiday Closure
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applyPreset({
+                        badge: 'Festive Schedule',
+                        title: 'Festival Operating Hours',
+                        message:
+                          'Wishing you a joyous festive season! StyleX is operating under special extended celebratory hours this week.\n\nAdvance reservations are strongly recommended to secure your preferred Master Artisan.',
+                        buttonText: 'Book An Appointment',
+                      })
+                    }
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#eaefeb] dark:bg-white/10 text-[#112e20] dark:text-neutral-200 hover:bg-[#dce4de] transition-colors cursor-pointer"
+                  >
+                    ✨ Festive Special Hours
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applyPreset({
+                        badge: 'Atelier Update',
+                        title: 'Scheduled Studio Upgrade',
+                        message:
+                          'We are performing routine sanctuary upgrades. Online reservations remain open for upcoming dates starting tomorrow.\n\nFor urgent concierge questions, contact front desk via WhatsApp.',
+                        buttonText: 'Got It',
+                      })
+                    }
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#eaefeb] dark:bg-white/10 text-[#112e20] dark:text-neutral-200 hover:bg-[#dce4de] transition-colors cursor-pointer"
+                  >
+                    🛠️ Studio Maintenance
+                  </button>
+                </div>
+              </div>
+
+              {/* Tag / Badge */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#112e20] dark:text-neutral-200 flex items-center justify-between">
+                  <span>Notice Badge / Pill Tag</span>
+                  <span className="text-[11px] text-[#727973] font-normal">Optional label</span>
+                </label>
+                <input
+                  type="text"
+                  value={noticeForm.badge || ''}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, badge: e.target.value })}
+                  placeholder="e.g. Special Holiday Notice, Outlet Update, Important"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c2c8c2] dark:border-white/20 bg-white dark:bg-[#1a2520] text-sm text-[#112e20] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#112e20]"
+                />
+              </div>
+
+              {/* Title */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#112e20] dark:text-neutral-200">
+                  Headline Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={noticeForm.title || ''}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
+                  placeholder="e.g. Outlet Closed This Sunday"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c2c8c2] dark:border-white/20 bg-white dark:bg-[#1a2520] text-sm text-[#112e20] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#112e20]"
+                />
+              </div>
+
+              {/* Message */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#112e20] dark:text-neutral-200 flex items-center justify-between">
+                  <span>Notice Message Body *</span>
+                  <span className="text-[11px] text-[#727973] font-normal">Supports line breaks</span>
+                </label>
+                <textarea
+                  rows={5}
+                  required
+                  value={noticeForm.message || ''}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, message: e.target.value })}
+                  placeholder="Write the announcement message shown to visitors when they load the website..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c2c8c2] dark:border-white/20 bg-white dark:bg-[#1a2520] text-sm text-[#112e20] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#112e20] resize-y"
+                />
+              </div>
+
+              {/* Action Button Label */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#112e20] dark:text-neutral-200">
+                  Dismiss / Action Button Text
+                </label>
+                <input
+                  type="text"
+                  value={noticeForm.buttonText || ''}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, buttonText: e.target.value })}
+                  placeholder="e.g. Got It, Understood, Close"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c2c8c2] dark:border-white/20 bg-white dark:bg-[#1a2520] text-sm text-[#112e20] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#112e20]"
+                />
+              </div>
+
+              {/* Submit & Status Bar */}
+              <div className="pt-2 flex items-center justify-between gap-4 border-t border-[#c2c8c2]/30 dark:border-white/10">
+                <div className="text-xs">
+                  {isNoticeSaved ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5 animate-fadeIn">
+                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                      Notice Saved &amp; Live!
+                    </span>
+                  ) : (
+                    <span className="text-[#727973] dark:text-neutral-400">
+                      Changes take effect on live website immediately upon saving.
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isViewOnly}
+                  className="px-6 py-2.5 rounded-xl bg-[#112e20] hover:bg-[#185341] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                  <span>Save &amp; Publish Notice</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Live Interactive Preview Simulator (5 cols) */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#424844] dark:text-neutral-300 font-label-caps">
+                  Live Website Simulator
+                </span>
+                <span className="text-[11px] text-[#727973] dark:text-neutral-400">
+                  Exact visitor preview
+                </span>
+              </div>
+
+              {/* Browser Preview Box */}
+              <div className="bg-[#f0f5f1] dark:bg-black/40 border border-[#c2c8c2]/50 dark:border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-inner relative min-h-[380px] justify-center items-center">
+                {/* Mock Browser Header */}
+                <div className="w-full flex items-center gap-1.5 pb-2 border-b border-[#c2c8c2]/30 dark:border-white/10 absolute top-3 left-4 right-4 max-w-[calc(100%-32px)]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                  <span className="text-[10px] text-[#727973] ml-2 font-mono">stylexsalon.in</span>
+                </div>
+
+                {/* Simulated Modal Card */}
+                <div className="w-full max-w-sm bg-white dark:bg-[#122019] rounded-2xl border border-[#c2c8c2]/60 dark:border-white/15 shadow-xl p-5 relative overflow-hidden flex flex-col gap-3 mt-6">
+                  {/* Top Ambient Glow */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#112e20] via-[#fe753c] to-[#112e20]" />
+
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fe753c]/10 text-[#fe753c] border border-[#fe753c]/20 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="material-symbols-outlined text-[13px]">campaign</span>
+                      <span>{noticeForm.badge || 'Special Notice'}</span>
+                    </span>
+
+                    <div className="w-6 h-6 rounded-full bg-[#f0f5f1] dark:bg-white/10 text-[#424844] dark:text-neutral-300 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[14px]">close</span>
+                    </div>
+                  </div>
+
+                  <h3 className="font-serif text-lg text-[#112e20] dark:text-white font-bold leading-tight">
+                    {noticeForm.title || 'Outlet Notice'}
+                  </h3>
+
+                  <p className="text-xs text-[#424844] dark:text-neutral-300 leading-relaxed whitespace-pre-line">
+                    {noticeForm.message || 'Notice message body will appear here for visitors...'}
+                  </p>
+
+                  <div className="pt-2">
+                    <div className="w-full py-2 px-4 rounded-xl bg-[#112e20] dark:bg-[#1f3b2d] text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs">
+                      <span>{noticeForm.buttonText || 'Got It'}</span>
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-[#727973] dark:text-neutral-400 text-center max-w-xs mt-2">
+                  {noticeForm.isActive ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                      ● Active: Displays on homescreen &amp; /booking screen.
+                    </span>
+                  ) : (
+                    <span className="text-neutral-500 italic">
+                      ○ Currently disabled. Toggle ON to show to visitors.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Full Screen Live Preview Modal */}
+          {isNoticePreviewModalOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+              onClick={() => setIsNoticePreviewModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-lg bg-white dark:bg-[#122019] rounded-3xl border border-[#c2c8c2]/50 dark:border-white/10 shadow-2xl p-6 sm:p-8 relative overflow-hidden flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#112e20] via-[#fe753c] to-[#112e20]" />
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fe753c]/10 text-[#fe753c] border border-[#fe753c]/20 text-[11px] font-bold uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[16px]">campaign</span>
+                    <span>{noticeForm.badge || 'Special Notice'}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsNoticePreviewModalOpen(false)}
+                    className="w-8 h-8 rounded-full bg-[#f0f5f1] dark:bg-white/10 hover:bg-[#eaefeb] text-[#424844] dark:text-neutral-300 flex items-center justify-center cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+
+                <h2 className="font-serif text-2xl sm:text-3xl text-[#112e20] dark:text-white font-bold tracking-tight">
+                  {noticeForm.title || 'Outlet Notice'}
+                </h2>
+
+                <div className="text-sm sm:text-[15px] text-[#424844] dark:text-neutral-300 leading-relaxed whitespace-pre-line py-1">
+                  {noticeForm.message || 'Write a message in the editor to see it appear here.'}
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsNoticePreviewModalOpen(false)}
+                    className="w-full py-3.5 px-6 rounded-2xl bg-[#112e20] hover:bg-[#185341] text-white font-semibold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>{noticeForm.buttonText || 'Got It'}</span>
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

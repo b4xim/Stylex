@@ -16,6 +16,7 @@ import {
   UserAccount,
   SystemRole,
   AdminNotification,
+  StoreNotice,
 } from './types';
 import {
   INITIAL_APPOINTMENTS,
@@ -341,6 +342,24 @@ export default function App() {
     return saved !== null ? saved === 'true' : true;
   });
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
+
+  // Store Notice Announcement State
+  const [storeNotice, setStoreNotice] = useState<StoreNotice>(() => {
+    const saved = localStorage.getItem('stylex_store_notice');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
+      } catch {}
+    }
+    return {
+      isActive: false,
+      title: 'Outlet Notice',
+      message: '',
+      badge: 'Special Notice',
+      buttonText: 'Got It',
+    };
+  });
 
   // Modals state
   const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
@@ -734,6 +753,11 @@ export default function App() {
             setWeekSchedule(liveSettings.weekSchedule);
             safeSetItem('stylex_tirur_v7_schedule', JSON.stringify(liveSettings.weekSchedule));
           }
+
+          if (liveSettings.storeNotice && typeof liveSettings.storeNotice === 'object') {
+            setStoreNotice(liveSettings.storeNotice);
+            safeSetItem('stylex_store_notice', JSON.stringify(liveSettings.storeNotice));
+          }
         }
       } catch (e) {
         console.warn('Live settings fetch:', e);
@@ -864,6 +888,14 @@ export default function App() {
                   safeSetItem('stylex_tirur_v7_schedule', newStr);
                 }
               }
+              if (liveSettings.storeNotice && typeof liveSettings.storeNotice === 'object') {
+                const currentStr = localStorage.getItem('stylex_store_notice');
+                const newStr = JSON.stringify(liveSettings.storeNotice);
+                if (currentStr !== newStr) {
+                  setStoreNotice(liveSettings.storeNotice);
+                  safeSetItem('stylex_store_notice', newStr);
+                }
+              }
             }
           } catch {}
         } catch {}
@@ -935,6 +967,21 @@ export default function App() {
       'success',
       `${targetDay.dayName} Hours Updated`,
       `Working hours set to ${newHours}`
+    );
+  };
+
+  const handleSaveStoreNotice = (newNotice: StoreNotice) => {
+    const updated = { ...newNotice, updatedAt: new Date().toISOString() };
+    setStoreNotice(updated);
+    safeSetItem('stylex_store_notice', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
+    DashboardApi.updateSettings({ storeNotice: updated }).catch((err) => {
+      console.warn('Backend API updateSettings storeNotice error:', err);
+    });
+    addToast(
+      updated.isActive ? 'success' : 'info',
+      updated.isActive ? 'Store Notice Published' : 'Store Notice Disabled',
+      updated.isActive ? 'Notice popup is now live on the website.' : 'Notice popup has been turned off.'
     );
   };
 
@@ -2301,6 +2348,8 @@ export default function App() {
                 setPortfolioPhotoToEdit(null);
                 setIsAddPortfolioPhotoOpen(true);
               }}
+              storeNotice={storeNotice}
+              onSaveStoreNotice={handleSaveStoreNotice}
               currentUser={currentUser}
             />
           )}

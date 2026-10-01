@@ -116,3 +116,12 @@ export interface BookingState {
   bookingRef?: string;
 }
 
+export interface StoreNotice {
+  isActive: boolean;
+  title: string;
+  message: string;
+  badge?: string;
+  buttonText?: string;
+  updatedAt?: string;
+}
+

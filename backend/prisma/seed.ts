@@ -94,6 +94,16 @@ async function main() {
         { dayName: 'Sunday', label: 'Sunday', dateStr: 'Sun, Weekend', isOpen: true, statusText: 'Open', subText: '10:00 AM – 1:00 AM', hours: '10:00 AM – 1:00 AM' },
       ]),
     },
+    {
+      key: 'storeNotice',
+      value: JSON.stringify({
+        isActive: false,
+        title: 'Special Notice',
+        message: '',
+        badge: 'Outlet Announcement',
+        buttonText: 'Got It',
+      }),
+    },
   ];
 
   for (const s of defaultSettings) {
