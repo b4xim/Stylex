@@ -7,7 +7,7 @@
 # ------------------------------------------------------------------------------
 server {
     listen 80;
-    server_name stylexsalon.in www.stylexsalon.in dashboard.stylexsalon.in;
+    server_name stylexsalon.in www.stylexsalon.in dashboard.stylexsalon.in stylexsignaturesalon.in www.stylexsignaturesalon.in;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -83,7 +83,7 @@ server {
 server {
     listen 443 ssl default_server;
     http2 on;
-    server_name stylexsalon.in www.stylexsalon.in;
+    server_name stylexsalon.in www.stylexsalon.in stylexsignaturesalon.in www.stylexsignaturesalon.in;
     client_max_body_size 50M;
 
     # Docker internal DNS resolver

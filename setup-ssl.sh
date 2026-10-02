@@ -7,9 +7,9 @@
 set -e
 
 EMAIL=${1:-"admin@stylexsalon.in"}
-DOMAINS="-d stylexsalon.in -d www.stylexsalon.in -d dashboard.stylexsalon.in"
+DOMAINS="-d stylexsalon.in -d www.stylexsalon.in -d dashboard.stylexsalon.in -d stylexsignaturesalon.in -d www.stylexsignaturesalon.in"
 
-echo "Requesting Let's Encrypt SSL certificate for: stylexsalon.in, www.stylexsalon.in, dashboard.stylexsalon.in"
+echo "Requesting Let's Encrypt SSL certificate for: stylexsalon.in, www.stylexsalon.in, dashboard.stylexsalon.in, stylexsignaturesalon.in, www.stylexsignaturesalon.in"
 echo "Registration Email: $EMAIL"
 
 mkdir -p certbot/conf certbot/www
