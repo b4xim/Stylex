@@ -1272,9 +1272,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844] font-label-caps block">
                           Select Time Slot (1-Hour)
                         </label>
-                        <span className="text-[11px] text-[#fe753c] font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">schedule</span> {getBlackoutStatus(selectedDay).dayConfig?.hours || '10 AM – 1 AM'}
-                        </span>
                       </div>
 
                       {/* Touch-Friendly Grid of All Available Slots */}
