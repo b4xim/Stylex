@@ -139,7 +139,10 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
       const res = await fetch(`/api/bookings/slots?date=${dateYMD}${stylistParam}${genderParam}`);
       const json = await res.json();
       if (res.ok && json.success) {
-        setAvailableSlots(json.data || []);
+        const rawSlots = json.data || [];
+        // Strictly hourly slots to match BookingEngine (1-Hour intervals)
+        const hourlySlots = rawSlots.filter((s: SlotAvailability) => !s.timeSlot.includes(':30'));
+        setAvailableSlots(hourlySlots);
       } else {
         setAvailableSlots([]);
       }
@@ -532,7 +535,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
               {/* Slot Selector */}
               <div>
                 <label className="block text-[11px] uppercase tracking-wider text-[#9eb6aa] font-bold mb-2">
-                  2. Select Available Time Slot
+                  2. Select Available Time Slot (1-Hour)
                 </label>
                 
                 {isLoadingSlots ? (
