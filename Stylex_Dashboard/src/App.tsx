@@ -760,12 +760,29 @@ export default function App() {
           }
 
           if (liveSettings.storeNotice && typeof liveSettings.storeNotice === 'object') {
-            const normalized = {
+            const normalized: StoreNotice = {
               ...liveSettings.storeNotice,
               isActive: liveSettings.storeNotice.isActive === true || liveSettings.storeNotice.isActive === 'true',
             };
-            setStoreNotice(normalized);
-            safeSetItem('stylex_store_notice', JSON.stringify(normalized));
+            const localStr = localStorage.getItem('stylex_store_notice');
+            let shouldApply = true;
+            if (localStr) {
+              try {
+                const localParsed = JSON.parse(localStr);
+                if (localParsed?.updatedAt && normalized?.updatedAt) {
+                  const localTime = new Date(localParsed.updatedAt).getTime();
+                  const serverTime = new Date(normalized.updatedAt).getTime();
+                  if (localTime > serverTime) {
+                    shouldApply = false;
+                    DashboardApi.updateSettings({ storeNotice: localParsed }).catch(() => {});
+                  }
+                }
+              } catch {}
+            }
+            if (shouldApply) {
+              setStoreNotice(normalized);
+              safeSetItem('stylex_store_notice', JSON.stringify(normalized));
+            }
           }
         }
       } catch (e) {
@@ -898,13 +915,27 @@ export default function App() {
                 }
               }
               if (liveSettings.storeNotice && typeof liveSettings.storeNotice === 'object') {
-                const normalized = {
+                const normalized: StoreNotice = {
                   ...liveSettings.storeNotice,
                   isActive: liveSettings.storeNotice.isActive === true || liveSettings.storeNotice.isActive === 'true',
                 };
                 const currentStr = localStorage.getItem('stylex_store_notice');
+                let shouldApply = true;
+                if (currentStr) {
+                  try {
+                    const localParsed = JSON.parse(currentStr);
+                    if (localParsed?.updatedAt && normalized?.updatedAt) {
+                      const localTime = new Date(localParsed.updatedAt).getTime();
+                      const serverTime = new Date(normalized.updatedAt).getTime();
+                      if (localTime > serverTime) {
+                        shouldApply = false;
+                        DashboardApi.updateSettings({ storeNotice: localParsed }).catch(() => {});
+                      }
+                    }
+                  } catch {}
+                }
                 const newStr = JSON.stringify(normalized);
-                if (currentStr !== newStr) {
+                if (shouldApply && currentStr !== newStr) {
                   setStoreNotice(normalized);
                   safeSetItem('stylex_store_notice', newStr);
                 }
@@ -983,14 +1014,23 @@ export default function App() {
     );
   };
 
-  const handleSaveStoreNotice = (newNotice: StoreNotice) => {
-    const updated = { ...newNotice, updatedAt: new Date().toISOString() };
+  const handleSaveStoreNotice = async (newNotice: StoreNotice) => {
+    const updated: StoreNotice = {
+      ...newNotice,
+      isActive: Boolean(newNotice.isActive),
+      updatedAt: new Date().toISOString(),
+    };
     setStoreNotice(updated);
     safeSetItem('stylex_store_notice', JSON.stringify(updated));
     window.dispatchEvent(new Event('storage'));
-    DashboardApi.updateSettings({ storeNotice: updated }).catch((err) => {
+
+    try {
+      if (!DashboardApi.getToken()) await DashboardApi.silentLogin();
+      await DashboardApi.updateSettings({ storeNotice: updated });
+    } catch (err) {
       console.warn('Backend API updateSettings storeNotice error:', err);
-    });
+    }
+
     addToast(
       updated.isActive ? 'success' : 'info',
       updated.isActive ? 'Store Notice Published' : 'Store Notice Disabled',

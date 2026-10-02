@@ -80,8 +80,9 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
   }, [storeNotice]);
 
   const handleToggleNotice = () => {
-    const nextActive = !noticeForm.isActive;
-    const updated = { ...noticeForm, isActive: nextActive };
+    const currentActive = noticeForm.isActive === true || (noticeForm.isActive as any) === 'true';
+    const nextActive = !currentActive;
+    const updated: StoreNotice = { ...noticeForm, isActive: nextActive };
     setNoticeForm(updated);
     if (onSaveStoreNotice) {
       onSaveStoreNotice(updated);
@@ -92,8 +93,10 @@ export const PromotionsView: React.FC<PromotionsViewProps> = ({
 
   const handleNoticeSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    const isCurrentActive = noticeForm.isActive === true || (noticeForm.isActive as any) === 'true';
+    const updated: StoreNotice = { ...noticeForm, isActive: isCurrentActive };
     if (onSaveStoreNotice) {
-      onSaveStoreNotice(noticeForm);
+      onSaveStoreNotice(updated);
       setIsNoticeSaved(true);
       setTimeout(() => setIsNoticeSaved(false), 3000);
     }

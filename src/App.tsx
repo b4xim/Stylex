@@ -143,13 +143,27 @@ export default function App() {
           }
 
           if (json?.data?.storeNotice && typeof json.data.storeNotice === 'object') {
-            const notice = {
+            const serverNotice = {
               ...json.data.storeNotice,
               isActive: json.data.storeNotice.isActive === true || json.data.storeNotice.isActive === 'true',
             };
-            setStoreNotice(notice);
-            localStorage.setItem('stylex_store_notice', JSON.stringify(notice));
-            evaluateStoreNoticePopup(notice);
+            const localRaw = localStorage.getItem('stylex_store_notice');
+            let applyServer = true;
+            if (localRaw) {
+              try {
+                const localParsed = JSON.parse(localRaw);
+                if (localParsed?.updatedAt && serverNotice?.updatedAt) {
+                  if (new Date(localParsed.updatedAt).getTime() > new Date(serverNotice.updatedAt).getTime()) {
+                    applyServer = false;
+                  }
+                }
+              } catch {}
+            }
+            if (applyServer) {
+              setStoreNotice(serverNotice);
+              localStorage.setItem('stylex_store_notice', JSON.stringify(serverNotice));
+              evaluateStoreNoticePopup(serverNotice);
+            }
           }
         }
       } catch {

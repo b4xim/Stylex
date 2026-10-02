@@ -61,8 +61,8 @@ export class DashboardApi {
         headers,
       });
 
-      // Handle 401 Unauthorized with silent retry if admin credentials exist
-      if (res.status === 401 && retryAuth) {
+      // Handle 401 Unauthorized or 403 Forbidden with silent retry if admin credentials exist
+      if ((res.status === 401 || res.status === 403) && retryAuth) {
         const loggedIn = await this.silentLogin();
         if (loggedIn) {
           return this.request<T>(endpoint, options, false);
