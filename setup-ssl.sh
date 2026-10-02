@@ -30,7 +30,10 @@ $DOCKER_CMD run -i --rm --name temp_certbot \
   --agree-tos \
   --force-renewal
 
-if [ -f "certbot/conf/live/stylexsalon.in/fullchain.pem" ]; then
+# Ensure permissions allow checking and reading the certificate
+sudo chmod -R 755 certbot/conf/live certbot/conf/archive 2>/dev/null || true
+
+if sudo test -f "certbot/conf/live/stylexsalon.in/fullchain.pem" 2>/dev/null || [ -f "certbot/conf/live/stylexsalon.in/fullchain.pem" ]; then
   echo "SSL certificate successfully obtained! Activating HTTPS configuration..."
   cp nginx/conf.d/ssl.conf.template nginx/conf.d/default.conf
   
