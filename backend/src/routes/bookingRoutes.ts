@@ -4,9 +4,13 @@ import { optionalAuthenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// Public & Dashboard endpoints
+// Public & Client Self-Service endpoints
 router.get('/slots', BookingController.getAvailableSlots);
 router.post('/', BookingController.createBooking);
+router.get('/manage/:token', BookingController.getBookingByToken);
+router.post('/lookup', BookingController.lookupBookingsByPhone);
+router.patch('/manage/:token/reschedule', BookingController.rescheduleBooking);
+router.patch('/manage/:token/cancel', BookingController.cancelBooking);
 
 // Dashboard endpoints (resilient auth)
 router.get('/', optionalAuthenticateToken, BookingController.listBookings);

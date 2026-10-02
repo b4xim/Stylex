@@ -4,10 +4,12 @@ import { BookingState } from '../types.ts';
 interface BookingModalProps {
   booking: BookingState | null;
   onClose: () => void;
+  onManageBooking?: (token: string) => void;
 }
 
-export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) => {
+export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose, onManageBooking }) => {
   const [isCompleting, setIsCompleting] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   if (!booking) return null;
 
@@ -214,13 +216,70 @@ export const BookingModal: React.FC<BookingModalProps> = ({ booking, onClose }) 
                 </div>
               </div>
 
-              {/* Mobile compact badge (saves 120px vertical space so everything fits cleanly!) */}
+              {/* Mobile compact badge */}
               <div className="sm:hidden flex items-center justify-between px-3 py-2 rounded-xl bg-[#082017] border border-white/10 text-[11px] text-[#caead5]">
                 <span className="flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[14px] text-emerald-400">verified</span>
                   <span>Zero Prepayment • Pay at Salon</span>
                 </span>
                 <span className="text-[#9eb6aa] font-medium">Open till 1 AM</span>
+              </div>
+
+              {/* Quick Self-Service Management Actions */}
+              <div className="bg-[#0a231b] border border-[#276451]/60 rounded-xl p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#caead5] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px] text-[#fe753c]">tune</span>
+                    <span>Self-Service Booking Pass</span>
+                  </span>
+                  <span className="text-[10px] text-[#86efac] font-medium">Instant Reschedule / Cancel</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const token = booking.managementToken || booking.bookingRef || '';
+                      if (onManageBooking) onManageBooking(token);
+                    }}
+                    className="py-2 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px] text-[#fe753c]">schedule</span>
+                    <span>Reschedule / Cancel</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const token = booking.managementToken || booking.bookingRef || '';
+                      const url = `${window.location.origin}/?manage=${encodeURIComponent(token)}`;
+                      navigator.clipboard.writeText(url).then(() => {
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2500);
+                      });
+                    }}
+                    className="py-2 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-[#d4ebe1] text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px] text-[#fe753c]">
+                      {copiedLink ? 'done' : 'content_copy'}
+                    </span>
+                    <span>{copiedLink ? 'Copied!' : 'Copy Pass Link'}</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const token = booking.managementToken || booking.bookingRef || '';
+                    const url = `${window.location.origin}/?manage=${encodeURIComponent(token)}`;
+                    const text = `StyleX Signature Salon Appointment Pass\n• Ref: ${booking.bookingRef}\n• Service: ${booking.serviceName}\n• Date: ${booking.date} at ${booking.time}\n\nView or Reschedule your booking here: ${url}`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                  className="w-full py-2 rounded-lg bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/40 text-[#86efac] text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-[#25D366]">share</span>
+                  <span>Save Pass to WhatsApp</span>
+                </button>
               </div>
             </div>
 

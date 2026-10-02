@@ -114,6 +114,7 @@ export interface BookingState {
   email?: string;
   customerName?: string;
   bookingRef?: string;
+  managementToken?: string;
 }
 
 export interface StoreNotice {

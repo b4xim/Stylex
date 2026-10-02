@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Appointment, UserAccount } from '../types';
-import { getWhatsAppUrl, WhatsAppIcon } from '../utils/whatsapp';
+import { getWhatsAppUrl, getWhatsAppManageUrl, getClientManageUrl, WhatsAppIcon } from '../utils/whatsapp';
 
 interface AppointmentsViewProps {
   appointments: Appointment[];
@@ -69,6 +69,17 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>(todayYMD);
   const [showAllDates, setShowAllDates] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'BOOKED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [copiedAptId, setCopiedAptId] = useState<string | null>(null);
+
+  const handleCopyManageLink = (e: React.MouseEvent, apt: Appointment) => {
+    e.stopPropagation();
+    const token = apt.managementToken || apt.bookingRef || apt.id;
+    const url = getClientManageUrl(token);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedAptId(apt.id);
+      setTimeout(() => setCopiedAptId(null), 2500);
+    });
+  };
   
   // Custom Calendar Popover state
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -863,17 +874,31 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                       </div>
                     </div>
 
-                    <a
-                      href={getWhatsAppUrl(apt.clientPhone, apt.clientName, apt.serviceName, apt.dateStr, apt.time)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#25D366]/15 hover:bg-[#25D366] text-[#0f7a37] dark:text-[#4ade80] hover:text-white dark:hover:text-white border border-[#25D366]/30 transition-all text-[11px] font-semibold cursor-pointer shadow-2xs group/wa shrink-0"
-                      title={`Chat with ${apt.clientName} on WhatsApp`}
-                    >
-                      <WhatsAppIcon className="w-3 h-3 text-[#25D366] group-hover/wa:text-white transition-colors shrink-0" />
-                      <span>WhatsApp</span>
-                    </a>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyManageLink(e, apt)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/20 text-[#181d1b] dark:text-neutral-200 border border-neutral-300 dark:border-white/10 text-[11px] font-semibold cursor-pointer transition-all shadow-2xs"
+                        title="Copy Client Self-Service Link (Reschedule / Cancel)"
+                      >
+                        <span className="material-symbols-outlined text-[13px] text-[#fe753c]">
+                          {copiedAptId === apt.id ? 'done' : 'link'}
+                        </span>
+                        <span>{copiedAptId === apt.id ? 'Copied' : 'Client Link'}</span>
+                      </button>
+
+                      <a
+                        href={getWhatsAppManageUrl(apt.clientPhone, apt.clientName, apt.serviceName, apt.dateStr, apt.time, apt.managementToken || apt.bookingRef || apt.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#25D366]/15 hover:bg-[#25D366] text-[#0f7a37] dark:text-[#4ade80] hover:text-white dark:hover:text-white border border-[#25D366]/30 transition-all text-[11px] font-semibold cursor-pointer shadow-2xs group/wa"
+                        title={`Send reservation pass to ${apt.clientName} on WhatsApp`}
+                      >
+                        <WhatsAppIcon className="w-3 h-3 text-[#25D366] group-hover/wa:text-white transition-colors shrink-0" />
+                        <span>WhatsApp</span>
+                      </a>
+                    </div>
                   </div>
 
                   {/* Service & Stylist Tag */}
@@ -997,13 +1022,24 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({
                           <span className="text-base text-[#181d1b] dark:text-white font-semibold">
                             {apt.clientName}
                           </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyManageLink(e, apt)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/20 text-[#181d1b] dark:text-neutral-200 border border-neutral-300 dark:border-white/10 text-[10.5px] font-semibold cursor-pointer transition-all shadow-2xs"
+                            title="Copy Client Self-Service Link (Reschedule / Cancel)"
+                          >
+                            <span className="material-symbols-outlined text-[12px] text-[#fe753c]">
+                              {copiedAptId === apt.id ? 'done' : 'link'}
+                            </span>
+                            <span>{copiedAptId === apt.id ? 'Copied' : 'Client Link'}</span>
+                          </button>
                           <a
-                            href={getWhatsAppUrl(apt.clientPhone, apt.clientName, apt.serviceName, apt.dateStr, apt.time)}
+                            href={getWhatsAppManageUrl(apt.clientPhone, apt.clientName, apt.serviceName, apt.dateStr, apt.time, apt.managementToken || apt.bookingRef || apt.id)}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#25D366]/15 hover:bg-[#25D366] text-[#0f7a37] dark:text-[#4ade80] hover:text-white dark:hover:text-white border border-[#25D366]/30 transition-all text-[11px] font-semibold cursor-pointer shadow-2xs group/wa"
-                            title={`Chat with ${apt.clientName} on WhatsApp`}
+                            title={`Send reservation pass to ${apt.clientName} on WhatsApp`}
                           >
                             <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366] group-hover/wa:text-white transition-colors shrink-0" />
                             <span>WhatsApp</span>

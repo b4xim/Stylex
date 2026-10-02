@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { prisma } from '../config/db';
+import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 import { SlotService } from '../services/slotService';
 import { WhatsAppService } from '../services/whatsappService';
@@ -197,10 +199,14 @@ export class BookingController {
           },
         });
 
+        // 3b. Generate unguessable management token for client self-service
+        const managementToken = crypto.randomBytes(16).toString('hex');
+
         // Create booking with individual guest identity snapshot
         const booking = await tx.booking.create({
           data: {
             bookingRef,
+            managementToken,
             customerId: customer.id,
             guestName: customerName,
             guestPhone: fullGuestPhone,
@@ -231,6 +237,9 @@ export class BookingController {
 
       // 5. Trigger Asynchronous Notifications (Non-blocking)
       const fullPhone = `${countryCode}${customerPhone.replace(/[^0-9]/g, '')}`;
+      const appUrl = env.APP_URL || 'https://stylexsalon.in';
+      const manageUrl = `${appUrl}/?manage=${result.managementToken || result.bookingRef}`;
+
       WhatsAppService.sendBookingConfirmation({
         bookingRef: result.bookingRef,
         customerName: result.customer.name,
@@ -240,6 +249,7 @@ export class BookingController {
         timeSlot: result.timeSlot,
         total: result.total,
         stylistName: result.stylist?.name,
+        manageUrl,
       }).then(async (res) => {
         if (res.success) {
           await prisma.booking.update({
@@ -259,6 +269,7 @@ export class BookingController {
           timeSlot: result.timeSlot,
           total: result.total,
           stylistName: result.stylist?.name,
+          manageUrl,
         }).then(async (res) => {
           if (res.success) {
             await prisma.booking.update({
@@ -269,10 +280,10 @@ export class BookingController {
         }).catch((e) => console.error('Failed to send Email confirmation:', e));
       }
 
-      // Generate direct WhatsApp chat URL for client confirmation
+      // Generate direct WhatsApp chat URL for client confirmation (includes self-service link)
       const directWhatsAppUrl = WhatsAppService.generateDirectChatUrl(
         fullPhone,
-        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${result.service.name} on ${result.date} at ${result.timeSlot}.`
+        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${result.service.name} on ${result.date} at ${result.timeSlot}.\n\nManage or Reschedule link: ${manageUrl}`
       );
 
       res.status(201).json({
@@ -280,6 +291,8 @@ export class BookingController {
         message: 'Appointment booked successfully!',
         data: {
           booking: result,
+          managementToken: result.managementToken || result.bookingRef,
+          manageUrl,
           directWhatsAppUrl,
         },
       });
@@ -437,6 +450,367 @@ export class BookingController {
       res.status(200).json({
         success: true,
         message: 'Booking permanently deleted',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Public: Retrieve a booking for client self-service via token or ref
+   */
+  public static async getBookingByToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const token = String(req.params.token || '').trim();
+      if (!token) {
+        throw new AppError('Booking management token or reference is required', 400);
+      }
+
+      const booking = await prisma.booking.findFirst({
+        where: {
+          OR: [
+            { managementToken: token },
+            { bookingRef: { equals: token, mode: 'insensitive' as const } },
+            { id: token },
+          ],
+        },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      if (!booking) {
+        throw new AppError('Reservation pass not found. Please verify the link or reference number.', 404);
+      }
+
+      // Calculate hours until appointment
+      let canModify = true;
+      let hoursUntilAppointment = 999;
+      try {
+        const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (timeMatch) {
+          let h = parseInt(timeMatch[1], 10);
+          const m = parseInt(timeMatch[2], 10);
+          const mer = timeMatch[3].toUpperCase();
+          if (mer === 'PM' && h < 12) h += 12;
+          if (mer === 'AM' && h === 12) h = 0;
+          const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+          hoursUntilAppointment = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
+        }
+      } catch {}
+
+      if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED' || hoursUntilAppointment < 2) {
+        canModify = false;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: booking.id,
+          bookingRef: booking.bookingRef,
+          managementToken: booking.managementToken || booking.bookingRef,
+          customerName: booking.guestName || booking.customer.name,
+          customerPhone: booking.guestPhone || booking.customer.phone,
+          customerEmail: booking.guestEmail || booking.customer.email,
+          service: {
+            id: booking.service.id,
+            name: booking.service.name,
+            duration: booking.service.durationMins,
+            price: booking.service.price,
+            category: booking.service.category,
+            gender: booking.service.gender,
+          },
+          stylist: booking.stylist ? {
+            id: booking.stylist.id,
+            name: booking.stylist.name,
+            avatarUrl: booking.stylist.imageUrl,
+          } : null,
+          secondaryService: booking.secondaryService,
+          secondaryPrice: booking.secondaryPrice,
+          date: booking.date,
+          timeSlot: booking.timeSlot,
+          status: booking.status,
+          total: booking.total,
+          notes: booking.notes,
+          canModify,
+          hoursUntilAppointment: Math.round(hoursUntilAppointment * 10) / 10,
+          createdAt: booking.createdAt,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Public: Look up active upcoming bookings by mobile number
+   */
+  public static async lookupBookingsByPhone(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { phone } = req.body;
+      if (!phone || typeof phone !== 'string') {
+        throw new AppError('Mobile number is required to search reservations', 400);
+      }
+
+      const digits = phone.replace(/[^0-9]/g, '');
+      const last10 = digits.length >= 10 ? digits.slice(-10) : digits;
+
+      if (last10.length < 7) {
+        throw new AppError('Please enter a valid mobile number with at least 7 digits', 400);
+      }
+
+      const bookings = await prisma.booking.findMany({
+        where: {
+          OR: [
+            { guestPhone: { contains: last10 } },
+            { customer: { phone: { contains: last10 } } },
+          ],
+          status: { in: ['CONFIRMED', 'PENDING'] },
+        },
+        include: {
+          service: true,
+          stylist: true,
+        },
+        orderBy: [
+          { date: 'asc' },
+          { timeSlot: 'asc' },
+        ],
+        take: 10,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: bookings.map((b) => ({
+          id: b.id,
+          bookingRef: b.bookingRef,
+          managementToken: b.managementToken || b.bookingRef,
+          customerName: b.guestName,
+          serviceName: b.service.name,
+          stylistName: b.stylist?.name || 'Any Stylist',
+          date: b.date,
+          timeSlot: b.timeSlot,
+          status: b.status,
+          total: b.total,
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Public: Reschedule an existing appointment
+   */
+  public static async rescheduleBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const token = String(req.params.token || '').trim();
+      const { date, timeSlot, stylistId } = req.body;
+
+      if (!token || !date || !timeSlot) {
+        throw new AppError('Date and time slot are required to reschedule', 400);
+      }
+
+      const booking = await prisma.booking.findFirst({
+        where: {
+          OR: [
+            { managementToken: token },
+            { bookingRef: { equals: token, mode: 'insensitive' as const } },
+            { id: token },
+          ],
+        },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      if (!booking) {
+        throw new AppError('Reservation pass not found', 404);
+      }
+
+      if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') {
+        throw new AppError(`Cannot reschedule an appointment that is already ${booking.status.toLowerCase()}`, 400);
+      }
+
+      // Check cutoff rule (2 hours before current appointment)
+      const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (timeMatch) {
+        let h = parseInt(timeMatch[1], 10);
+        const m = parseInt(timeMatch[2], 10);
+        const mer = timeMatch[3].toUpperCase();
+        if (mer === 'PM' && h < 12) h += 12;
+        if (mer === 'AM' && h === 12) h = 0;
+        const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+        const hoursUntil = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
+        if (hoursUntil < 2) {
+          throw new AppError('Appointments within 2 hours cannot be rescheduled online. Please contact our salon front desk at +91 96561 11149.', 403);
+        }
+      }
+
+      // Normalize target date
+      const normalizedDate = String(date).trim();
+      const targetGender = booking.service.gender || 'gents';
+
+      // Verify availability of target slot
+      const targetStylistId = stylistId || booking.stylistId || null;
+      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, targetStylistId, targetGender);
+
+      // Perform update
+      const updated = await prisma.booking.update({
+        where: { id: booking.id },
+        data: {
+          date: normalizedDate,
+          timeSlot,
+          stylistId: targetStylistId,
+          notes: booking.notes ? `${booking.notes} (Rescheduled from ${booking.date} ${booking.timeSlot})` : `Rescheduled from ${booking.date} ${booking.timeSlot}`,
+        },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      // Dispatch async notifications
+      const manageUrl = `${env.APP_URL || 'https://stylexsalon.in'}/?manage=${updated.managementToken || updated.bookingRef}`;
+      const fullPhone = booking.guestPhone?.replace(/[^0-9]/g, '') || `91${booking.customer.phone}`;
+
+      WhatsAppService.sendBookingRescheduled({
+        bookingRef: updated.bookingRef,
+        customerName: updated.guestName || updated.customer.name,
+        customerPhone: fullPhone,
+        serviceName: updated.service.name,
+        date: updated.date,
+        timeSlot: updated.timeSlot,
+        total: updated.total,
+        stylistName: updated.stylist?.name,
+        manageUrl,
+      }).catch((e) => console.error('WhatsApp reschedule notification error:', e));
+
+      const clientEmail = updated.guestEmail || updated.customer.email;
+      if (clientEmail) {
+        EmailService.sendBookingRescheduled({
+          toEmail: clientEmail,
+          customerName: updated.guestName || updated.customer.name,
+          bookingRef: updated.bookingRef,
+          serviceName: updated.service.name,
+          date: updated.date,
+          timeSlot: updated.timeSlot,
+          total: updated.total,
+          stylistName: updated.stylist?.name,
+          manageUrl,
+        }).catch((e) => console.error('Email reschedule notification error:', e));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Your appointment has been successfully rescheduled!',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Public: Cancel an appointment
+   */
+  public static async cancelBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const token = String(req.params.token || '').trim();
+      const { reason } = req.body;
+
+      if (!token) {
+        throw new AppError('Reservation token or reference is required', 400);
+      }
+
+      const booking = await prisma.booking.findFirst({
+        where: {
+          OR: [
+            { managementToken: token },
+            { bookingRef: { equals: token, mode: 'insensitive' as const } },
+            { id: token },
+          ],
+        },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      if (!booking) {
+        throw new AppError('Reservation pass not found', 404);
+      }
+
+      if (booking.status === 'CANCELLED') {
+        res.status(200).json({
+          success: true,
+          message: 'Appointment is already cancelled.',
+          data: booking,
+        });
+        return;
+      }
+
+      // Check cutoff rule (2 hours before current appointment)
+      const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (timeMatch) {
+        let h = parseInt(timeMatch[1], 10);
+        const m = parseInt(timeMatch[2], 10);
+        const mer = timeMatch[3].toUpperCase();
+        if (mer === 'PM' && h < 12) h += 12;
+        if (mer === 'AM' && h === 12) h = 0;
+        const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+        const hoursUntil = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
+        if (hoursUntil < 2) {
+          throw new AppError('Appointments within 2 hours cannot be cancelled online. Please call our salon directly at +91 96561 11149.', 403);
+        }
+      }
+
+      const cancelNote = reason ? `Cancelled by client: ${reason}` : 'Cancelled by client online';
+      const updated = await prisma.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: 'CANCELLED',
+          notes: booking.notes ? `${booking.notes} | ${cancelNote}` : cancelNote,
+        },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      // Dispatch async notifications
+      const fullPhone = booking.guestPhone?.replace(/[^0-9]/g, '') || `91${booking.customer.phone}`;
+      WhatsAppService.sendBookingCancelled({
+        customerName: booking.guestName || booking.customer.name,
+        customerPhone: fullPhone,
+        bookingRef: booking.bookingRef,
+        serviceName: booking.service.name,
+        date: booking.date,
+        timeSlot: booking.timeSlot,
+      }).catch((e) => console.error('WhatsApp cancellation error:', e));
+
+      const clientEmail = booking.guestEmail || booking.customer.email;
+      if (clientEmail) {
+        EmailService.sendBookingCancelled({
+          toEmail: clientEmail,
+          customerName: booking.guestName || booking.customer.name,
+          bookingRef: booking.bookingRef,
+          serviceName: booking.service.name,
+          date: booking.date,
+          timeSlot: booking.timeSlot,
+        }).catch((e) => console.error('Email cancellation error:', e));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Your appointment has been cancelled. Time slot has been freed.',
+        data: updated,
       });
     } catch (error) {
       next(error);

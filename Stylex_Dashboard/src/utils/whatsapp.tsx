@@ -32,6 +32,44 @@ export const getWhatsAppUrl = (
 };
 
 /**
+ * Generates direct client self-service URL for managing the booking
+ */
+export const getClientManageUrl = (bookingRefOrToken?: string): string => {
+  if (!bookingRefOrToken) return 'https://stylexsalon.in';
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const clientBase = isLocal
+    ? `${window.location.protocol}//${window.location.hostname}:5173`
+    : window.location.origin.replace('dashboard.', '');
+  return `${clientBase}/?manage=${encodeURIComponent(bookingRefOrToken)}`;
+};
+
+/**
+ * Generates WhatsApp URL containing the self-service management link
+ */
+export const getWhatsAppManageUrl = (
+  phone: string,
+  clientName?: string,
+  serviceName?: string,
+  dateStr?: string,
+  time?: string,
+  bookingRefOrToken?: string
+): string => {
+  if (!phone) return 'https://wa.me/';
+  const digits = phone.replace(/[^0-9]/g, '');
+  let cleanPhone = digits;
+  if (digits.length === 10) {
+    cleanPhone = `91${digits}`;
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    cleanPhone = `91${digits.slice(1)}`;
+  }
+
+  const manageUrl = getClientManageUrl(bookingRefOrToken);
+  const message = `Hi ${clientName || 'there'}, this is StyleX Signature Salon Tirur.\n\nHere is your reservation pass for ${serviceName || 'your appointment'}${dateStr ? ` on ${dateStr}` : ''}${time ? ` at ${time}` : ''}.\n\nYou can view, reschedule, or manage your booking directly here:\n${manageUrl}\n\nPlease let us know if you need any assistance!`;
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+};
+
+/**
  * Official SVG WhatsApp icon component
  */
 export const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (

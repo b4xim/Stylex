@@ -3,6 +3,7 @@ import { LOGO_URL, SALON_DATA } from '../data/salonData.ts';
 
 interface NavbarProps {
   onOpenBooking: () => void;
+  onOpenManageBooking?: () => void;
   activeScreen?: string;
   setActiveScreen?: (screen: string) => void;
   onNavigate?: (path: string, sectionId?: string, screenName?: string) => void;
@@ -10,6 +11,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenBooking,
+  onOpenManageBooking,
   activeScreen = 'home',
   setActiveScreen,
   onNavigate,
@@ -156,6 +158,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action: Slim CTA Button (Desktop only; hidden on mobile) */}
           <div className="flex items-center gap-2">
+            {onOpenManageBooking && (
+              <button
+                type="button"
+                onClick={onOpenManageBooking}
+                className="hidden md:inline-flex items-center gap-1 px-3 py-1 sm:py-1.5 rounded-full border border-white/20 hover:border-[#fe753c]/60 bg-white/5 hover:bg-white/10 text-[#d4ebe1] hover:text-white text-[11px] sm:text-[11.5px] font-semibold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined text-[13px] text-[#fe753c]">calendar_month</span>
+                <span>Manage Booking</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenBooking}
               className="hidden md:inline-flex items-center gap-1 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-[#fe753c] hover:bg-[#e8652d] text-white text-[11px] sm:text-[11.5px] font-bold shadow-[0_2px_10px_rgba(254,117,60,0.3)] transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer whitespace-nowrap"
@@ -201,7 +214,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </div>
 
-          <div className="pt-4 mt-3 border-t border-[#185341]/60">
+          <div className="pt-4 mt-3 border-t border-[#185341]/60 space-y-2">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
@@ -212,6 +225,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Book Appointment</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
+
+            {onOpenManageBooking && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenManageBooking();
+                }}
+                className="w-full py-2.5 rounded-full border border-white/20 bg-white/5 text-[#d4ebe1] font-semibold text-[13px] text-center flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px] text-[#fe753c]">calendar_month</span>
+                <span>Manage Reservation</span>
+              </button>
+            )}
           </div>
         </div>
       )}

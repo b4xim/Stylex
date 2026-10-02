@@ -10,6 +10,7 @@ export interface EmailBookingPayload {
   timeSlot: string;
   total: number;
   stylistName?: string;
+  manageUrl?: string;
 }
 
 export class EmailService {
@@ -102,11 +103,15 @@ export class EmailService {
                   <td class="value">₹${payload.total.toLocaleString('en-IN')}</td>
                 </tr>
               </table>
-              <p style="font-size: 13px; color: #555;">Please arrive 10 minutes prior to your appointment time. For any schedule adjustments, please contact our front desk at <strong>+91 97478 64111</strong>.</p>
+              ${payload.manageUrl ? `
+              <div style="text-align: center; margin: 24px 0;">
+                <a href="${payload.manageUrl}" style="background-color: #fe753c; color: #ffffff; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">Manage or Reschedule Booking</a>
+              </div>` : ''}
+              <p style="font-size: 13px; color: #555;">Please arrive 10 minutes prior to your appointment time. For any schedule adjustments, please contact our front desk at <strong>+91 96561 11149</strong>.</p>
             </div>
             <div class="footer">
-              <p style="margin: 0;">StyleX Flagship Salon, City Center, Tirur, Kerala 676101</p>
-              <p style="margin: 4px 0 0 0;">WhatsApp: +91 97478 64111 • Email: appointments@stylextirur.com</p>
+              <p style="margin: 0;">StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101</p>
+              <p style="margin: 4px 0 0 0;">WhatsApp: +91 96561 11149 • appointments@stylextirur.com</p>
             </div>
           </div>
         </body>
@@ -123,6 +128,73 @@ export class EmailService {
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
       console.error('❌ Email Sending Error:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  public static async sendBookingRescheduled(
+    payload: EmailBookingPayload
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const transporter = this.getTransporter();
+    if (!transporter) {
+      console.log(`ℹ️ [Email Service] Reschedule email simulated for ${payload.toEmail} (${payload.bookingRef})`);
+      return { success: true, messageId: `SIMULATED_RESCHEDULE_${Date.now()}` };
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from: env.SMTP_FROM,
+        to: payload.toEmail,
+        subject: `Appointment Rescheduled: ${payload.bookingRef} - StyleX Signature Salon`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px;">
+            <h2 style="color: #112e20;">Your StyleX Appointment Has Been Rescheduled</h2>
+            <p>Dear <strong>${payload.customerName}</strong>,</p>
+            <p>Your appointment has been successfully updated to the new date and time below:</p>
+            <ul>
+              <li><strong>Booking Ref:</strong> ${payload.bookingRef}</li>
+              <li><strong>Service:</strong> ${payload.serviceName}</li>
+              <li><strong>New Date:</strong> ${payload.date}</li>
+              <li><strong>New Time Slot:</strong> ${payload.timeSlot}</li>
+              ${payload.stylistName ? `<li><strong>Stylist:</strong> ${payload.stylistName}</li>` : ''}
+            </ul>
+            ${payload.manageUrl ? `<p><a href="${payload.manageUrl}" style="display:inline-block; background:#fe753c; color:#fff; padding:10px 20px; border-radius:20px; text-decoration:none; font-weight:bold;">View or Manage Appointment</a></p>` : ''}
+            <p style="color:#777; font-size:12px;">StyleX Signature Salon • One Arcade, Tirur • +91 96561 11149</p>
+          </div>
+        `,
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  public static async sendBookingCancelled(
+    payload: { toEmail: string; customerName: string; bookingRef: string; serviceName: string; date: string; timeSlot: string }
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const transporter = this.getTransporter();
+    if (!transporter) {
+      console.log(`ℹ️ [Email Service] Cancellation email simulated for ${payload.toEmail} (${payload.bookingRef})`);
+      return { success: true, messageId: `SIMULATED_CANCEL_${Date.now()}` };
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from: env.SMTP_FROM,
+        to: payload.toEmail,
+        subject: `Appointment Cancelled: ${payload.bookingRef} - StyleX Signature Salon`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px;">
+            <h2 style="color: #991b1b;">Appointment Cancelled</h2>
+            <p>Dear <strong>${payload.customerName}</strong>,</p>
+            <p>Your appointment <strong>${payload.bookingRef}</strong> for <strong>${payload.serviceName}</strong> on ${payload.date} at ${payload.timeSlot} has been cancelled.</p>
+            <p>If you'd like to book another session at any time, please visit <a href="https://stylexsalon.in/booking">stylexsalon.in/booking</a>.</p>
+            <p style="color:#777; font-size:12px;">StyleX Signature Salon • One Arcade, Tirur • +91 96561 11149</p>
+          </div>
+        `,
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
       return { success: false, error: error.message };
     }
   }

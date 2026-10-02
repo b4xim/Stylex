@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Appointment, AppointmentStatus, Stylist, StylistLeave } from '../../types';
-import { getWhatsAppUrl, WhatsAppIcon } from '../../utils/whatsapp';
+import { getWhatsAppUrl, getClientManageUrl, getWhatsAppManageUrl, WhatsAppIcon } from '../../utils/whatsapp';
 
 interface ManageBookingModalProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
   const [notes, setNotes] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     if (appointment) {
@@ -39,6 +40,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
       setNotes(appointment.notes || '');
       setCancellationReason('');
       setShowDeleteConfirm(false);
+      setCopiedLink(false);
     }
   }, [appointment, isOpen, stylists]);
 
@@ -76,6 +78,15 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
     setShowDeleteConfirm(false);
     onDeleteBooking(appointment.id);
     onClose();
+  };
+
+  const clientToken = appointment.managementToken || appointment.bookingRef || appointment.id;
+  const manageUrl = getClientManageUrl(clientToken);
+
+  const handleCopyClientLink = () => {
+    navigator.clipboard.writeText(manageUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
   };
 
   return (
@@ -142,6 +153,39 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
             >
               <WhatsAppIcon className="w-4 h-4 fill-current" />
               <span>WhatsApp Chat</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Self-Service Pass Quick Actions */}
+        <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-base">link</span>
+            <div>
+              <span className="font-semibold text-stone-800 dark:text-stone-200 block">Client Self-Service Pass</span>
+              <span className="text-[11px] text-stone-500 dark:text-stone-400">Direct link to view, reschedule, or cancel</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopyClientLink}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 text-xs font-medium border border-stone-200 dark:border-white/10 transition-colors shadow-2xs cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {copiedLink ? 'done' : 'content_copy'}
+              </span>
+              <span>{copiedLink ? 'Copied!' : 'Copy Pass Link'}</span>
+            </button>
+            <a
+              href={getWhatsAppManageUrl(appointment.clientPhone, appointment.clientName, appointment.serviceName, appointment.dateStr, appointment.time, clientToken)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+              title="Share self-service reservation pass directly via WhatsApp"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+              <span>Share Pass</span>
             </a>
           </div>
         </div>

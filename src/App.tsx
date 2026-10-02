@@ -20,11 +20,22 @@ import { PortfolioModal } from './components/PortfolioModal.tsx';
 import { BookingPage } from './pages/BookingPage.tsx';
 import { MaintenancePage } from './pages/MaintenancePage.tsx';
 import { StoreNoticeModal } from './components/StoreNoticeModal.tsx';
+import { ManageBookingModal } from './components/ManageBookingModal.tsx';
 import { BookingState, ReelItem, ServiceItem, PortfolioWork, StoreNotice } from './types.ts';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
   const [selectedServiceId, setSelectedServiceId] = useState<string>('hair-1');
+
+  // Client-Side Self-Service Manage Booking Modal
+  const [isManageBookingOpen, setIsManageBookingOpen] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return !!params.get('manage') || window.location.pathname === '/manage-booking';
+  });
+  const [manageBookingToken, setManageBookingToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('manage') || null;
+  });
 
   // Maintenance Mode (controlled by Developer in Dashboard)
   const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(() => {
@@ -384,6 +395,10 @@ export default function App() {
           }
           navigate('/booking');
         }}
+        onOpenManageBooking={() => {
+          setManageBookingToken(null);
+          setIsManageBookingOpen(true);
+        }}
         activeScreen={activeScreen}
         setActiveScreen={setActiveSection}
         onNavigate={navigate}
@@ -446,6 +461,23 @@ export default function App() {
       <BookingModal
         booking={confirmedBooking}
         onClose={() => setConfirmedBooking(null)}
+        onManageBooking={(token) => {
+          setConfirmedBooking(null);
+          setManageBookingToken(token);
+          setIsManageBookingOpen(true);
+        }}
+      />
+
+      <ManageBookingModal
+        isOpen={isManageBookingOpen}
+        onClose={() => {
+          setIsManageBookingOpen(false);
+          setManageBookingToken(null);
+          if (window.location.search.includes('manage')) {
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        }}
+        initialToken={manageBookingToken}
       />
 
       <BookingPausedModal

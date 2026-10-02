@@ -92,6 +92,7 @@ model Stylist {
 model Booking {
   id                 String    @id @default(uuid())
   bookingRef         String    @unique // e.g. 'SX-8492'
+  managementToken    String?   @unique // Cryptographic unguessable token for client self-service
   customerId         String
   customer           Customer  @relation(fields: [customerId], references: [id])
   stylistId          String?

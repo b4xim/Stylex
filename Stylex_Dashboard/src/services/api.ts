@@ -546,6 +546,8 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
     status,
     dateStr: normalizeToYMD(b.date),
     notes: b.notes ? `[Ref: ${b.bookingRef}] ${b.notes}` : `Ref: ${b.bookingRef}`,
+    bookingRef: b.bookingRef,
+    managementToken: b.managementToken || b.bookingRef,
   };
 }
 

@@ -27,6 +27,8 @@ export interface Appointment {
   status: AppointmentStatus;
   dateStr: string; // e.g. "2024-10-24"
   notes?: string;
+  bookingRef?: string;
+  managementToken?: string;
 }
 
 export interface DaySchedule {

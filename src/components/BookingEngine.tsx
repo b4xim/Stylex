@@ -826,6 +826,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
       onConfirmBooking({
         bookingRef: serverRef,
+        managementToken: json.data?.managementToken || createdBooking?.managementToken || serverRef,
         customerName: cleanName,
         serviceId: selectedService.id,
         serviceName: selectedService.name,
