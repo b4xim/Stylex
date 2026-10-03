@@ -10,7 +10,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
   return (
     <section
       id="hero-top"
-      className="relative w-full bg-gradient-to-b from-[#072018] via-[#0b2b21] to-[#081d16] text-white pt-6 pb-20 px-4 sm:px-6 lg:px-12 overflow-hidden border-b border-[#1b4335]"
+      className="relative w-full bg-gradient-to-b from-[#072018] via-[#0b2b21] to-[#081d16] text-white pt-6 pb-12 lg:pb-20 px-4 sm:px-6 lg:px-12 overflow-hidden border-b border-[#1b4335]"
     >
       {/* Ambient Lighting Orbs */}
       <div className="absolute -top-32 -left-20 w-[500px] h-[500px] rounded-full bg-[#185341]/25 blur-3xl pointer-events-none" />
@@ -85,8 +85,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
             </div>
           </div>
 
-          {/* Right Column: Hero Model Portrait with Curated Badges */}
-          <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
+          {/* Right Column: Hero Model Portrait with Curated Badges (Hidden on mobile) */}
+          <div className="hidden lg:flex lg:col-span-5 relative justify-center lg:justify-end">
             <div className="relative w-full max-w-[480px] aspect-[4/5] flex items-center justify-center">
               {/* Diffused Glow */}
               <div className="absolute -inset-10 bg-gradient-to-t from-[#072018] via-[#185341]/40 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
