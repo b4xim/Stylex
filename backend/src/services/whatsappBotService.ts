@@ -22,6 +22,7 @@ export interface WhatsAppBotStatus {
   phoneNumber: string | null;
   pushname: string | null;
   status: 'INITIALIZING' | 'AWAITING_SCAN' | 'AUTHENTICATED' | 'CONNECTED' | 'DISCONNECTED';
+  statusMessage?: string;
   lastUpdated: string;
 }
 
@@ -31,6 +32,7 @@ export class WhatsAppBotService {
   private static isClientConnected = false;
   private static clientInfo: any = null;
   private static currentStatus: WhatsAppBotStatus['status'] = 'DISCONNECTED';
+  private static statusMessage: string = 'Offline';
   private static isInitializing = false;
 
   /**
@@ -43,6 +45,7 @@ export class WhatsAppBotService {
 
     this.isInitializing = true;
     this.currentStatus = 'INITIALIZING';
+    this.statusMessage = 'Launching headless browser...';
 
     try {
       const authDir = path.resolve(process.cwd(), 'whatsapp-auth');
@@ -61,18 +64,37 @@ export class WhatsAppBotService {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
+          '--single-process',
           '--disable-gpu',
         ],
       };
 
-      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-        puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      const possibleChromiumPaths = [
+        process.env.PUPPETEER_EXECUTABLE_PATH,
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+      ].filter(Boolean) as string[];
+
+      for (const p of possibleChromiumPaths) {
+        if (fs.existsSync(p)) {
+          puppeteerOptions.executablePath = p;
+          console.log(`🔍 [WhatsApp Bot] Using detected browser binary: ${p}`);
+          break;
+        }
       }
+
+      this.statusMessage = 'Starting WhatsApp Web client...';
 
       this.client = new Client({
         authStrategy: new LocalAuth({
           dataPath: authDir,
         }),
+        webVersionCache: {
+          type: 'remote',
+          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+        },
         puppeteer: puppeteerOptions,
       });
 
@@ -89,15 +111,18 @@ export class WhatsAppBotService {
           });
           this.isClientConnected = false;
           this.currentStatus = 'AWAITING_SCAN';
+          this.statusMessage = 'QR code generated. Awaiting salon phone scan in dashboard.';
           console.log('📲 [WhatsApp Bot] New QR code generated. Awaiting salon phone scan in dashboard.');
-        } catch (qrErr) {
+        } catch (qrErr: any) {
           console.error('❌ [WhatsApp Bot] Error rendering QR code to data URL:', qrErr);
+          this.statusMessage = `Failed to render QR: ${qrErr?.message || qrErr}`;
         }
       });
 
       // Event: Authenticated successfully
       this.client.on('authenticated', () => {
         this.currentStatus = 'AUTHENTICATED';
+        this.statusMessage = 'Session authenticated. Loading salon desk...';
         console.log('🔐 [WhatsApp Bot] Session authenticated successfully.');
       });
 
@@ -107,6 +132,7 @@ export class WhatsAppBotService {
         this.qrDataUrl = null;
         this.clientInfo = this.client.info;
         this.currentStatus = 'CONNECTED';
+        this.statusMessage = `Connected as +${this.clientInfo?.wid?.user || 'Unknown'} (${this.clientInfo?.pushname || 'Salon Desk'})`;
         console.log(`✅ [WhatsApp Bot] Ready! Connected as: +${this.clientInfo?.wid?.user || 'Unknown'} (${this.clientInfo?.pushname || 'Salon Desk'})`);
       });
 
@@ -117,6 +143,7 @@ export class WhatsAppBotService {
         this.qrDataUrl = null;
         this.clientInfo = null;
         this.currentStatus = 'DISCONNECTED';
+        this.statusMessage = `Disconnected: ${reason}`;
         
         // Re-initialize to generate a fresh QR code
         setTimeout(() => {
@@ -128,20 +155,24 @@ export class WhatsAppBotService {
     } catch (error: any) {
       console.warn('⚠️ [WhatsApp Bot] Initialization deferred (Chromium or dependency unavailable):', error.message || error);
       this.currentStatus = 'DISCONNECTED';
+      this.statusMessage = `Initialization error: ${error.message || error}`;
     } finally {
       this.isInitializing = false;
     }
   }
 
-  private static async reinitialize(): Promise<void> {
+  public static async reinitialize(): Promise<void> {
     try {
+      this.statusMessage = 'Restarting WhatsApp gateway...';
       if (this.client) {
         await this.client.destroy().catch(() => {});
         this.client = null;
       }
-      this.initialize();
-    } catch (e) {
+      this.isInitializing = false;
+      await this.initialize();
+    } catch (e: any) {
       console.error('❌ [WhatsApp Bot] Re-initialization error:', e);
+      this.statusMessage = `Re-initialization error: ${e?.message || e}`;
     }
   }
 
@@ -155,6 +186,7 @@ export class WhatsAppBotService {
       phoneNumber: this.clientInfo?.wid?.user || null,
       pushname: this.clientInfo?.pushname || null,
       status: this.currentStatus,
+      statusMessage: this.statusMessage,
       lastUpdated: new Date().toISOString(),
     };
   }

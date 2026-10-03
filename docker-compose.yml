@@ -25,6 +25,7 @@ services:
       dockerfile: Dockerfile
     container_name: stylex_api
     restart: always
+    shm_size: '1gb'
     depends_on:
       postgres:
         condition: service_healthy

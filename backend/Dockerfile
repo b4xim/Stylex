@@ -33,7 +33,10 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     openssl \
-    libc6-compat
+    libc6-compat \
+    udev \
+    libstdc++ \
+    dumb-init
 
 ENV NODE_ENV=production
 ENV PORT=5000

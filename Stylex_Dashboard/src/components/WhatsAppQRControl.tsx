@@ -15,6 +15,7 @@ interface BotStatusState {
   phoneNumber: string | null;
   pushname: string | null;
   status: string;
+  statusMessage?: string;
 }
 
 export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
@@ -29,6 +30,7 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testFeedback, setTestFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
 
   const fetchBotStatus = async () => {
     try {
@@ -43,6 +45,18 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
       // In offline or local fallback
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRestart = async () => {
+    setIsRestarting(true);
+    try {
+      await DashboardApi.restartWhatsApp();
+      await fetchBotStatus();
+    } catch (e) {
+      console.error('Error restarting WhatsApp:', e);
+    } finally {
+      setIsRestarting(false);
     }
   };
 
@@ -92,6 +106,20 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
   const displayPhone = botStatus?.phoneNumber ? `+${botStatus.phoneNumber}` : connectedPhone;
   const displayName = botStatus?.pushname ? `(${botStatus.pushname})` : '(StyleX Tirur Desk)';
 
+  const getBadgeInfo = () => {
+    if (isActuallyConnected) {
+      return { text: 'Online & Linked', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-500 animate-pulse' };
+    }
+    if (botStatus?.status === 'INITIALIZING') {
+      return { text: 'Launching Gateway', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30', dot: 'bg-blue-500 animate-ping' };
+    }
+    if (botStatus?.status === 'AWAITING_SCAN') {
+      return { text: 'Awaiting QR Scan', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30', dot: 'bg-amber-500' };
+    }
+    return { text: 'Offline / Standby', color: 'bg-stone-500/15 text-stone-700 dark:text-stone-400 border-stone-500/30', dot: 'bg-stone-400' };
+  };
+  const badge = getBadgeInfo();
+
   return (
     <section className="bg-white dark:bg-[#15201a] rounded-xl p-6 shadow-sm flex flex-col gap-5 border border-[#c2c8c2]/30 dark:border-white/10 transition-colors">
       {/* Section Header */}
@@ -106,18 +134,10 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
                 WhatsApp Bot Gateway
               </h2>
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase ${
-                  isActuallyConnected
-                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
-                    : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
-                }`}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase border ${badge.color}`}
               >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isActuallyConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                  }`}
-                />
-                {isActuallyConnected ? 'Online & Linked' : 'Awaiting QR Scan'}
+                <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                {badge.text}
               </span>
             </div>
             <span className="text-xs text-[#424844] dark:text-[#a0aca4] mt-0.5">
@@ -241,9 +261,20 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
                     <span className="material-symbols-outlined text-3xl text-emerald-700 animate-spin">
                       progress_activity
                     </span>
-                    <span className="text-xs text-stone-600 font-medium">
-                      Generating salon WhatsApp QR code...
+                    <span className="text-xs text-stone-700 dark:text-neutral-300 font-medium max-w-[210px] break-words">
+                      {botStatus?.statusMessage || 'Initializing WhatsApp Web...'}
                     </span>
+                    <button
+                      type="button"
+                      onClick={handleRestart}
+                      disabled={isRestarting}
+                      className="mt-1 px-3 py-1 text-[11px] font-bold rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-stone-800 dark:text-neutral-200 border border-stone-300 dark:border-white/10 transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    >
+                      <span className={`material-symbols-outlined text-[13px] ${isRestarting ? 'animate-spin' : ''}`}>
+                        restart_alt
+                      </span>
+                      <span>{isRestarting ? 'Restarting...' : 'Restart Gateway'}</span>
+                    </button>
                   </div>
                 )}
               </div>

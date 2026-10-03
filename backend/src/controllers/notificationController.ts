@@ -51,6 +51,18 @@ export class NotificationController {
   }
 
   /**
+   * POST /api/notifications/whatsapp/restart
+   */
+  public static async restartWhatsApp(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await WhatsAppBotService.reinitialize();
+      res.status(200).json({ success: true, message: 'WhatsApp gateway re-initialized.' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/notifications/email/status
    */
   public static async getEmailStatus(_req: Request, res: Response, next: NextFunction): Promise<void> {

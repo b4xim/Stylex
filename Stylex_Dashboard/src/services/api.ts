@@ -510,6 +510,12 @@ export class DashboardApi {
     });
   }
 
+  public static async restartWhatsApp() {
+    return this.request('/notifications/whatsapp/restart', {
+      method: 'POST',
+    });
+  }
+
   // ============================================================================
   // Automated Email Gateway & Diagnostics
   // ============================================================================
