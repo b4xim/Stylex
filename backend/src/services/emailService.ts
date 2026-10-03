@@ -153,12 +153,17 @@ export class EmailService {
         <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="color-scheme" content="light dark">
+          <meta name="supported-color-schemes" content="light dark">
           <style>
+            :root { color-scheme: light dark; supported-color-schemes: light dark; }
             body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f7faf8; margin: 0; padding: 24px; color: #112e20; }
             .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #dbe5e0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-            .header { background: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center; }
-            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
-            .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
+            .header { background: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff !important; padding: 32px 24px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; }
+            .header h1 span { color: #ffffff !important; }
+            .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c !important; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
             .content { padding: 28px 24px; }
             .ref-box { background: #f0f5f1; border-left: 4px solid #fe753c; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 24px; }
             .ref-title { font-size: 11px; text-transform: uppercase; color: #727973; font-weight: bold; }
@@ -172,10 +177,10 @@ export class EmailService {
         </head>
         <body>
           <div class="container">
-            <div class="header">
-              <div class="badge">Appointment Voucher</div>
-              <h1>StyleX Signature Salon</h1>
-              <p style="margin: 6px 0 0 0; color: #a6d0be; font-size: 13px;">Tirur Outlet • Kerala</p>
+            <div class="header" style="background-color: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center;">
+              <div class="badge" style="display: inline-block; background-color: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase;">Appointment Voucher</div>
+              <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; font-weight: bold; text-align: center;"><span style="color: #ffffff !important;">StyleX Signature Salon</span></h1>
+              <p style="margin: 6px 0 0 0; color: #a6d0be !important; font-size: 13px;">Tirur Outlet • Kerala</p>
             </div>
             <div class="content">
               <p>Dear <strong>${payload.customerName}</strong>,</p>
@@ -291,12 +296,17 @@ export class EmailService {
         <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="color-scheme" content="light dark">
+          <meta name="supported-color-schemes" content="light dark">
           <style>
+            :root { color-scheme: light dark; supported-color-schemes: light dark; }
             body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f7faf8; margin: 0; padding: 24px; color: #112e20; }
             .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #dbe5e0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-            .header { background: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center; }
-            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
-            .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
+            .header { background: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff !important; padding: 32px 24px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; }
+            .header h1 span { color: #ffffff !important; }
+            .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c !important; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
             .content { padding: 28px 24px; }
             .ref-box { background: #f0f5f1; border-left: 4px solid #fe753c; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 24px; }
             .ref-title { font-size: 11px; text-transform: uppercase; color: #727973; font-weight: bold; }
@@ -310,10 +320,10 @@ export class EmailService {
         </head>
         <body>
           <div class="container">
-            <div class="header">
-              <div class="badge">Appointment Updated</div>
-              <h1>StyleX Signature Salon</h1>
-              <p style="margin: 6px 0 0 0; color: #a6d0be; font-size: 13px;">Tirur Outlet • Kerala</p>
+            <div class="header" style="background-color: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center;">
+              <div class="badge" style="display: inline-block; background-color: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase;">Appointment Updated</div>
+              <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; font-weight: bold; text-align: center;"><span style="color: #ffffff !important;">StyleX Signature Salon</span></h1>
+              <p style="margin: 6px 0 0 0; color: #a6d0be !important; font-size: 13px;">Tirur Outlet • Kerala</p>
             </div>
             <div class="content">
               <p>Dear <strong>${payload.customerName}</strong>,</p>

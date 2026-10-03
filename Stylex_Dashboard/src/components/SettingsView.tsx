@@ -423,25 +423,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </section>
 
         {/* Booking Policy */}
-        <section className="bg-white rounded-xl p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30">
-          <div className="flex items-center gap-3 pb-2 border-b border-[#c2c8c2]/30">
-            <span className="material-symbols-outlined text-[#112e20] text-[22px]">lock_clock</span>
+        <section className={`bg-white dark:bg-[#15201a] rounded-xl p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30 dark:border-white/10 transition-colors ${isSettingsDisabled ? 'opacity-70' : ''}`}>
+          <div className="flex items-center gap-3 pb-2 border-b border-[#c2c8c2]/30 dark:border-white/10">
+            <span className="material-symbols-outlined text-[#112e20] dark:text-white text-[22px]">lock_clock</span>
             <div className="flex flex-col">
-              <h2 className="text-base text-[#112e20] font-semibold">Booking Policy</h2>
-              <span className="text-xs text-[#424844]">
+              <h2 className="text-base text-[#112e20] dark:text-white font-semibold">Booking Policy</h2>
+              <span className="text-xs text-[#424844] dark:text-neutral-400">
                 Client cancellation and rescheduling parameters
               </span>
             </div>
           </div>
 
           <div className="flex flex-col gap-4 pt-1">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-[#f0f5f1]">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-[#f0f5f1] dark:bg-white/5">
               <div className="flex flex-col pr-4">
-                <span className="text-[13px] text-[#112e20] font-semibold">
-                  24h Reschedule & Cancellation Policy
+                <span className="text-[13px] text-[#112e20] dark:text-white font-semibold">
+                  2-Hour Reschedule & Cancellation Cutoff
                 </span>
-                <span className="text-xs text-[#424844] mt-0.5">
-                  Complimentary changes and cancellations up to 24 hours prior to appointment time.
+                <span className="text-xs text-[#424844] dark:text-neutral-400 mt-0.5">
+                  Complimentary self-service changes and cancellations up to 2 hours prior to appointment time.
                 </span>
               </div>
               <button
@@ -454,11 +454,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     reschedulePolicy24h: !formData.reschedulePolicy24h,
                   })
                 }
-                aria-label="Toggle 24h Reschedule Policy"
+                aria-label="Toggle 2-Hour Reschedule Policy"
                 className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors ${
                   isSettingsDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 } ${
-                  formData.reschedulePolicy24h ? 'bg-[#112e20] justify-end' : 'bg-[#c2c8c2] justify-start'
+                  formData.reschedulePolicy24h ? 'bg-[#112e20] justify-end' : 'bg-[#c2c8c2] dark:bg-white/20 justify-start'
                 }`}
               >
                 <span className="w-5 h-5 rounded-full bg-white shadow-sm"></span>
@@ -579,10 +579,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="flex items-center justify-between p-4 rounded-lg bg-[#f0f5f1] dark:bg-white/5">
               <div className="flex flex-col pr-4">
                 <span className="text-[13px] text-[#112e20] dark:text-white font-semibold">
-                  WhatsApp & SMS Reminders
+                  WhatsApp Automated Reminders
                 </span>
                 <span className="text-xs text-[#424844] dark:text-neutral-400 mt-0.5">
-                  Send 24-hour appointment reminder and directions via SMS and WhatsApp.
+                  Send 1-hour automated appointment reminder and directions via WhatsApp.
                 </span>
               </div>
               <button
@@ -594,7 +594,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     smsWhatsappReminders: !formData.smsWhatsappReminders,
                   })
                 }
-                aria-label="Toggle WhatsApp & SMS Reminders"
+                aria-label="Toggle WhatsApp Automated Reminders"
                 className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors ${
                   isSettingsDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 } ${
@@ -611,7 +611,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   Email Calendar Invites
                 </span>
                 <span className="text-xs text-[#424844] dark:text-neutral-400 mt-0.5">
-                  Attach .ics calendar invite to booking confirmation email.
+                  Attach .ics calendar invite to booking confirmation and reschedule emails.
                 </span>
               </div>
               <button
