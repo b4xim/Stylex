@@ -19,7 +19,6 @@ export const EmailGatewayControl: React.FC<EmailGatewayControlProps> = ({ disabl
   const [testEmail, setTestEmail] = useState('');
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testFeedback, setTestFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   const fetchEmailStatus = async () => {
     try {
@@ -104,42 +103,7 @@ export const EmailGatewayControl: React.FC<EmailGatewayControlProps> = ({ disabl
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowSetupGuide(!showSetupGuide)}
-          className="text-xs font-semibold text-[#185341] dark:text-emerald-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
-        >
-          <span className="material-symbols-outlined text-[16px]">
-            {showSetupGuide ? 'expand_less' : 'help_outline'}
-          </span>
-          {showSetupGuide ? 'Hide Setup Guide' : 'Setup Guide (Gmail)'}
-        </button>
       </div>
-
-      {/* Guide Accordion */}
-      {showSetupGuide && (
-        <div className="bg-[#f7faf8] dark:bg-black/20 rounded-xl p-4 border border-[#c2c8c2]/40 dark:border-white/10 text-xs text-[#2b3530] dark:text-neutral-300 space-y-2">
-          <p className="font-bold text-[#112e20] dark:text-white">
-            Quick 2-Minute Gmail SMTP Setup (100% Free):
-          </p>
-          <ol className="list-decimal pl-4 space-y-1">
-            <li>Go to your Google Account (<a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="text-blue-600 underline">Security Settings</a>).</li>
-            <li>Ensure <strong>2-Step Verification</strong> is enabled.</li>
-            <li>Search for <strong>"App passwords"</strong> in the top search bar.</li>
-            <li>Create a new App Password named <code>StyleX Salon</code>. Google will give you a 16-character code (e.g. <code>abcd efgh ijkl mnop</code>).</li>
-            <li>Add these variables into your <code>backend/.env</code> file on the server:</li>
-          </ol>
-          <div className="bg-neutral-900 text-neutral-100 p-3 rounded-lg font-mono text-[11px] overflow-x-auto">
-            SMTP_HOST=smtp.gmail.com<br />
-            SMTP_PORT=587<br />
-            SMTP_SECURE=false<br />
-            SMTP_USER=your-salon-email@gmail.com<br />
-            SMTP_PASS=abcdefghijklmnop<br />
-            SMTP_FROM="StyleX Signature Salon" &lt;your-salon-email@gmail.com&gt;
-          </div>
-        </div>
-      )}
 
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

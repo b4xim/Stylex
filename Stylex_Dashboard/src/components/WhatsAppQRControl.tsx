@@ -334,10 +334,6 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
                 </span>
               </div>
             </div>
-
-            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11.5px] leading-relaxed">
-              💡 <strong>100% Free &amp; Instant:</strong> Dispatches automated WhatsApp passes directly from your own phone number without per-message Meta fees.
-            </div>
           </div>
         </div>
       )}
