@@ -64,6 +64,7 @@ import { RunSheetModal } from './components/modals/RunSheetModal';
 import { ManageBookingModal } from './components/modals/ManageBookingModal';
 import { ScheduleStylistLeaveModal } from './components/modals/ScheduleStylistLeaveModal';
 import { StylistModal } from './components/modals/StylistModal';
+import { WhatsAppDisconnectedModal } from './components/modals/WhatsAppDisconnectedModal';
 
 import { safeSetItem, safeGetItem, cleanObsoleteStorage } from './utils/storage';
 
@@ -385,6 +386,10 @@ export default function App() {
   const [leaveTargetStylistId, setLeaveTargetStylistId] = useState<string | undefined>(undefined);
   const [isStylistModalOpen, setIsStylistModalOpen] = useState(false);
   const [stylistToEdit, setStylistToEdit] = useState<Stylist | null>(null);
+
+  // WhatsApp Bot Disconnection Alert Modal
+  const [isWhatsAppDisconnectedModalOpen, setIsWhatsAppDisconnectedModalOpen] = useState(false);
+  const hasCheckedWhatsAppOnOpenRef = useRef(false);
 
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -787,6 +792,20 @@ export default function App() {
         }
       } catch (e) {
         console.warn('Live settings fetch:', e);
+      }
+
+      // 9. Check live WhatsApp Bot connection status on dashboard open
+      try {
+        const botStatus = await DashboardApi.getWhatsAppBotStatus();
+        if (botStatus && typeof botStatus.connected !== 'undefined') {
+          const isConnected = Boolean(botStatus.connected);
+          if (!isConnected && !hasCheckedWhatsAppOnOpenRef.current) {
+            hasCheckedWhatsAppOnOpenRef.current = true;
+            setIsWhatsAppDisconnectedModalOpen(true);
+          }
+        }
+      } catch (e) {
+        console.warn('Live WhatsApp status check on dashboard open:', e);
       }
 
       // Mark initial load completed
@@ -2564,6 +2583,23 @@ export default function App() {
         }}
         onSave={handleSaveUser}
         existingEmails={users.map((u) => u.email)}
+      />
+
+      {/* WhatsApp Disconnected Alert Modal */}
+      <WhatsAppDisconnectedModal
+        isOpen={isWhatsAppDisconnectedModalOpen}
+        onClose={() => setIsWhatsAppDisconnectedModalOpen(false)}
+        onGoToSettings={() => {
+          setIsWhatsAppDisconnectedModalOpen(false);
+          setCurrentTab('settings');
+          setGlobalSearchQuery('');
+          setTimeout(() => {
+            const qrEl = document.getElementById('whatsapp-qr-section');
+            if (qrEl) {
+              qrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 250);
+        }}
       />
 
       {/* Mobile PWA Bottom Navigation Bar */}

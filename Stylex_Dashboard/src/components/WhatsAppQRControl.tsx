@@ -121,7 +121,7 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
   const badge = getBadgeInfo();
 
   return (
-    <section className="bg-white dark:bg-[#15201a] rounded-xl p-6 shadow-sm flex flex-col gap-5 border border-[#c2c8c2]/30 dark:border-white/10 transition-colors">
+    <section id="whatsapp-qr-section" className="bg-white dark:bg-[#15201a] rounded-xl p-6 shadow-sm flex flex-col gap-5 border border-[#c2c8c2]/30 dark:border-white/10 transition-colors">
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#c2c8c2]/30 dark:border-white/10">
         <div className="flex items-center gap-3">
