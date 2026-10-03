@@ -7,7 +7,8 @@ export type NavTab =
   | 'promotions'
   | 'clients-and-vip'
   | 'concierge-desk'
-  | 'atelier-settings';
+  | 'atelier-settings'
+  | 'site-analytics';
 
 export type AppointmentStatus = 'BOOKED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 

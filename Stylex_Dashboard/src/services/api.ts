@@ -530,6 +530,20 @@ export class DashboardApi {
       body: JSON.stringify({ email }),
     });
   }
+
+  // ============================================================================
+  // Developer Site Analytics (GoAccess Telemetry)
+  // ============================================================================
+  public static async getAnalyticsSummary() {
+    const res = await this.request('/analytics/summary');
+    return res?.data;
+  }
+
+  public static async refreshAnalyticsReport() {
+    return this.request('/analytics/refresh', {
+      method: 'POST',
+    });
+  }
 }
 
 // ============================================================================

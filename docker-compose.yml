@@ -38,6 +38,8 @@ services:
     volumes:
       - stylex_uploads:/app/uploads
       - stylex_whatsapp_auth:/app/whatsapp-auth
+      - stylex_nginx_logs:/var/log/nginx:ro
+      - stylex_goaccess_data:/app/analytics-data
     networks:
       - stylex_network
 
@@ -58,6 +60,25 @@ services:
       - stylex_uploads:/usr/share/nginx/html/uploads:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
+      - stylex_nginx_logs:/var/log/nginx
+    networks:
+      - stylex_network
+
+  # 4. GoAccess Real-Time Web Log Analytics
+  goaccess:
+    image: allinurl/goaccess:latest
+    container_name: stylex_goaccess
+    restart: always
+    volumes:
+      - stylex_nginx_logs:/var/log/nginx:ro
+      - stylex_goaccess_data:/var/www/goaccess
+    command: >
+      goaccess /var/log/nginx/stylex_access.log
+      -o /var/www/goaccess/index.html
+      --log-format=COMBINED
+      --real-time-html
+      --anonymize-ip
+      --ignore-crawlers
     networks:
       - stylex_network
 
@@ -72,3 +93,7 @@ volumes:
     name: stylex_uploads
   stylex_whatsapp_auth:
     name: stylex_whatsapp_auth
+  stylex_nginx_logs:
+    name: stylex_nginx_logs
+  stylex_goaccess_data:
+    name: stylex_goaccess_data

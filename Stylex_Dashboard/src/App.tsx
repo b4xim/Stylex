@@ -49,6 +49,7 @@ import { PromotionsView } from './components/PromotionsView';
 import { ClientsView } from './components/ClientsView';
 import { ConciergeView } from './components/ConciergeView';
 import { SettingsView } from './components/SettingsView';
+import { SiteAnalyticsView } from './components/SiteAnalyticsView';
 import { AdminSignIn } from './components/AdminSignIn';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { UserModal } from './components/modals/UserModal';
@@ -170,6 +171,20 @@ export default function App() {
       setCurrentUser(updated);
     }
   }, [users, currentUser?.id]);
+
+  const isDeveloper = Boolean(
+    currentUser && (
+      currentUser.role === 'Developer' ||
+      currentUser.username?.toLowerCase() === 'developer' ||
+      currentUser.email?.toLowerCase() === 'dev@stylexsalon.in'
+    )
+  );
+
+  useEffect(() => {
+    if (currentTab === 'site-analytics' && !isDeveloper) {
+      setCurrentTab('overview');
+    }
+  }, [currentTab, isDeveloper]);
 
   // Core Data (with Tirur Flagship data keys)
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
@@ -2271,6 +2286,7 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        isDeveloper={isDeveloper}
       />
 
       {/* Main Content Pane */}
@@ -2459,6 +2475,10 @@ export default function App() {
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
             />
+          )}
+
+          {currentTab === 'site-analytics' && isDeveloper && (
+            <SiteAnalyticsView currentUser={currentUser} />
           )}
         </main>
       </div>

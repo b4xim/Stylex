@@ -10,6 +10,7 @@ import settingRoutes from './settingRoutes';
 import uploadRoutes from './uploadRoutes';
 import inquiryRoutes from './inquiryRoutes';
 import notificationRoutes from './notificationRoutes';
+import analyticsRoutes from './analyticsRoutes';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/settings', settingRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/inquiries', inquiryRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/analytics', analyticsRoutes);
 
 export default router;

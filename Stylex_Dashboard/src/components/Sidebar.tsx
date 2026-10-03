@@ -10,6 +10,7 @@ interface SidebarProps {
   onLogout: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  isDeveloper?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -20,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isOpen = false,
   onClose,
+  isDeveloper = false,
 }) => {
   const navItems: { id: NavTab; label: string; icon: string; badge?: string; badgeColor?: string }[] = [
     { id: 'overview', label: 'Overview', icon: 'grid_view' },
@@ -43,6 +45,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: 'bg-[#735c00] text-white',
     },
     { id: 'atelier-settings', label: 'Admin Settings', icon: 'tune' },
+    ...(isDeveloper
+      ? [
+          {
+            id: 'site-analytics' as NavTab,
+            label: 'Site Analytics',
+            icon: 'monitoring',
+            badge: 'DEV',
+            badgeColor: 'bg-emerald-600/90 text-white',
+          },
+        ]
+      : []),
   ];
 
   const handleSelectTab = (tabId: NavTab) => {

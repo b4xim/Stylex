@@ -24,7 +24,7 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Install Chromium and system libraries required for Puppeteer on Alpine
+# Install Chromium and system libraries required for Puppeteer on Alpine, plus GoAccess for analytics
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -36,7 +36,8 @@ RUN apk add --no-cache \
     libc6-compat \
     udev \
     libstdc++ \
-    dumb-init
+    dumb-init \
+    goaccess
 
 ENV NODE_ENV=production
 ENV PORT=5000
