@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
+import { prisma } from '../config/db';
 
 export interface EmailBookingPayload {
   toEmail: string;
@@ -235,9 +236,15 @@ export class EmailService {
         `StyleX Signature Salon, One Arcade, Tirur, Kerala 676101\n` +
         `WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com\n`;
 
+      // Check if calendar invite attachments are enabled in settings
+      const calendarSetting = await prisma.salonSetting.findUnique({
+        where: { key: 'emailCalendarInvites' },
+      });
+      const attachCalendar = !calendarSetting || (calendarSetting.value !== 'false' && (calendarSetting.value as any) !== false);
+
       const fromAddress = env.SMTP_FROM || '"StyleX Signature Salon" <stylexsignaturesalon@gmail.com>';
 
-      const info = await transporter.sendMail({
+      const mailOptions: any = {
         from: fromAddress,
         to: payload.toEmail,
         replyTo: 'stylexsignaturesalon@gmail.com',
@@ -248,19 +255,24 @@ export class EmailService {
           'X-Mailer': 'StyleX Signature Salon Gateway',
           'X-Entity-Ref-ID': payload.bookingRef,
         },
-        attachments: [
+      };
+
+      if (attachCalendar) {
+        mailOptions.attachments = [
           {
             filename: 'invite.ics',
             content: icsContent,
             contentType: 'text/calendar; charset=utf-8; method=REQUEST',
           },
-        ],
-        icalEvent: {
+        ];
+        mailOptions.icalEvent = {
           filename: 'invite.ics',
           method: 'REQUEST',
           content: icsContent,
-        },
-      });
+        };
+      }
+
+      const info = await transporter.sendMail(mailOptions);
 
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
@@ -377,9 +389,15 @@ export class EmailService {
         `StyleX Signature Salon, One Arcade, Tirur, Kerala 676101\n` +
         `WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com\n`;
 
+      // Check if calendar invite attachments are enabled in settings
+      const calendarSetting = await prisma.salonSetting.findUnique({
+        where: { key: 'emailCalendarInvites' },
+      });
+      const attachCalendar = !calendarSetting || (calendarSetting.value !== 'false' && (calendarSetting.value as any) !== false);
+
       const fromAddress = env.SMTP_FROM || '"StyleX Signature Salon" <stylexsignaturesalon@gmail.com>';
 
-      const info = await transporter.sendMail({
+      const mailOptions: any = {
         from: fromAddress,
         to: payload.toEmail,
         replyTo: 'stylexsignaturesalon@gmail.com',
@@ -390,19 +408,24 @@ export class EmailService {
           'X-Mailer': 'StyleX Signature Salon Gateway',
           'X-Entity-Ref-ID': payload.bookingRef,
         },
-        attachments: [
+      };
+
+      if (attachCalendar) {
+        mailOptions.attachments = [
           {
             filename: 'invite.ics',
             content: icsContent,
             contentType: 'text/calendar; charset=utf-8; method=REQUEST',
           },
-        ],
-        icalEvent: {
+        ];
+        mailOptions.icalEvent = {
           filename: 'invite.ics',
           method: 'REQUEST',
           content: icsContent,
-        },
-      });
+        };
+      }
+
+      const info = await transporter.sendMail(mailOptions);
 
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
