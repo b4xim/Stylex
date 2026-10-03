@@ -79,8 +79,7 @@ export class WhatsAppService {
               `💇 *Service:* ${payload.serviceName}\n` +
               `📅 *Date:* ${payload.date}\n` +
               `⏰ *Time Slot:* ${payload.timeSlot}\n` +
-              `${payload.stylistName ? `👤 *Stylist:* ${payload.stylistName}\n` : ''}` +
-              `💰 *Estimated Total:* ₹${payload.total.toLocaleString('en-IN')}\n\n` +
+              `${payload.stylistName ? `👤 *Stylist:* ${payload.stylistName}\n` : ''}\n` +
               (payload.manageUrl ? `📲 *Manage or Reschedule:* ${payload.manageUrl}\n\n` : '') +
               `📍 *Location:* StyleX Flagship, City Center, Tirur, Malappuram\n` +
               `📞 *Salon Helpline:* +91 96561 11149\n\n` +
