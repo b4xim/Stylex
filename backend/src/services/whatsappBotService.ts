@@ -26,6 +26,33 @@ export interface WhatsAppBotStatus {
   lastUpdated: string;
 }
 
+/**
+ * Removes stale Chromium lock files left behind by previous Docker containers or crashes
+ */
+function cleanChromiumLocks(dir: string): void {
+  if (!fs.existsSync(dir)) return;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        cleanChromiumLocks(fullPath);
+      } else if (
+        entry.name.startsWith('Singleton') ||
+        entry.name.endsWith('.lock') ||
+        entry.name === 'lockfile'
+      ) {
+        try {
+          fs.rmSync(fullPath, { force: true });
+          console.log(`🧹 [WhatsApp Bot] Cleared stale Chromium profile lock: ${entry.name}`);
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ [WhatsApp Bot] Warning inspecting lock files:', err);
+  }
+}
+
 export class WhatsAppBotService {
   private static client: any = null;
   private static qrDataUrl: string | null = null;
@@ -51,6 +78,9 @@ export class WhatsAppBotService {
       const authDir = path.resolve(process.cwd(), 'whatsapp-auth');
       if (!fs.existsSync(authDir)) {
         fs.mkdirSync(authDir, { recursive: true });
+      } else {
+        // Clear any orphaned lock files from prior containers
+        cleanChromiumLocks(authDir);
       }
 
       console.log('🤖 [WhatsApp Bot] Initializing self-hosted WhatsApp gateway...');
