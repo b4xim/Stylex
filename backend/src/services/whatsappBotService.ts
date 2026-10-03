@@ -87,6 +87,7 @@ export class WhatsAppBotService {
 
       const puppeteerOptions: any = {
         headless: true,
+        dumpio: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -94,7 +95,6 @@ export class WhatsAppBotService {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--single-process',
           '--disable-gpu',
         ],
       };
