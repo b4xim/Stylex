@@ -50,12 +50,12 @@ export const MaintenancePage: React.FC = () => {
         {/* Maintenance Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#185341]/40 border border-[#185341] text-[#a6d0be] text-xs font-semibold uppercase tracking-wider mb-6 shadow-lg shadow-[#185341]/20">
           <span className="material-symbols-outlined text-[16px] text-[#fe753c]">engineering</span>
-          <span>Atelier Enhancement In Progress</span>
+          <span>Website Enhancement In Progress</span>
         </div>
 
         {/* Headline */}
         <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-white font-normal tracking-tight leading-tight max-w-3xl mb-4">
-          We Are Upgrading Our Digital Experience
+          We Are Upgrading Our Website
         </h1>
 
         <p className="text-sm sm:text-base text-[#a6d0be] max-w-2xl leading-relaxed mb-10">
@@ -77,7 +77,7 @@ export const MaintenancePage: React.FC = () => {
           </div>
 
           <p className="text-xs sm:text-sm text-neutral-200 mb-6 leading-relaxed">
-            Please connect directly with our front desk concierge via Call or WhatsApp for immediate reservation & stylist availability:
+            Please connect directly with our front desk via Call or WhatsApp for immediate reservation & stylist availability:
           </p>
 
           {/* 2 Primary Action Buttons */}
@@ -94,7 +94,7 @@ export const MaintenancePage: React.FC = () => {
                 <span className="text-[10px] uppercase font-bold tracking-wider text-white/80 leading-none">
                   Direct Line
                 </span>
-                <span className="text-sm font-extrabold leading-tight">Call Concierge</span>
+                <span className="text-sm font-extrabold leading-tight">Call Us</span>
               </div>
             </a>
 
