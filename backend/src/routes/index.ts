@@ -9,6 +9,7 @@ import customerRoutes from './customerRoutes';
 import settingRoutes from './settingRoutes';
 import uploadRoutes from './uploadRoutes';
 import inquiryRoutes from './inquiryRoutes';
+import notificationRoutes from './notificationRoutes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/customers', customerRoutes);
 router.use('/settings', settingRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/inquiries', inquiryRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

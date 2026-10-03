@@ -4,6 +4,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 RUN apk add --no-cache openssl libc6-compat
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Install dependencies
 COPY package*.json ./
@@ -23,10 +24,21 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-RUN apk add --no-cache openssl libc6-compat
+# Install Chromium and system libraries required for Puppeteer on Alpine
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    openssl \
+    libc6-compat
 
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Install production dependencies only
 COPY package*.json ./
@@ -40,8 +52,8 @@ COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-# Create upload directories
-RUN mkdir -p uploads/banners uploads/reels uploads/photos uploads/general
+# Create upload and whatsapp auth directories
+RUN mkdir -p uploads/banners uploads/reels uploads/photos uploads/general whatsapp-auth
 
 EXPOSE 5000
 

@@ -488,6 +488,42 @@ export class DashboardApi {
       method: 'DELETE',
     });
   }
+
+  // ============================================================================
+  // Automated WhatsApp Bot Gateway & Diagnostics
+  // ============================================================================
+  public static async getWhatsAppBotStatus() {
+    const res = await this.request('/notifications/whatsapp/status');
+    return res?.data;
+  }
+
+  public static async sendWhatsAppTest(phone: string) {
+    return this.request('/notifications/whatsapp/test', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  public static async disconnectWhatsApp() {
+    return this.request('/notifications/whatsapp/disconnect', {
+      method: 'POST',
+    });
+  }
+
+  // ============================================================================
+  // Automated Email Gateway & Diagnostics
+  // ============================================================================
+  public static async getEmailStatus() {
+    const res = await this.request('/notifications/email/status');
+    return res?.data;
+  }
+
+  public static async sendEmailTest(email: string) {
+    return this.request('/notifications/email/test', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
 }
 
 // ============================================================================

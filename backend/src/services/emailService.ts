@@ -198,4 +198,43 @@ export class EmailService {
       return { success: false, error: error.message };
     }
   }
+
+  public static isConfigured(): boolean {
+    return Boolean(env.SMTP_USER && env.SMTP_PASS);
+  }
+
+  public static async sendTestEmail(
+    toEmail: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const transporter = this.getTransporter();
+    if (!transporter) {
+      return {
+        success: false,
+        error: 'SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASS in backend .env.',
+      };
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from: env.SMTP_FROM,
+        to: toEmail,
+        subject: '✨ StyleX Signature Salon — Email Dispatch Test',
+        html: `
+          <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px; background:#fff;">
+            <h2 style="color: #112e20; margin-top:0;">StyleX Email Notification System Online</h2>
+            <p>This is a verification email from your StyleX Signature Salon backend.</p>
+            <div style="background:#f0f5f1; padding:16px; border-radius:10px; margin:16px 0;">
+              <p style="margin:0; font-size:13px; color:#185341;"><strong>Status:</strong> Connected via ${env.SMTP_HOST}:${env.SMTP_PORT}</p>
+              <p style="margin:4px 0 0 0; font-size:13px; color:#185341;"><strong>Sender Account:</strong> ${env.SMTP_USER}</p>
+            </div>
+            <p style="font-size:12px; color:#777;">Automated client passes, reschedule notifications, and cancellations will be dispatched from this account.</p>
+          </div>
+        `,
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
 }
+

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SalonSettings, UserAccount } from '../types';
 import { WhatsAppQRControl } from './WhatsAppQRControl';
+import { EmailGatewayControl } from './EmailGatewayControl';
 import { getRolePermissions } from '../utils/permissions';
 
 interface SettingsViewProps {
@@ -647,6 +648,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             })
           }
         />
+
+        {/* Automated Email Gateway Section */}
+        <EmailGatewayControl disabled={isSettingsDisabled} />
       </div>
 
       {/* Floating Bottom Save Bar for when user scrolls down */}

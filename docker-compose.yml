@@ -36,6 +36,7 @@ services:
       PORT: 5000
     volumes:
       - stylex_uploads:/app/uploads
+      - stylex_whatsapp_auth:/app/whatsapp-auth
     networks:
       - stylex_network
 
@@ -68,3 +69,5 @@ volumes:
     name: stylex_pgdata
   stylex_uploads:
     name: stylex_uploads
+  stylex_whatsapp_auth:
+    name: stylex_whatsapp_auth

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WhatsAppIcon } from '../utils/whatsapp';
+import { DashboardApi } from '../services/api';
 
 interface WhatsAppQRControlProps {
   isConnected: boolean;
@@ -8,26 +9,88 @@ interface WhatsAppQRControlProps {
   disabled?: boolean;
 }
 
+interface BotStatusState {
+  connected: boolean;
+  qrImage: string | null;
+  phoneNumber: string | null;
+  pushname: string | null;
+  status: string;
+}
+
 export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
-  isConnected,
+  isConnected: propConnected,
   connectedPhone = '+91 96561 11149',
   onToggleConnected,
   disabled = false,
 }) => {
-  const [countdown, setCountdown] = useState(30);
+  const [botStatus, setBotStatus] = useState<BotStatusState | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [testPhone, setTestPhone] = useState('');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isUnlinking, setIsUnlinking] = useState(false);
 
-  // Auto-refresh countdown for QR pairing token
-  useEffect(() => {
-    if (isConnected) return;
-    const interval = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isConnected]);
-
-  const handleRefreshQR = () => {
-    setCountdown(30);
+  const fetchBotStatus = async () => {
+    try {
+      const data = await DashboardApi.getWhatsAppBotStatus();
+      if (data) {
+        setBotStatus(data);
+        if (typeof data.connected === 'boolean' && data.connected !== propConnected) {
+          onToggleConnected(data.connected);
+        }
+      }
+    } catch {
+      // In offline or local fallback
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchBotStatus();
+    // Poll live status every 4s to catch QR refresh and instantaneous scan events
+    const interval = setInterval(fetchBotStatus, 4000);
+    return () => clearInterval(interval);
+  }, [propConnected]);
+
+  const handleSendTestMessage = async () => {
+    if (!testPhone.trim()) return;
+    setIsSendingTest(true);
+    setTestFeedback(null);
+    try {
+      const res = await DashboardApi.sendWhatsAppTest(testPhone.trim());
+      if (res?.success) {
+        setTestFeedback({ type: 'success', text: '✅ Test message dispatched via linked salon WhatsApp!' });
+        setTestPhone('');
+      } else {
+        setTestFeedback({ type: 'error', text: res?.message || '❌ Failed to send test message' });
+      }
+    } catch (err: any) {
+      setTestFeedback({ type: 'error', text: err?.message || '❌ Failed to communicate with WhatsApp gateway' });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!window.confirm('Are you sure you want to unlink this WhatsApp device? Automated booking dispatch will pause until re-scanned.')) {
+      return;
+    }
+    setIsUnlinking(true);
+    try {
+      await DashboardApi.disconnectWhatsApp();
+      onToggleConnected(false);
+      await fetchBotStatus();
+    } catch (e) {
+      console.error('Error disconnecting WhatsApp:', e);
+    } finally {
+      setIsUnlinking(false);
+    }
+  };
+
+  const isActuallyConnected = Boolean(botStatus?.connected || propConnected);
+  const displayPhone = botStatus?.phoneNumber ? `+${botStatus.phoneNumber}` : connectedPhone;
+  const displayName = botStatus?.pushname ? `(${botStatus.pushname})` : '(StyleX Tirur Desk)';
 
   return (
     <section className="bg-white dark:bg-[#15201a] rounded-xl p-6 shadow-sm flex flex-col gap-5 border border-[#c2c8c2]/30 dark:border-white/10 transition-colors">
@@ -44,190 +107,161 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
               </h2>
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase ${
-                  isConnected
+                  isActuallyConnected
                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                     : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
                 }`}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
-                    isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                    isActuallyConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
                   }`}
                 />
-                {isConnected ? 'Online & Linked' : 'Awaiting QR Scan'}
+                {isActuallyConnected ? 'Online & Linked' : 'Awaiting QR Scan'}
               </span>
             </div>
             <span className="text-xs text-[#424844] dark:text-[#a0aca4] mt-0.5">
-              Automated reservation passes, instant chat dispatch & session pairing
+              Automated booking pass dispatch, reschedule receipts & salon desk bot
             </span>
           </div>
         </div>
+
+        {/* Diagnostic Refresh Button */}
+        <button
+          type="button"
+          onClick={fetchBotStatus}
+          disabled={isLoading}
+          className="self-start sm:self-center px-3 py-1.5 rounded-lg border border-stone-200 dark:border-white/10 hover:bg-stone-50 dark:hover:bg-white/5 text-stone-600 dark:text-stone-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <span className={`material-symbols-outlined text-[15px] ${isLoading ? 'animate-spin' : ''}`}>
+            sync
+          </span>
+          <span>Check Status</span>
+        </button>
       </div>
 
-      {isConnected ? (
+      {isActuallyConnected ? (
+        /* ========================================================================= */
         /* PRODUCTION CONNECTED STATE */
-        <div className="p-4 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/30 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-              ✓
+        /* ========================================================================= */
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/30 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                ✓
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] uppercase text-[#727973] dark:text-[#a0aca4] font-bold tracking-wider">
+                  Active Linked WhatsApp
+                </span>
+                <span className="text-sm font-semibold text-[#112e20] dark:text-white">
+                  {displayPhone} <span className="font-normal text-xs text-[#727973] dark:text-[#88998f]">{displayName}</span>
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[11px] uppercase text-[#727973] dark:text-[#a0aca4] font-bold tracking-wider">
-                Connected Salon WhatsApp
+
+            <div className="flex items-center gap-3 self-end sm:self-auto">
+              <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-800/40">
+                Session Active &amp; Ready
               </span>
-              <span className="text-sm font-semibold text-[#112e20] dark:text-white">
-                {connectedPhone} <span className="font-normal text-xs text-[#727973] dark:text-[#88998f]">(StyleX Tirur Desk)</span>
-              </span>
+              <button
+                type="button"
+                disabled={disabled || isUnlinking}
+                onClick={handleUnlink}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                  disabled || isUnlinking
+                    ? 'border-neutral-200 dark:border-white/10 text-neutral-400 dark:text-neutral-500 cursor-not-allowed opacity-60'
+                    : 'border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer'
+                }`}
+              >
+                {isUnlinking ? 'Unlinking...' : 'Unlink Device'}
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-medium border border-emerald-200 dark:border-emerald-800/40">
-              Session Active
-            </span>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onToggleConnected(false)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                disabled
-                  ? 'border-neutral-200 dark:border-white/10 text-neutral-400 dark:text-neutral-500 cursor-not-allowed opacity-60'
-                  : 'border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer'
-              }`}
-            >
-              Unlink Device
-            </button>
+          {/* Verification / Test Sender */}
+          <div className="p-4 rounded-xl bg-white dark:bg-[#121c16] border border-stone-200 dark:border-white/10 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#112e20] dark:text-stone-200 uppercase tracking-wider block">
+                Send Test Verification Message
+              </label>
+              <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                Tests outbound delivery to any mobile
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="tel"
+                placeholder="Enter 10-digit mobile (e.g. 9656111149)"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+                disabled={isSendingTest}
+                className="flex-1 px-3.5 py-2 rounded-xl bg-[#f0f5f1] dark:bg-white/5 border border-stone-300 dark:border-white/10 text-sm text-[#112e20] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#112e20] dark:focus:ring-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={handleSendTestMessage}
+                disabled={isSendingTest || !testPhone.trim()}
+                className="px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                <span>{isSendingTest ? 'Sending...' : 'Send Test WhatsApp'}</span>
+              </button>
+            </div>
+            {testFeedback && (
+              <p
+                className={`text-xs font-medium pt-1 ${
+                  testFeedback.type === 'success'
+                    ? 'text-emerald-700 dark:text-emerald-400'
+                    : 'text-rose-700 dark:text-rose-400'
+                }`}
+              >
+                {testFeedback.text}
+              </p>
+            )}
           </div>
         </div>
       ) : (
+        /* ========================================================================= */
         /* PRODUCTION QR CODE PAIRING STATE */
+        /* ========================================================================= */
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-5 sm:p-6 rounded-xl bg-[#f0f5f1]/60 dark:bg-[#1a2520]/60 border border-[#c2c8c2]/40 dark:border-white/10">
           {/* QR Code Presentation Box */}
           <div className="flex flex-col items-center gap-3 shrink-0">
-            <div className="bg-white p-4 rounded-2xl shadow-md border border-[#c2c8c2]/40 relative">
-              {/* High-Resolution Vector QR Code */}
-              <div className="w-48 h-48 sm:w-52 sm:h-52 relative flex items-center justify-center bg-white">
-                <svg
-                  className="w-full h-full text-[#112e20]"
-                  viewBox="0 0 120 120"
-                  fill="currentColor"
-                  shapeRendering="crispEdges"
-                >
-                  {/* Top-Left Finder Square */}
-                  <rect x="10" y="10" width="28" height="28" fill="#112e20" rx="3" />
-                  <rect x="14" y="14" width="20" height="20" fill="white" rx="2" />
-                  <rect x="18" y="18" width="12" height="12" fill="#112e20" rx="1.5" />
-
-                  {/* Top-Right Finder Square */}
-                  <rect x="82" y="10" width="28" height="28" fill="#112e20" rx="3" />
-                  <rect x="86" y="14" width="20" height="20" fill="white" rx="2" />
-                  <rect x="90" y="18" width="12" height="12" fill="#112e20" rx="1.5" />
-
-                  {/* Bottom-Left Finder Square */}
-                  <rect x="10" y="82" width="28" height="28" fill="#112e20" rx="3" />
-                  <rect x="14" y="86" width="20" height="20" fill="white" rx="2" />
-                  <rect x="18" y="90" width="12" height="12" fill="#112e20" rx="1.5" />
-
-                  {/* Data Blocks Pattern */}
-                  <rect x="42" y="12" width="4" height="4" />
-                  <rect x="50" y="12" width="8" height="4" />
-                  <rect x="62" y="12" width="4" height="4" />
-                  <rect x="74" y="12" width="4" height="4" />
-
-                  <rect x="42" y="20" width="8" height="4" />
-                  <rect x="54" y="20" width="4" height="4" />
-                  <rect x="66" y="20" width="8" height="4" />
-
-                  <rect x="42" y="28" width="4" height="4" />
-                  <rect x="50" y="28" width="8" height="4" />
-                  <rect x="70" y="28" width="4" height="4" />
-
-                  <rect x="12" y="42" width="8" height="4" />
-                  <rect x="24" y="42" width="4" height="4" />
-                  <rect x="32" y="42" width="8" height="4" />
-                  <rect x="44" y="42" width="8" height="4" />
-                  <rect x="56" y="42" width="12" height="4" />
-                  <rect x="72" y="42" width="8" height="4" />
-                  <rect x="84" y="42" width="4" height="4" />
-                  <rect x="92" y="42" width="8" height="4" />
-                  <rect x="104" y="42" width="4" height="4" />
-
-                  <rect x="12" y="50" width="4" height="4" />
-                  <rect x="20" y="50" width="8" height="4" />
-                  <rect x="32" y="50" width="4" height="4" />
-                  <rect x="40" y="50" width="4" height="4" />
-                  <rect x="76" y="50" width="8" height="4" />
-                  <rect x="88" y="50" width="4" height="4" />
-                  <rect x="100" y="50" width="8" height="4" />
-
-                  <rect x="12" y="58" width="8" height="4" />
-                  <rect x="24" y="58" width="4" height="4" />
-                  <rect x="36" y="58" width="8" height="4" />
-                  <rect x="76" y="58" width="4" height="4" />
-                  <rect x="84" y="58" width="12" height="4" />
-                  <rect x="100" y="58" width="4" height="4" />
-
-                  <rect x="12" y="66" width="4" height="4" />
-                  <rect x="24" y="66" width="8" height="4" />
-                  <rect x="36" y="66" width="4" height="4" />
-                  <rect x="76" y="66" width="8" height="4" />
-                  <rect x="92" y="66" width="4" height="4" />
-                  <rect x="104" y="66" width="4" height="4" />
-
-                  <rect x="12" y="74" width="8" height="4" />
-                  <rect x="28" y="74" width="4" height="4" />
-                  <rect x="40" y="74" width="8" height="4" />
-                  <rect x="52" y="74" width="4" height="4" />
-                  <rect x="64" y="74" width="8" height="4" />
-                  <rect x="76" y="74" width="4" height="4" />
-                  <rect x="88" y="74" width="8" height="4" />
-                  <rect x="100" y="74" width="8" height="4" />
-
-                  <rect x="44" y="82" width="4" height="4" />
-                  <rect x="56" y="82" width="8" height="4" />
-                  <rect x="68" y="82" width="4" height="4" />
-                  <rect x="80" y="82" width="8" height="4" />
-                  <rect x="96" y="82" width="4" height="4" />
-                  <rect x="104" y="82" width="4" height="4" />
-
-                  <rect x="44" y="90" width="8" height="4" />
-                  <rect x="56" y="90" width="4" height="4" />
-                  <rect x="68" y="90" width="8" height="4" />
-                  <rect x="84" y="90" width="4" height="4" />
-                  <rect x="92" y="90" width="8" height="4" />
-                  <rect x="104" y="90" width="4" height="4" />
-
-                  <rect x="44" y="98" width="4" height="4" />
-                  <rect x="52" y="98" width="8" height="4" />
-                  <rect x="64" y="98" width="4" height="4" />
-                  <rect x="72" y="98" width="8" height="4" />
-                  <rect x="88" y="98" width="4" height="4" />
-                  <rect x="100" y="98" width="8" height="4" />
-
-                  <rect x="44" y="106" width="8" height="4" />
-                  <rect x="60" y="106" width="4" height="4" />
-                  <rect x="68" y="106" width="8" height="4" />
-                  <rect x="80" y="106" width="4" height="4" />
-                  <rect x="92" y="106" width="16" height="4" />
-                </svg>
-
-                {/* WhatsApp Emblem Center Badge */}
-                <div className="absolute inset-0 m-auto w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg border-2 border-white">
-                  <WhatsAppIcon className="w-6 h-6 fill-current" />
-                </div>
+            <div className="bg-white p-3.5 rounded-2xl shadow-md border border-[#c2c8c2]/40 relative">
+              <div className="w-48 h-48 sm:w-56 sm:h-56 relative flex items-center justify-center bg-white rounded-xl overflow-hidden">
+                {botStatus?.qrImage ? (
+                  <img
+                    src={botStatus.qrImage}
+                    alt="WhatsApp Web Pairing QR Code"
+                    className="w-full h-full object-contain animate-fadeIn"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                    <span className="material-symbols-outlined text-3xl text-emerald-700 animate-spin">
+                      progress_activity
+                    </span>
+                    <span className="text-xs text-stone-600 font-medium">
+                      Generating salon WhatsApp QR code...
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2 text-xs text-[#727973] dark:text-[#a0aca4]">
-              <span>Refreshes in {countdown}s</span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                Live Sync Active
+              </span>
               <span>•</span>
               <button
                 type="button"
-                onClick={handleRefreshQR}
+                onClick={fetchBotStatus}
                 className="text-[#112e20] dark:text-emerald-400 font-semibold hover:underline cursor-pointer flex items-center gap-0.5"
               >
                 <span className="material-symbols-outlined text-[13px]">refresh</span>
-                <span>Refresh QR</span>
+                <span>Refresh Now</span>
               </button>
             </div>
           </div>
@@ -239,7 +273,7 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
                 Pair Salon Phone with WhatsApp Gateway
               </h3>
               <p className="mt-1 leading-relaxed">
-                Scan this QR code using the official StyleX salon phone to authorize automated booking confirmations.
+                Scan this QR code using the official StyleX salon phone to authorize automated customer booking confirmations.
               </p>
             </div>
 
@@ -249,7 +283,7 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
                   1
                 </span>
                 <span>
-                  Open <strong>WhatsApp</strong> on the salon phone (<span className="text-[#112e20] dark:text-white font-medium">{connectedPhone}</span>)
+                  Open <strong>WhatsApp</strong> on the official salon phone
                 </span>
               </div>
               <div className="flex items-start gap-2.5">
@@ -265,9 +299,13 @@ export const WhatsAppQRControl: React.FC<WhatsAppQRControlProps> = ({
                   3
                 </span>
                 <span>
-                  Point camera at this screen to pair. Session will persist across server reboots.
+                  Point camera at this screen to pair. Session will persist permanently across server restarts.
                 </span>
               </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11.5px] leading-relaxed">
+              💡 <strong>100% Free &amp; Instant:</strong> Dispatches automated WhatsApp passes directly from your own phone number without per-message Meta fees.
             </div>
           </div>
         </div>

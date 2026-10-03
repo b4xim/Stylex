@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { env } from '../config/env';
+import { WhatsAppBotService } from './whatsappBotService';
 
 export interface BookingNotificationPayload {
   bookingRef: string;
@@ -34,17 +35,26 @@ export class WhatsAppService {
   }
 
   /**
-   * Sends an automated booking confirmation via Meta WhatsApp Cloud API
+   * Sends an automated booking confirmation via WhatsApp Bot (Primary) or Meta Cloud API (Secondary)
    */
   public static async sendBookingConfirmation(
     payload: BookingNotificationPayload
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    // 1. Primary: Use self-hosted WhatsApp Web Bot if paired
+    if (WhatsAppBotService.isConnected()) {
+      const botRes = await WhatsAppBotService.sendBookingConfirmation(payload);
+      if (botRes.success) {
+        return botRes;
+      }
+      console.warn('⚠️ [WhatsApp Service] Bot dispatch failed, falling back to Cloud API:', botRes.error);
+    }
+
     const token = env.WHATSAPP_API_TOKEN;
     const phoneId = env.WHATSAPP_PHONE_NUMBER_ID;
 
-    // If Cloud API credentials are not set, return simulated success for development
+    // 2. Secondary: If Cloud API credentials are not set, return simulated success for development
     if (!token || !phoneId) {
-      console.log('ℹ️ [WhatsApp Service] Meta Cloud API credentials not configured. Notification logged locally:');
+      console.log('ℹ️ [WhatsApp Service] Neither Bot nor Meta Cloud API configured. Notification logged locally:');
       console.log(`To: ${payload.customerPhone} | Ref: ${payload.bookingRef} | Service: ${payload.serviceName} | Time: ${payload.timeSlot}`);
       return { success: true, messageId: `SIMULATED_${Date.now()}` };
     }
@@ -97,11 +107,17 @@ export class WhatsAppService {
   }
 
   /**
-   * Sends an automated reschedule notification via Meta WhatsApp Cloud API
+   * Sends an automated reschedule notification via WhatsApp Bot or Meta Cloud API
    */
   public static async sendBookingRescheduled(
     payload: BookingNotificationPayload
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (WhatsAppBotService.isConnected()) {
+      const botRes = await WhatsAppBotService.sendBookingRescheduled(payload);
+      if (botRes.success) return botRes;
+      console.warn('⚠️ [WhatsApp Service] Bot reschedule dispatch failed, falling back to Cloud API:', botRes.error);
+    }
+
     const token = env.WHATSAPP_API_TOKEN;
     const phoneId = env.WHATSAPP_PHONE_NUMBER_ID;
 
@@ -152,11 +168,17 @@ export class WhatsAppService {
   }
 
   /**
-   * Sends an automated cancellation notification via Meta WhatsApp Cloud API
+   * Sends an automated cancellation notification via WhatsApp Bot or Meta Cloud API
    */
   public static async sendBookingCancelled(
     payload: { customerName: string; customerPhone: string; bookingRef: string; serviceName: string; date: string; timeSlot: string }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (WhatsAppBotService.isConnected()) {
+      const botRes = await WhatsAppBotService.sendBookingCancelled(payload);
+      if (botRes.success) return botRes;
+      console.warn('⚠️ [WhatsApp Service] Bot cancellation dispatch failed, falling back to Cloud API:', botRes.error);
+    }
+
     const token = env.WHATSAPP_API_TOKEN;
     const phoneId = env.WHATSAPP_PHONE_NUMBER_ID;
 
