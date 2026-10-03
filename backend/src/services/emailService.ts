@@ -8,9 +8,102 @@ export interface EmailBookingPayload {
   serviceName: string;
   date: string;
   timeSlot: string;
-  total: number;
+  total?: number;
   stylistName?: string;
   manageUrl?: string;
+}
+
+/**
+ * Normalizes management link so it always points to the public salon domain
+ */
+function normalizeManageUrl(rawUrl?: string): string {
+  if (!rawUrl) return 'https://stylexsalon.in/';
+  return rawUrl.replace(/https?:\/\/(localhost:5000|127\.0\.0\.1:5000)/g, 'https://stylexsalon.in');
+}
+
+/**
+ * Generates an RFC 5545 compliant iCalendar (.ics) event string
+ */
+function generateICS(payload: {
+  bookingRef: string;
+  customerName: string;
+  customerEmail: string;
+  serviceName: string;
+  date: string;
+  timeSlot: string;
+  stylistName?: string;
+  manageUrl?: string;
+}): string {
+  // Parse YYYY-MM-DD
+  const dateMatch = payload.date.match(/(\d{4})-(\d{2})-(\d{2})/);
+  let year = '2026';
+  let month = '10';
+  let day = '04';
+  if (dateMatch) {
+    [, year, month, day] = dateMatch;
+  }
+
+  // Parse start hour and minute (supports "10:00 AM", "02:30 PM", "14:00")
+  let startHour = 10;
+  let startMin = 0;
+  const timeMatch = payload.timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (timeMatch) {
+    let h = parseInt(timeMatch[1], 10);
+    const m = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3]?.toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    startHour = h;
+    startMin = m;
+  }
+
+  let endHour = startHour + 1;
+  let endMin = startMin;
+  if (endHour >= 24) endHour = 23;
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dtStart = `${year}${month}${day}T${pad(startHour)}${pad(startMin)}00`;
+  const dtEnd = `${year}${month}${day}T${pad(endHour)}${pad(endMin)}00`;
+  const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const uid = `booking-${payload.bookingRef}-${Date.now()}@stylexsalon.in`;
+
+  const descriptionLines = [
+    `StyleX Signature Salon Appointment`,
+    `Ritual: ${payload.serviceName}`,
+    `Booking Ref: ${payload.bookingRef}`,
+    payload.stylistName ? `Artisan: ${payload.stylistName}` : '',
+    `Location: One Arcade, Tirur, Kerala 676101`,
+    payload.manageUrl ? `Manage / Reschedule: ${payload.manageUrl}` : '',
+  ].filter(Boolean);
+
+  const icsLines = [
+    'BEGIN:VCALENDAR',
+    'PRODID:-//StyleX Signature Salon//Booking Engine//EN',
+    'VERSION:2.0',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${nowStamp}`,
+    `DTSTART;TZID=Asia/Kolkata:${dtStart}`,
+    `DTEND;TZID=Asia/Kolkata:${dtEnd}`,
+    `SUMMARY:StyleX Salon: ${payload.serviceName}`,
+    `DESCRIPTION:${descriptionLines.join('\\n')}`,
+    'LOCATION:StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101',
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'ORGANIZER;CN="StyleX Signature Salon":mailto:stylexsignaturesalon@gmail.com',
+    `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=${payload.customerName}:mailto:${payload.customerEmail}`,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT1H',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Reminder: StyleX Appointment in 1 hour',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+
+  return icsLines.join('\r\n');
 }
 
 export class EmailService {
@@ -43,6 +136,18 @@ export class EmailService {
     }
 
     try {
+      const manageUrl = normalizeManageUrl(payload.manageUrl);
+      const icsContent = generateICS({
+        bookingRef: payload.bookingRef,
+        customerName: payload.customerName,
+        customerEmail: payload.toEmail,
+        serviceName: payload.serviceName,
+        date: payload.date,
+        timeSlot: payload.timeSlot,
+        stylistName: payload.stylistName,
+        manageUrl,
+      });
+
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -98,31 +203,58 @@ export class EmailService {
                   <td class="value">${payload.stylistName}</td>
                 </tr>
                 ` : ''}
-                <tr>
-                  <td class="label">Estimated Amount</td>
-                  <td class="value">₹${payload.total.toLocaleString('en-IN')}</td>
-                </tr>
               </table>
-              ${payload.manageUrl ? `
               <div style="text-align: center; margin: 24px 0;">
-                <a href="${payload.manageUrl}" style="background-color: #fe753c; color: #ffffff; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">Manage or Reschedule Booking</a>
-              </div>` : ''}
+                <a href="${manageUrl}" style="background-color: #fe753c; color: #ffffff; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">Manage or Reschedule Booking</a>
+              </div>
+              <p style="font-size: 13px; color: #555;">An interactive calendar invite (<strong>invite.ics</strong>) is attached. Tap <em>Add to Calendar</em> to sync your appointment.</p>
               <p style="font-size: 13px; color: #555;">Please arrive 10 minutes prior to your appointment time. For any schedule adjustments, please contact our front desk at <strong>+91 96561 11149</strong>.</p>
             </div>
             <div class="footer">
               <p style="margin: 0;">StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101</p>
-              <p style="margin: 4px 0 0 0;">WhatsApp: +91 96561 11149 • appointments@stylextirur.com</p>
+              <p style="margin: 4px 0 0 0;">WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com</p>
             </div>
           </div>
         </body>
         </html>
       `;
 
+      const textFallback = `Dear ${payload.customerName},\n\n` +
+        `Your appointment at StyleX Signature Salon is confirmed!\n\n` +
+        `Booking Ref: ${payload.bookingRef}\n` +
+        `Selected Ritual: ${payload.serviceName}\n` +
+        `Date: ${payload.date}\n` +
+        `Time Slot: ${payload.timeSlot}\n` +
+        (payload.stylistName ? `Artisan: ${payload.stylistName}\n` : '') +
+        `\nManage or Reschedule: ${manageUrl}\n\n` +
+        `StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101\n` +
+        `WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com\n`;
+
+      const fromAddress = env.SMTP_FROM || '"StyleX Signature Salon" <stylexsignaturesalon@gmail.com>';
+
       const info = await transporter.sendMail({
-        from: env.SMTP_FROM,
+        from: fromAddress,
         to: payload.toEmail,
+        replyTo: 'stylexsignaturesalon@gmail.com',
         subject: `Appointment Confirmed: ${payload.bookingRef} at StyleX Signature Salon`,
+        text: textFallback,
         html: htmlContent,
+        headers: {
+          'X-Mailer': 'StyleX Signature Salon Gateway',
+          'X-Entity-Ref-ID': payload.bookingRef,
+        },
+        attachments: [
+          {
+            filename: 'invite.ics',
+            content: icsContent,
+            contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+          },
+        ],
+        icalEvent: {
+          filename: 'invite.ics',
+          method: 'REQUEST',
+          content: icsContent,
+        },
       });
 
       return { success: true, messageId: info.messageId };
@@ -142,27 +274,126 @@ export class EmailService {
     }
 
     try {
-      const info = await transporter.sendMail({
-        from: env.SMTP_FROM,
-        to: payload.toEmail,
-        subject: `Appointment Rescheduled: ${payload.bookingRef} - StyleX Signature Salon`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px;">
-            <h2 style="color: #112e20;">Your StyleX Appointment Has Been Rescheduled</h2>
-            <p>Dear <strong>${payload.customerName}</strong>,</p>
-            <p>Your appointment has been successfully updated to the new date and time below:</p>
-            <ul>
-              <li><strong>Booking Ref:</strong> ${payload.bookingRef}</li>
-              <li><strong>Service:</strong> ${payload.serviceName}</li>
-              <li><strong>New Date:</strong> ${payload.date}</li>
-              <li><strong>New Time Slot:</strong> ${payload.timeSlot}</li>
-              ${payload.stylistName ? `<li><strong>Stylist:</strong> ${payload.stylistName}</li>` : ''}
-            </ul>
-            ${payload.manageUrl ? `<p><a href="${payload.manageUrl}" style="display:inline-block; background:#fe753c; color:#fff; padding:10px 20px; border-radius:20px; text-decoration:none; font-weight:bold;">View or Manage Appointment</a></p>` : ''}
-            <p style="color:#777; font-size:12px;">StyleX Signature Salon • One Arcade, Tirur • +91 96561 11149</p>
-          </div>
-        `,
+      const manageUrl = normalizeManageUrl(payload.manageUrl);
+      const icsContent = generateICS({
+        bookingRef: payload.bookingRef,
+        customerName: payload.customerName,
+        customerEmail: payload.toEmail,
+        serviceName: payload.serviceName,
+        date: payload.date,
+        timeSlot: payload.timeSlot,
+        stylistName: payload.stylistName,
+        manageUrl,
       });
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f7faf8; margin: 0; padding: 24px; color: #112e20; }
+            .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #dbe5e0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+            .header { background: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+            .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
+            .content { padding: 28px 24px; }
+            .ref-box { background: #f0f5f1; border-left: 4px solid #fe753c; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 24px; }
+            .ref-title { font-size: 11px; text-transform: uppercase; color: #727973; font-weight: bold; }
+            .ref-number { font-size: 20px; font-weight: bold; color: #112e20; margin-top: 4px; }
+            .details-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+            .details-table td { padding: 10px 0; border-bottom: 1px solid #eef3f0; font-size: 14px; }
+            .details-table td.label { color: #727973; width: 40%; }
+            .details-table td.value { font-weight: 600; color: #112e20; text-align: right; }
+            .footer { background: #fbf9f5; padding: 20px 24px; text-align: center; font-size: 12px; color: #727973; border-top: 1px solid #e7e5e0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="badge">Appointment Updated</div>
+              <h1>StyleX Signature Salon</h1>
+              <p style="margin: 6px 0 0 0; color: #a6d0be; font-size: 13px;">Tirur Flagship • Kerala</p>
+            </div>
+            <div class="content">
+              <p>Dear <strong>${payload.customerName}</strong>,</p>
+              <p>Your appointment schedule has been successfully updated:</p>
+              <div class="ref-box">
+                <div class="ref-title">Booking Confirmation Code</div>
+                <div class="ref-number">${payload.bookingRef}</div>
+              </div>
+              <table class="details-table">
+                <tr>
+                  <td class="label">Ritual</td>
+                  <td class="value">${payload.serviceName}</td>
+                </tr>
+                <tr>
+                  <td class="label">New Date</td>
+                  <td class="value">${payload.date}</td>
+                </tr>
+                <tr>
+                  <td class="label">New Time Slot</td>
+                  <td class="value">${payload.timeSlot}</td>
+                </tr>
+                ${payload.stylistName ? `
+                <tr>
+                  <td class="label">Artisan / Stylist</td>
+                  <td class="value">${payload.stylistName}</td>
+                </tr>
+                ` : ''}
+              </table>
+              <div style="text-align: center; margin: 24px 0;">
+                <a href="${manageUrl}" style="background-color: #fe753c; color: #ffffff; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">Manage Appointment</a>
+              </div>
+              <p style="font-size: 13px; color: #555;">Updated calendar invite (<strong>invite.ics</strong>) is attached.</p>
+            </div>
+            <div class="footer">
+              <p style="margin: 0;">StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101</p>
+              <p style="margin: 4px 0 0 0;">WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const textFallback = `Dear ${payload.customerName},\n\n` +
+        `Your appointment at StyleX Signature Salon has been updated.\n\n` +
+        `Booking Ref: ${payload.bookingRef}\n` +
+        `Service: ${payload.serviceName}\n` +
+        `New Date: ${payload.date}\n` +
+        `New Time Slot: ${payload.timeSlot}\n` +
+        (payload.stylistName ? `Artisan: ${payload.stylistName}\n` : '') +
+        `\nManage Appointment: ${manageUrl}\n\n` +
+        `StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101\n` +
+        `WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com\n`;
+
+      const fromAddress = env.SMTP_FROM || '"StyleX Signature Salon" <stylexsignaturesalon@gmail.com>';
+
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to: payload.toEmail,
+        replyTo: 'stylexsignaturesalon@gmail.com',
+        subject: `Appointment Rescheduled: ${payload.bookingRef} - StyleX Signature Salon`,
+        text: textFallback,
+        html: htmlContent,
+        headers: {
+          'X-Mailer': 'StyleX Signature Salon Gateway',
+          'X-Entity-Ref-ID': payload.bookingRef,
+        },
+        attachments: [
+          {
+            filename: 'invite.ics',
+            content: icsContent,
+            contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+          },
+        ],
+        icalEvent: {
+          filename: 'invite.ics',
+          method: 'REQUEST',
+          content: icsContent,
+        },
+      });
+
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -179,19 +410,33 @@ export class EmailService {
     }
 
     try {
+      const fromAddress = env.SMTP_FROM || '"StyleX Signature Salon" <stylexsignaturesalon@gmail.com>';
+
+      const htmlContent = `
+        <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px;">
+          <h2 style="color: #991b1b; margin-top:0;">Appointment Cancelled</h2>
+          <p>Dear <strong>${payload.customerName}</strong>,</p>
+          <p>Your appointment <strong>${payload.bookingRef}</strong> for <strong>${payload.serviceName}</strong> on ${payload.date} at ${payload.timeSlot} has been cancelled.</p>
+          <p>If you'd like to book another session at any time, please visit <a href="https://stylexsalon.in/">stylexsalon.in</a>.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="color:#777; font-size:12px; margin:0;">StyleX Signature Salon • One Arcade, Tirur, Kerala 676101</p>
+          <p style="color:#777; font-size:12px; margin:4px 0 0 0;">WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com</p>
+        </div>
+      `;
+
+      const textFallback = `Dear ${payload.customerName},\n\n` +
+        `Your appointment ${payload.bookingRef} for ${payload.serviceName} on ${payload.date} at ${payload.timeSlot} has been cancelled.\n\n` +
+        `Book another session anytime at https://stylexsalon.in/\n\n` +
+        `StyleX Flagship Salon, One Arcade, Tirur, Kerala 676101\n` +
+        `WhatsApp: +91 96561 11149 • stylexsignaturesalon@gmail.com\n`;
+
       const info = await transporter.sendMail({
-        from: env.SMTP_FROM,
+        from: fromAddress,
         to: payload.toEmail,
+        replyTo: 'stylexsignaturesalon@gmail.com',
         subject: `Appointment Cancelled: ${payload.bookingRef} - StyleX Signature Salon`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px;">
-            <h2 style="color: #991b1b;">Appointment Cancelled</h2>
-            <p>Dear <strong>${payload.customerName}</strong>,</p>
-            <p>Your appointment <strong>${payload.bookingRef}</strong> for <strong>${payload.serviceName}</strong> on ${payload.date} at ${payload.timeSlot} has been cancelled.</p>
-            <p>If you'd like to book another session at any time, please visit <a href="https://stylexsalon.in/booking">stylexsalon.in/booking</a>.</p>
-            <p style="color:#777; font-size:12px;">StyleX Signature Salon • One Arcade, Tirur • +91 96561 11149</p>
-          </div>
-        `,
+        text: textFallback,
+        html: htmlContent,
       });
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
@@ -215,10 +460,14 @@ export class EmailService {
     }
 
     try {
+      const fromAddress = env.SMTP_FROM || '"StyleX Signature Salon" <stylexsignaturesalon@gmail.com>';
+
       const info = await transporter.sendMail({
-        from: env.SMTP_FROM,
+        from: fromAddress,
         to: toEmail,
+        replyTo: 'stylexsignaturesalon@gmail.com',
         subject: '✨ StyleX Signature Salon — Email Dispatch Test',
+        text: `StyleX Email Notification System Online\n\nThis is a verification email from your StyleX Signature Salon backend.\nConnected via ${env.SMTP_HOST}:${env.SMTP_PORT}\nSender: ${env.SMTP_USER}\n\nSupport: stylexsignaturesalon@gmail.com`,
         html: `
           <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #dbe5e0; border-radius: 16px; background:#fff;">
             <h2 style="color: #112e20; margin-top:0;">StyleX Email Notification System Online</h2>
@@ -227,7 +476,9 @@ export class EmailService {
               <p style="margin:0; font-size:13px; color:#185341;"><strong>Status:</strong> Connected via ${env.SMTP_HOST}:${env.SMTP_PORT}</p>
               <p style="margin:4px 0 0 0; font-size:13px; color:#185341;"><strong>Sender Account:</strong> ${env.SMTP_USER}</p>
             </div>
-            <p style="font-size:12px; color:#777;">Automated client passes, reschedule notifications, and cancellations will be dispatched from this account.</p>
+            <p style="font-size:12px; color:#777;">Automated client passes, calendar invites, and reschedule notifications will be dispatched from this account.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+            <p style="font-size:11px; color:#999; margin:0;">StyleX Flagship Salon, One Arcade, Tirur • stylexsignaturesalon@gmail.com</p>
           </div>
         `,
       });
@@ -237,4 +488,3 @@ export class EmailService {
     }
   }
 }
-

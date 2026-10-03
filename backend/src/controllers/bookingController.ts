@@ -237,8 +237,11 @@ export class BookingController {
 
       // 5. Trigger Asynchronous Notifications (Non-blocking)
       const fullPhone = `${countryCode}${customerPhone.replace(/[^0-9]/g, '')}`;
-      const appUrl = env.APP_URL || 'https://stylexsalon.in';
-      const manageUrl = `${appUrl}/?manage=${result.managementToken || result.bookingRef}`;
+      const rawAppUrl = env.APP_URL || '';
+      const clientPortalUrl = (!rawAppUrl || rawAppUrl.includes('localhost:5000') || rawAppUrl.includes('127.0.0.1'))
+        ? 'https://stylexsalon.in'
+        : rawAppUrl.replace(/\/+$/, '');
+      const manageUrl = `${clientPortalUrl}/?manage=${result.managementToken || result.bookingRef}`;
 
       WhatsAppService.sendBookingConfirmation({
         bookingRef: result.bookingRef,
@@ -675,7 +678,11 @@ export class BookingController {
       });
 
       // Dispatch async notifications
-      const manageUrl = `${env.APP_URL || 'https://stylexsalon.in'}/?manage=${updated.managementToken || updated.bookingRef}`;
+      const rawAppUrl = env.APP_URL || '';
+      const clientPortalUrl = (!rawAppUrl || rawAppUrl.includes('localhost:5000') || rawAppUrl.includes('127.0.0.1'))
+        ? 'https://stylexsalon.in'
+        : rawAppUrl.replace(/\/+$/, '');
+      const manageUrl = `${clientPortalUrl}/?manage=${updated.managementToken || updated.bookingRef}`;
       const fullPhone = booking.guestPhone?.replace(/[^0-9]/g, '') || `91${booking.customer.phone}`;
 
       WhatsAppService.sendBookingRescheduled({
