@@ -289,7 +289,7 @@ export class WhatsAppBotService {
       const chatId = this.formatChatId(payload.customerPhone);
       const text =
         `✨ *StyleX Signature Salon — Appointment Pass* ✨\n\n` +
-        `──────────\n\n` +
+        `── ✦ ──\n\n` +
         `🔖 Booking Reference: *${payload.bookingRef}*\n\n` +
         `👤 *Guest Name:* ${payload.customerName}\n` +
         `💇 *Service:* ${payload.serviceName}\n` +
@@ -299,7 +299,7 @@ export class WhatsAppBotService {
         (payload.manageUrl ? `📲 *Self-Service Pass (Reschedule / Cancel):*\n${payload.manageUrl}\n\n` : '') +
         `📍 *Salon Address:*\nOne Arcade, Near Lenskart, KG Padi Rd, Tirur\n` +
         `🗺️ *Google Maps:* https://maps.google.com/?q=StyleX+Salon+Tirur\n\n` +
-        `──────────\n\n` +
+        `── ✦ ──\n\n` +
         `• _To adjust or enquire, reply directly to this message or call +91 96561 11149._\n\n` +
         `_Thank you for choosing StyleX Tirur!_`;
 
@@ -325,7 +325,7 @@ export class WhatsAppBotService {
       const chatId = this.formatChatId(payload.customerPhone);
       const text =
         `🔄 *StyleX Signature Salon — Appointment Rescheduled* 🔄\n\n` +
-        `──────────\n\n` +
+        `── ✦ ──\n\n` +
         `🔖 Booking Reference: *${payload.bookingRef}*\n\n` +
         `Dear *${payload.customerName}*,\n` +
         `Your appointment has been updated to your requested schedule:\n\n` +
