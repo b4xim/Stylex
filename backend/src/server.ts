@@ -2,6 +2,7 @@ import { app } from './app';
 import { env } from './config/env';
 import { prisma } from './config/db';
 import { WhatsAppBotService } from './services/whatsappBotService';
+import { ReminderSchedulerService } from './services/reminderSchedulerService';
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
   console.log(`\n======================================================`);
@@ -15,10 +16,14 @@ const server = app.listen(env.PORT, '0.0.0.0', () => {
   WhatsAppBotService.initialize().catch((err) => {
     console.warn('⚠️ [WhatsApp Bot] Background initialization notice:', err?.message || err);
   });
+
+  // Start background 1-hour appointment reminder scheduler
+  ReminderSchedulerService.start();
 });
 
 const gracefulShutdown = async (signal: string) => {
   console.log(`\n🛑 Received ${signal}. Gracefully shutting down StyleX API...`);
+  ReminderSchedulerService.stop();
   server.close(async () => {
     await prisma.$disconnect();
     console.log('✅ PostgreSQL connection disconnected. Process exited.');

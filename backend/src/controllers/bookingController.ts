@@ -668,6 +668,7 @@ export class BookingController {
           date: normalizedDate,
           timeSlot,
           stylistId: targetStylistId,
+          reminderSent: false,
           notes: booking.notes ? `${booking.notes} (Rescheduled from ${booking.date} ${booking.timeSlot})` : `Rescheduled from ${booking.date} ${booking.timeSlot}`,
         },
         include: {

@@ -347,6 +347,43 @@ export class WhatsAppBotService {
   }
 
   /**
+   * Sends automated 1-hour appointment reminder
+   */
+  public static async sendBookingReminder(
+    payload: WhatsAppNotificationPayload
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.isClientConnected || !this.client) {
+      return { success: false, error: 'WhatsApp bot is not connected' };
+    }
+
+    try {
+      const chatId = this.formatChatId(payload.customerPhone);
+      const text =
+        `✨ *StyleX Signature Salon — Appointment Reminder* ✨\n\n` +
+        `── ✦ ──\n\n` +
+        `Dear *${payload.customerName}*,\n\n` +
+        `This is a gentle reminder that your appointment is scheduled in **1 hour**!\n\n` +
+        `🔖 Booking Reference: *${payload.bookingRef}*\n\n` +
+        `💇 *Service:* ${payload.serviceName}\n` +
+        `⏰ *Time Slot:* Today at ${payload.timeSlot} IST\n` +
+        `${payload.stylistName ? `✂️ *Stylist:* ${payload.stylistName}\n` : ''}\n` +
+        (payload.manageUrl ? `📲 *View or Adjust Online:*\n${payload.manageUrl}\n\n` : '') +
+        `📍 *Salon Address:*\nOne Arcade, Near Lenskart, KG Padi Rd, Tirur\n` +
+        `🗺️ *Google Maps:* https://maps.google.com/?q=StyleX+Salon+Tirur\n\n` +
+        `── ✦ ──\n\n` +
+        `• _Please arrive 5–10 minutes prior to your slot time._\n` +
+        `• _If you need directions or to adjust, reply directly to this message or call +91 96561 11149._\n\n` +
+        `_We look forward to welcoming you soon!_`;
+
+      const msg = await this.client.sendMessage(chatId, text);
+      return { success: true, messageId: msg?.id?._serialized || `WA_REMINDER_${Date.now()}` };
+    } catch (err: any) {
+      console.error('❌ [WhatsApp Bot] Failed to send reminder notice:', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
    * Sends automated cancellation confirmation
    */
   public static async sendBookingCancelled(

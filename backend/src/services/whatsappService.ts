@@ -167,6 +167,67 @@ export class WhatsAppService {
   }
 
   /**
+   * Sends an automated 1-hour reminder via WhatsApp Bot or Meta Cloud API
+   */
+  public static async sendBookingReminder(
+    payload: BookingNotificationPayload
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (WhatsAppBotService.isConnected()) {
+      const botRes = await WhatsAppBotService.sendBookingReminder(payload);
+      if (botRes.success) return botRes;
+      console.warn('⚠️ [WhatsApp Service] Bot reminder dispatch failed, falling back to Cloud API:', botRes.error);
+    }
+
+    const token = env.WHATSAPP_API_TOKEN;
+    const phoneId = env.WHATSAPP_PHONE_NUMBER_ID;
+
+    if (!token || !phoneId) {
+      console.log(`ℹ️ [WhatsApp Service] 1-hour reminder simulated for ${payload.customerPhone} (Ref: ${payload.bookingRef} at ${payload.timeSlot})`);
+      return { success: true, messageId: `SIMULATED_REMINDER_${Date.now()}` };
+    }
+
+    try {
+      const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
+      const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
+
+      const response = await axios.post(
+        url,
+        {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'text',
+          text: {
+            preview_url: false,
+            body: `✨ *StyleX Signature Salon Appointment Reminder* ✨\n\n` +
+              `Dear *${payload.customerName}*,\n` +
+              `Your appointment is coming up in *1 hour*!\n\n` +
+              `🔖 *Booking Ref:* ${payload.bookingRef}\n` +
+              `💇 *Service:* ${payload.serviceName}\n` +
+              `⏰ *Time Slot:* Today at ${payload.timeSlot}\n` +
+              `${payload.stylistName ? `👤 *Stylist:* ${payload.stylistName}\n` : ''}\n` +
+              (payload.manageUrl ? `📲 *View / Manage:* ${payload.manageUrl}\n\n` : '') +
+              `📍 *Location:* StyleX Signature Salon, One Arcade, Tirur\n` +
+              `📞 *Helpline:* +91 96561 11149\n\n` +
+              `Please arrive 5–10 minutes prior to your slot time!`,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return { success: true, messageId: response.data?.messages?.[0]?.id };
+    } catch (error: any) {
+      console.error('❌ WhatsApp Reminder Error:', error.response?.data || error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Sends an automated cancellation notification via WhatsApp Bot or Meta Cloud API
    */
   public static async sendBookingCancelled(

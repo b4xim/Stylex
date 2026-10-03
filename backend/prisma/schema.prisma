@@ -115,11 +115,13 @@ model Booking {
   paymentStatus      String    @default("PENDING") // 'PENDING', 'PAID', 'PAY_AT_SALON', 'UPI'
   whatsappStatus     String    @default("NOT_SENT") // 'NOT_SENT', 'SENT', 'FAILED'
   emailStatus        String    @default("NOT_SENT") // 'NOT_SENT', 'SENT', 'FAILED'
+  reminderSent       Boolean   @default(false)
   source             String    @default("WEBSITE") // 'WEBSITE', 'ADMIN_DASHBOARD', 'WALK_IN'
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@index([date, timeSlot])
+  @@index([date, reminderSent])
   @@index([status])
   @@index([customerId])
   @@index([stylistId])
