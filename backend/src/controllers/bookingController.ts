@@ -504,7 +504,13 @@ export class BookingController {
         }
       } catch {}
 
-      if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED' || hoursUntilAppointment < 2) {
+      // Check if 2-hour cutoff policy is enabled in settings
+      const cutoffSetting = await prisma.salonSetting.findUnique({
+        where: { key: 'reschedulePolicy24h' },
+      });
+      const isCutoffEnforced = !cutoffSetting || (cutoffSetting.value !== 'false' && (cutoffSetting.value as any) !== false);
+
+      if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED' || (isCutoffEnforced && hoursUntilAppointment < 2)) {
         canModify = false;
       }
 
@@ -638,18 +644,25 @@ export class BookingController {
         throw new AppError(`Cannot reschedule an appointment that is already ${booking.status.toLowerCase()}`, 400);
       }
 
-      // Check cutoff rule (2 hours before current appointment)
-      const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if (timeMatch) {
-        let h = parseInt(timeMatch[1], 10);
-        const m = parseInt(timeMatch[2], 10);
-        const mer = timeMatch[3].toUpperCase();
-        if (mer === 'PM' && h < 12) h += 12;
-        if (mer === 'AM' && h === 12) h = 0;
-        const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
-        const hoursUntil = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
-        if (hoursUntil < 2) {
-          throw new AppError('Appointments within 2 hours cannot be rescheduled online. Please contact our salon front desk at +91 96561 11149.', 403);
+      // Check cutoff rule if enabled (2 hours before current appointment)
+      const cutoffSetting = await prisma.salonSetting.findUnique({
+        where: { key: 'reschedulePolicy24h' },
+      });
+      const isCutoffEnforced = !cutoffSetting || (cutoffSetting.value !== 'false' && (cutoffSetting.value as any) !== false);
+
+      if (isCutoffEnforced) {
+        const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (timeMatch) {
+          let h = parseInt(timeMatch[1], 10);
+          const m = parseInt(timeMatch[2], 10);
+          const mer = timeMatch[3].toUpperCase();
+          if (mer === 'PM' && h < 12) h += 12;
+          if (mer === 'AM' && h === 12) h = 0;
+          const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+          const hoursUntil = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
+          if (hoursUntil < 2) {
+            throw new AppError('Appointments within 2 hours cannot be rescheduled online. Please contact our salon front desk at +91 96561 11149.', 403);
+          }
         }
       }
 
@@ -764,17 +777,25 @@ export class BookingController {
       }
 
       // Check cutoff rule (2 hours before current appointment)
-      const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if (timeMatch) {
-        let h = parseInt(timeMatch[1], 10);
-        const m = parseInt(timeMatch[2], 10);
-        const mer = timeMatch[3].toUpperCase();
-        if (mer === 'PM' && h < 12) h += 12;
-        if (mer === 'AM' && h === 12) h = 0;
-        const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
-        const hoursUntil = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
-        if (hoursUntil < 2) {
-          throw new AppError('Appointments within 2 hours cannot be cancelled online. Please call our salon directly at +91 96561 11149.', 403);
+      // Check cutoff rule if enabled (2 hours before current appointment)
+      const cutoffSetting = await prisma.salonSetting.findUnique({
+        where: { key: 'reschedulePolicy24h' },
+      });
+      const isCutoffEnforced = !cutoffSetting || (cutoffSetting.value !== 'false' && (cutoffSetting.value as any) !== false);
+
+      if (isCutoffEnforced) {
+        const timeMatch = booking.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (timeMatch) {
+          let h = parseInt(timeMatch[1], 10);
+          const m = parseInt(timeMatch[2], 10);
+          const mer = timeMatch[3].toUpperCase();
+          if (mer === 'PM' && h < 12) h += 12;
+          if (mer === 'AM' && h === 12) h = 0;
+          const aptDate = new Date(`${booking.date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+          const hoursUntil = (aptDate.getTime() - Date.now()) / (1000 * 60 * 60);
+          if (hoursUntil < 2) {
+            throw new AppError('Appointments within 2 hours cannot be cancelled online. Please call our salon directly at +91 96561 11149.', 403);
+          }
         }
       }
 
