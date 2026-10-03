@@ -161,9 +161,8 @@ export class EmailService {
             :root { color-scheme: light dark; supported-color-schemes: light dark; }
             body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f7faf8; margin: 0; padding: 24px; color: #112e20; }
             .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #dbe5e0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-            .header { background: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff !important; padding: 32px 24px; text-align: center; }
-            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; }
-            .header h1 span { color: #ffffff !important; }
+            .header { background: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #f2fcf7 !important; padding: 32px 24px; text-align: center; }
+            .brand-title { margin: 0; font-size: 24px; letter-spacing: 1px; color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; }
             .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c !important; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
             .content { padding: 28px 24px; }
             .ref-box { background: #f0f5f1; border-left: 4px solid #fe753c; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 24px; }
@@ -174,13 +173,24 @@ export class EmailService {
             .details-table td.label { color: #727973; width: 40%; }
             .details-table td.value { font-weight: 600; color: #112e20; text-align: right; }
             .footer { background: #fbf9f5; padding: 20px 24px; text-align: center; font-size: 12px; color: #727973; border-top: 1px solid #e7e5e0; }
+            @media (prefers-color-scheme: dark) {
+              .header { background: #071a14 !important; background-color: #071a14 !important; color: #f2fcf7 !important; }
+              .brand-title { color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; }
+            }
+            u + .body .brand-title,
+            [data-ogsc] .brand-title {
+              color: #f2fcf7 !important;
+              -webkit-text-fill-color: #ffffff !important;
+            }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="header" style="background-color: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center;">
+            <div class="header" style="background-color: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #f2fcf7 !important; padding: 32px 24px; text-align: center;">
               <div class="badge" style="display: inline-block; background-color: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase;">Appointment Voucher</div>
-              <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; font-weight: bold; text-align: center;"><span style="color: #ffffff !important;">StyleX Signature Salon</span></h1>
+              <div class="brand-title" style="margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: 1px; color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; text-align: center; line-height: 1.25;">
+                <span style="color: #fe753c !important; -webkit-text-fill-color: #fe753c !important; font-weight: 800;">StyleX</span>&nbsp;<span style="color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; font-weight: 700;">Signature Salon</span>
+              </div>
               <p style="margin: 6px 0 0 0; color: #a6d0be !important; font-size: 13px;">Tirur Outlet • Kerala</p>
             </div>
             <div class="content">
@@ -315,9 +325,8 @@ export class EmailService {
             :root { color-scheme: light dark; supported-color-schemes: light dark; }
             body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f7faf8; margin: 0; padding: 24px; color: #112e20; }
             .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #dbe5e0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-            .header { background: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff !important; padding: 32px 24px; text-align: center; }
-            .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; }
-            .header h1 span { color: #ffffff !important; }
+            .header { background: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #f2fcf7 !important; padding: 32px 24px; text-align: center; }
+            .brand-title { margin: 0; font-size: 24px; letter-spacing: 1px; color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; }
             .badge { display: inline-block; background: rgba(254, 117, 60, 0.2); color: #fe753c !important; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; }
             .content { padding: 28px 24px; }
             .ref-box { background: #f0f5f1; border-left: 4px solid #fe753c; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 24px; }
@@ -328,13 +337,24 @@ export class EmailService {
             .details-table td.label { color: #727973; width: 40%; }
             .details-table td.value { font-weight: 600; color: #112e20; text-align: right; }
             .footer { background: #fbf9f5; padding: 20px 24px; text-align: center; font-size: 12px; color: #727973; border-top: 1px solid #e7e5e0; }
+            @media (prefers-color-scheme: dark) {
+              .header { background: #071a14 !important; background-color: #071a14 !important; color: #f2fcf7 !important; }
+              .brand-title { color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; }
+            }
+            u + .body .brand-title,
+            [data-ogsc] .brand-title {
+              color: #f2fcf7 !important;
+              -webkit-text-fill-color: #ffffff !important;
+            }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="header" style="background-color: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #ffffff; padding: 32px 24px; text-align: center;">
+            <div class="header" style="background-color: #071a14; background-image: linear-gradient(135deg, #071a14 0%, #112e20 100%); color: #f2fcf7 !important; padding: 32px 24px; text-align: center;">
               <div class="badge" style="display: inline-block; background-color: rgba(254, 117, 60, 0.2); color: #fe753c; border: 1px solid #fe753c; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase;">Appointment Updated</div>
-              <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; color: #ffffff !important; font-weight: bold; text-align: center;"><span style="color: #ffffff !important;">StyleX Signature Salon</span></h1>
+              <div class="brand-title" style="margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: 1px; color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; text-align: center; line-height: 1.25;">
+                <span style="color: #fe753c !important; -webkit-text-fill-color: #fe753c !important; font-weight: 800;">StyleX</span>&nbsp;<span style="color: #f2fcf7 !important; -webkit-text-fill-color: #ffffff !important; font-weight: 700;">Signature Salon</span>
+              </div>
               <p style="margin: 6px 0 0 0; color: #a6d0be !important; font-size: 13px;">Tirur Outlet • Kerala</p>
             </div>
             <div class="content">
