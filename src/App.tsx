@@ -520,15 +520,23 @@ export default function App() {
 
 
       {/* Floating Concierge Action Trigger on mobile/tablet */}
-      <div className="fixed bottom-6 right-6 z-40 md:hidden">
-        <button
-          onClick={() => scrollToBooking()}
-          aria-label="Book Atelier Session"
-          className="w-14 h-14 rounded-full bg-[#fe753c] text-white shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-2 border-white"
-        >
-          <span className="material-symbols-outlined text-[26px]">calendar_month</span>
-        </button>
-      </div>
+      {!isBookingPage && (
+        <div className="fixed bottom-6 right-6 z-40 md:hidden">
+          <button
+            onClick={() => {
+              if (!isBookingEngineActive) {
+                setIsBookingPausedModalOpen(true);
+                return;
+              }
+              navigate('/booking');
+            }}
+            aria-label="Book Appointment"
+            className="w-14 h-14 rounded-full bg-[#fe753c] text-white shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-2 border-white cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[26px]">calendar_month</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
