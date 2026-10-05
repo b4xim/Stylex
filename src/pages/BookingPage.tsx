@@ -22,7 +22,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
   return (
     <div className="w-full bg-[#f6faf7] min-h-screen">
       {/* Dedicated Booking Hero Banner (Slimmed for Mobile, Rich for Desktop) */}
-      <section className="w-full bg-gradient-to-b from-[#031b14] via-[#05261d] to-[#041d16] text-white pt-5 sm:pt-14 pb-5 sm:pb-20 px-3 sm:px-6 lg:px-12 relative overflow-hidden border-b border-[#144e3d]">
+      <section className="w-full bg-gradient-to-b from-[#031b14] via-[#05261d] to-[#041d16] text-white pt-6 sm:pt-14 pb-8 sm:pb-14 px-4 sm:px-6 lg:px-12 relative overflow-hidden border-b border-[#144e3d]">
         {/* Subtle Decorative Ambient Glows */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#fe753c]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#185341]/25 rounded-full blur-3xl pointer-events-none" />
@@ -67,7 +67,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
       </section>
 
       {/* Main Interactive Booking Engine Card Section */}
-      <section className="w-full relative z-20 -mt-2 sm:-mt-8 px-2 sm:px-4 lg:px-8">
+      <section className="w-full relative z-20">
         <BookingEngine
           initialServiceId={selectedServiceId}
           onConfirmBooking={onConfirmBooking}

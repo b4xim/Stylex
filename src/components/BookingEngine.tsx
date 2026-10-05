@@ -896,7 +896,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
   return (
     <section
-      className={`w-full bg-[#f6faf7] ${showHeader ? 'py-20' : 'pt-2 pb-12 sm:pb-16'} px-4 sm:px-6 lg:px-12 relative`}
+      className={`w-full bg-[#f6faf7] ${showHeader ? 'py-20' : 'py-6 sm:py-10'} px-4 sm:px-6 lg:px-12 relative`}
       id="booking-engine"
     >
       <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
@@ -1146,13 +1146,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                               {heading.tagline}
                             </p>
                           )}
-
-                          <div className="flex items-center gap-2 pt-0.5 text-[12px]">
-                            <span className="text-[#424844]/80 flex items-center gap-1 font-medium">
-                              <span className="material-symbols-outlined text-[13px] text-[#fe753c]">schedule</span>
-                              <span>{heading.duration} mins</span>
-                            </span>
-                          </div>
                         </div>
 
                         {/* Radio Check Circle */}
@@ -1173,16 +1166,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                 {/* Bottom Continue Action Bar */}
                 <div className="pt-2 border-t border-[#c2c8c2]/40 space-y-2">
                   <div className="bg-[#f0f5f1] rounded-xl p-2.5 flex items-center justify-between">
-                    <div className="min-w-0 pr-2">
+                    <div className="min-w-0 flex-1 pr-2">
                       <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#424844]/70">Selected Treatment</p>
                       <p className="text-[13px] font-bold text-[#112e20] truncate">{selectedService.name}</p>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-[12px] font-bold text-[#112e20] flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] text-[#fe753c]">schedule</span>
-                        <span>{selectedService.duration} min</span>
-                      </p>
-                    </div>
+                    <span className="text-[11px] font-bold text-[#185341] bg-[#072f23]/10 px-2.5 py-1 rounded-full shrink-0">
+                      Selected
+                    </span>
                   </div>
 
                   <button
@@ -1596,9 +1586,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       </h4>
                     </div>
                     <div className="text-right">
-                      <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[#caead5] bg-[#0f2d22] border border-white/10 px-2.5 py-1 rounded-full">
-                        <span className="material-symbols-outlined text-[13px] text-[#fe753c]">schedule</span>
-                        <span>{selectedService.duration} mins</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#caead5] bg-[#0f2d22] border border-white/10 px-2.5 py-1 rounded-full">
+                        <span className="material-symbols-outlined text-[13px] text-[#fe753c]">check_circle</span>
+                        <span>Selected</span>
                       </span>
                     </div>
                   </div>
