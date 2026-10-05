@@ -118,32 +118,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap justify-end">
-          {/* Developer-Only Maintenance Mode Button */}
-          {isDeveloper && (
-            <button
-              type="button"
-              onClick={() => {
-                const nextState = !Boolean(formData.maintenanceMode);
-                setFormData((prev) => ({ ...prev, maintenanceMode: nextState }));
-                if (onToggleMaintenanceMode) {
-                  onToggleMaintenanceMode(nextState);
-                }
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold transition-all duration-300 shadow-sm cursor-pointer border ${
-                formData.maintenanceMode
-                  ? 'bg-rose-600 text-white border-rose-500 shadow-rose-600/30 hover:bg-rose-700 animate-pulse'
-                  : 'bg-amber-500/15 text-amber-900 dark:text-amber-200 border-amber-500/40 hover:bg-amber-500/25'
-              }`}
-              title="Click to toggle Client Site Maintenance Mode"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                {formData.maintenanceMode ? 'engineering' : 'build'}
-              </span>
-              <span>
-                Maintenance Mode: <strong>{formData.maintenanceMode ? 'ACTIVE' : 'OFF'}</strong>
-              </span>
-            </button>
-          )}
 
           {/* Discard Button (animated in/out) */}
           <button
@@ -232,84 +206,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       <div className="max-w-3xl flex flex-col gap-6">
-        {/* Developer Exclusive: Maintenance Mode Card */}
-        {isDeveloper && (
-          <section className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white dark:from-amber-950/40 dark:via-[#16251d] dark:to-[#111e17] rounded-2xl p-6 shadow-sm flex flex-col gap-5 border-2 border-amber-500/40 dark:border-amber-500/30 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="flex items-center justify-between pb-3 border-b border-amber-500/20 flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
-                  <span className="material-symbols-outlined text-[22px]">engineering</span>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base text-[#112e20] dark:text-white font-bold tracking-tight">
-                      Maintenance Mode
-                    </h2>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-white shadow-xs">
-                      Developer Control
-                    </span>
-                  </div>
-                  <span className="text-xs text-[#424844] dark:text-neutral-300 mt-0.5">
-                    Toggle client website between full live booking and static maintenance page
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                    formData.maintenanceMode
-                      ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
-                      : 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30'
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      formData.maintenanceMode ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'
-                    }`}
-                  />
-                  {formData.maintenanceMode ? 'WEBSITE OFFLINE (MAINTENANCE)' : 'WEBSITE ONLINE & LIVE'}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/90 dark:bg-white/5 border border-amber-500/20 backdrop-blur-xs">
-              <div className="flex flex-col max-w-xl">
-                <span className="text-sm font-semibold text-[#112e20] dark:text-white">
-                  Static Maintenance Booking Page
-                </span>
-                <p className="text-xs text-[#525a55] dark:text-neutral-300 mt-1 leading-relaxed">
-                  When enabled, all visitors to the client website are presented with a luxury branded maintenance screen. It displays the small title <strong>"For Booking"</strong>, direct <strong>Call</strong> & <strong>WhatsApp</strong> buttons, and the interactive salon location map.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !Boolean(formData.maintenanceMode);
-                    setFormData((prev) => ({ ...prev, maintenanceMode: next }));
-                    if (onToggleMaintenanceMode) {
-                      onToggleMaintenanceMode(next);
-                    }
-                  }}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-2 ${
-                    formData.maintenanceMode
-                      ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30'
-                      : 'bg-[#112e20] hover:bg-[#185341] text-white shadow-[#112e20]/20'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    {formData.maintenanceMode ? 'power_settings_new' : 'toggle_on'}
-                  </span>
-                  <span>{formData.maintenanceMode ? 'Disable Maintenance Mode' : 'Enable Maintenance Mode'}</span>
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
         {/* Appearance & Interface Theme */}
         <section className="bg-white rounded-xl p-6 shadow-sm flex flex-col gap-4 border border-[#c2c8c2]/30">
           <div className="flex items-center gap-3 pb-2 border-b border-[#c2c8c2]/30">

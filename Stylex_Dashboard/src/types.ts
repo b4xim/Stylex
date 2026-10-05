@@ -8,7 +8,8 @@ export type NavTab =
   | 'clients-and-vip'
   | 'concierge-desk'
   | 'atelier-settings'
-  | 'site-analytics';
+  | 'site-analytics'
+  | 'developer-settings';
 
 export type AppointmentStatus = 'BOOKED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
@@ -214,4 +215,10 @@ export interface StoreNotice {
   badge?: string;
   buttonText?: string;
   updatedAt?: string;
+}
+
+export interface SlotCapacityConfig {
+  defaultGents: number;
+  defaultLadies: number;
+  slotOverrides: Record<string, { gents: number; ladies: number }>;
 }

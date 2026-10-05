@@ -46,6 +46,7 @@ export class BookingController {
         countryCode = '+91',
         customerEmail,
         serviceId,
+        serviceIds,
         secondaryServiceId,
         stylistId,
         gender,
@@ -55,7 +56,7 @@ export class BookingController {
         source = 'WEBSITE',
       } = req.body;
 
-      if (!customerName || !customerPhone || !serviceId || !date || !timeSlot) {
+      if (!customerName || !customerPhone || (!serviceId && (!Array.isArray(serviceIds) || serviceIds.length === 0)) || !date || !timeSlot) {
         throw new AppError('Name, phone, service, date, and time slot are required', 400);
       }
 
@@ -92,40 +93,60 @@ export class BookingController {
         }
       }
 
-      // 1. Fetch primary service details (resilient lookup)
-      let primaryService = await prisma.service.findFirst({
+      // 1. Resolve selected services (support single serviceId or multiple serviceIds array)
+      const requestedIds: string[] = Array.isArray(serviceIds) && serviceIds.length > 0
+        ? serviceIds.map(String)
+        : [serviceId, secondaryServiceId].filter(Boolean).map(String);
+
+      let matchedServices = await prisma.service.findMany({
         where: {
-          OR: [
-            { id: serviceId },
-            { name: { contains: serviceId, mode: 'insensitive' } },
-          ],
+          OR: requestedIds.map((sid) => ({ id: sid })),
         },
       });
 
-      if (!primaryService) {
-        primaryService = await prisma.service.findFirst({
-          where: { isActive: true },
-        });
-      }
-
-      if (!primaryService) {
-        primaryService = await prisma.service.create({
-          data: {
-            id: serviceId,
-            name: 'Signature Salon Treatment',
-            category: 'Hair & Styling',
-            gender: 'gents',
-            durationMins: 35,
-            price: 250,
-            description: 'Signature Salon Service',
+      // If no exact IDs matched, try searching by name or fallback
+      if (matchedServices.length === 0) {
+        let fallback = await prisma.service.findFirst({
+          where: {
+            OR: [
+              { id: serviceId || (requestedIds[0] || 'default') },
+              { name: { contains: serviceId || requestedIds[0] || '', mode: 'insensitive' } },
+            ],
           },
         });
+        if (!fallback) {
+          fallback = await prisma.service.findFirst({ where: { isActive: true } });
+        }
+        if (!fallback) {
+          fallback = await prisma.service.create({
+            data: {
+              id: serviceId || 'signature-treatment',
+              name: 'Signature Salon Treatment',
+              category: 'Hair & Styling',
+              gender: 'gents',
+              durationMins: 35,
+              price: 250,
+              description: 'Signature Salon Service',
+            },
+          });
+        }
+        matchedServices = [fallback];
       }
 
-      // Optional secondary service
+      const primaryService = matchedServices[0];
+      const hasMultipleServices = matchedServices.length > 1;
+      const combinedServiceName = matchedServices.map((s) => s.name).join(' + ');
+
+      // Secondary service & combo details
       let secondaryService = null;
       let secondaryPrice = 0;
-      if (secondaryServiceId) {
+      let secondaryName: string | null = null;
+      if (hasMultipleServices) {
+        secondaryService = matchedServices[1];
+        const secondaryGroup = matchedServices.slice(1);
+        secondaryName = secondaryGroup.map((s) => s.name).join(' + ');
+        secondaryPrice = secondaryGroup.reduce((sum, s) => sum + s.price, 0);
+      } else if (secondaryServiceId) {
         secondaryService = await prisma.service.findFirst({
           where: {
             OR: [
@@ -136,6 +157,7 @@ export class BookingController {
         });
         if (secondaryService) {
           secondaryPrice = secondaryService.price;
+          secondaryName = secondaryService.name;
         }
       }
 
@@ -152,7 +174,7 @@ export class BookingController {
         });
       }
 
-      const subtotal = primaryService.price + secondaryPrice;
+      const subtotal = matchedServices.reduce((sum, s) => sum + s.price, 0) + (secondaryService && !hasMultipleServices ? secondaryPrice : 0);
       const total = subtotal;
 
       const targetGender = gender || primaryService.gender || 'gents';
@@ -213,7 +235,7 @@ export class BookingController {
             guestEmail: cleanGuestEmail,
             serviceId: primaryService.id,
             secondaryServiceId: secondaryService?.id,
-            secondaryService: secondaryService?.name,
+            secondaryService: secondaryName || secondaryService?.name,
             secondaryPrice: secondaryService ? secondaryPrice : null,
             stylistId: stylist?.id,
             date: normalizedDate,
@@ -221,7 +243,9 @@ export class BookingController {
             status: 'CONFIRMED',
             subtotal,
             total,
-            notes,
+            notes: hasMultipleServices && (!notes || !notes.includes(combinedServiceName))
+              ? (notes ? `${notes}\n[Selected Services: ${combinedServiceName}]` : `[Selected Services: ${combinedServiceName}]`)
+              : notes,
             source,
             paymentStatus: 'PENDING',
           },
@@ -247,7 +271,7 @@ export class BookingController {
         bookingRef: result.bookingRef,
         customerName: result.customer.name,
         customerPhone: fullPhone,
-        serviceName: result.service.name,
+        serviceName: combinedServiceName || result.service.name,
         date: result.date,
         timeSlot: result.timeSlot,
         total: result.total,
@@ -267,7 +291,7 @@ export class BookingController {
           toEmail: result.customer.email,
           customerName: result.customer.name,
           bookingRef: result.bookingRef,
-          serviceName: result.service.name,
+          serviceName: combinedServiceName || result.service.name,
           date: result.date,
           timeSlot: result.timeSlot,
           total: result.total,
@@ -286,7 +310,7 @@ export class BookingController {
       // Generate direct WhatsApp chat URL for client confirmation (includes self-service link)
       const directWhatsAppUrl = WhatsAppService.generateDirectChatUrl(
         fullPhone,
-        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${result.service.name} on ${result.date} at ${result.timeSlot}.\n\nManage or Reschedule link: ${manageUrl}`
+        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${combinedServiceName || result.service.name} on ${result.date} at ${result.timeSlot}.\n\nManage or Reschedule link: ${manageUrl}`
       );
 
       res.status(201).json({

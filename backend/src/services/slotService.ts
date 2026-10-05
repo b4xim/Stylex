@@ -20,6 +20,18 @@ export const SALON_DAILY_SLOTS = [
   '12:00 AM',
 ];
 
+export interface SlotCapacityConfig {
+  defaultGents: number;
+  defaultLadies: number;
+  slotOverrides?: Record<string, { gents?: number; ladies?: number }>;
+}
+
+export const DEFAULT_SLOT_CAPACITY_CONFIG: SlotCapacityConfig = {
+  defaultGents: 3,
+  defaultLadies: 3,
+  slotOverrides: {},
+};
+
 export interface SlotAvailability {
   timeSlot: string;
   isAvailable: boolean;
@@ -139,6 +151,45 @@ export class SlotService {
   }
 
   /**
+   * Reads slot capacity configuration from salonSetting (with fallback to 3 gents & 3 ladies)
+   */
+  public static async getSlotCapacityConfig(): Promise<SlotCapacityConfig> {
+    try {
+      const record = await prisma.salonSetting.findUnique({
+        where: { key: 'slotCapacityConfig' },
+      });
+      if (record && record.value) {
+        const parsed = JSON.parse(record.value);
+        return {
+          defaultGents: typeof parsed.defaultGents === 'number' && parsed.defaultGents >= 0 ? parsed.defaultGents : 3,
+          defaultLadies: typeof parsed.defaultLadies === 'number' && parsed.defaultLadies >= 0 ? parsed.defaultLadies : 3,
+          slotOverrides: typeof parsed.slotOverrides === 'object' && parsed.slotOverrides !== null ? parsed.slotOverrides : {},
+        };
+      }
+    } catch (err) {
+      console.error('Error reading slotCapacityConfig:', err);
+    }
+    return DEFAULT_SLOT_CAPACITY_CONFIG;
+  }
+
+  /**
+   * Helper to resolve Gents & Ladies capacity for a given time slot
+   */
+  public static getCapacityForSlot(
+    config: SlotCapacityConfig,
+    timeSlot: string
+  ): { gents: number; ladies: number } {
+    const override = config.slotOverrides?.[timeSlot];
+    const gents = (override && typeof override.gents === 'number' && override.gents >= 0)
+      ? override.gents
+      : config.defaultGents;
+    const ladies = (override && typeof override.ladies === 'number' && override.ladies >= 0)
+      ? override.ladies
+      : config.defaultLadies;
+    return { gents, ladies };
+  }
+
+  /**
    * Retrieve availability for all slots on a specified date
    */
   public static async getSlotsForDate(
@@ -187,16 +238,25 @@ export class SlotService {
       ? weekSchedule.find((d: any) => d.dayName && d.dayName.toLowerCase() === targetDayName.toLowerCase())
       : null;
 
+    // Load dynamic slot capacity configuration
+    const capacityConfig = await SlotService.getSlotCapacityConfig();
+
     // If day is closed in schedule, all slots are completely blocked
     if (dayConfig && (dayConfig.isOpen === false || dayConfig.isOpen === 'false')) {
-      return SALON_DAILY_SLOTS.map((slot) => ({
-        timeSlot: slot,
-        isAvailable: false,
-        bookedCount: 0,
-        maxCapacity: 3,
-        status: 'full',
-        reason: `Salon closed on ${targetDayName}s according to weekly working hours`,
-      }));
+      return SALON_DAILY_SLOTS.map((slot) => {
+        const { gents: slotGents, ladies: slotLadies } = SlotService.getCapacityForSlot(capacityConfig, slot);
+        const slotMax = gender?.toLowerCase().includes('ladi') || gender?.toLowerCase().includes('female')
+          ? slotLadies
+          : slotGents;
+        return {
+          timeSlot: slot,
+          isAvailable: false,
+          bookedCount: 0,
+          maxCapacity: slotMax,
+          status: 'full',
+          reason: `Salon closed on ${targetDayName}s according to weekly working hours`,
+        };
+      });
     }
 
     const operatingRange = dayConfig?.hours ? parseOperatingHoursRange(dayConfig.hours) : null;
@@ -238,7 +298,7 @@ export class SlotService {
       ? (gender.toLowerCase().includes('ladi') || gender.toLowerCase().includes('female') ? 'ladies' : 'gents')
       : undefined;
 
-    // Count bookings per slot separated by Gents and Ladies departments (Max 3 per slot each)
+    // Count bookings per slot separated by Gents and Ladies departments
     const gentsSlotCounts = new Map<string, number>();
     const ladiesSlotCounts = new Map<string, number>();
 
@@ -255,6 +315,14 @@ export class SlotService {
     const allDayBlocked = blockedSlotMap.has('ALL_DAY');
 
     return SALON_DAILY_SLOTS.map((slot) => {
+      const { gents: slotMaxGents, ladies: slotMaxLadies } = SlotService.getCapacityForSlot(capacityConfig, slot);
+      const targetMaxCapacity =
+        normalizedGender === 'ladies'
+          ? slotMaxLadies
+          : normalizedGender === 'gents'
+          ? slotMaxGents
+          : Math.max(slotMaxGents, slotMaxLadies);
+
       const gentsCount = gentsSlotCounts.get(slot) || 0;
       const ladiesCount = ladiesSlotCounts.get(slot) || 0;
       const bookedCount =
@@ -269,7 +337,7 @@ export class SlotService {
           timeSlot: slot,
           isAvailable: false,
           bookedCount,
-          maxCapacity: 3,
+          maxCapacity: targetMaxCapacity,
           status: 'full',
           reason: 'Time slot has passed',
         };
@@ -283,7 +351,7 @@ export class SlotService {
             timeSlot: slot,
             isAvailable: false,
             bookedCount,
-            maxCapacity: 3,
+            maxCapacity: targetMaxCapacity,
             status: 'full',
             reason: `Outside operational hours (${dayConfig?.hours})`,
           };
@@ -295,7 +363,7 @@ export class SlotService {
           timeSlot: slot,
           isAvailable: false,
           bookedCount,
-          maxCapacity: 3,
+          maxCapacity: targetMaxCapacity,
           status: 'full',
           reason: blockedSlotMap.get('ALL_DAY') || 'Salon closed for the day',
         };
@@ -306,7 +374,7 @@ export class SlotService {
           timeSlot: slot,
           isAvailable: false,
           bookedCount,
-          maxCapacity: 3,
+          maxCapacity: targetMaxCapacity,
           status: 'full',
           reason: blockedSlotMap.get(slot),
         };
@@ -319,31 +387,31 @@ export class SlotService {
           return {
             timeSlot: slot,
             isAvailable: false,
-            bookedCount: 3,
-            maxCapacity: 3,
+            bookedCount: targetMaxCapacity,
+            maxCapacity: targetMaxCapacity,
             status: 'full',
             reason: 'Stylist already reserved for this slot',
           };
         }
       }
 
-      // Max 3 bookings per timeslot for Gents, 3 bookings for Ladies
+      // Dynamic capacity check per timeslot per gender
       let isFull = false;
       let reason: string | undefined = undefined;
 
       if (normalizedGender === 'ladies') {
-        if (ladiesCount >= 3) {
+        if (ladiesCount >= slotMaxLadies) {
           isFull = true;
-          reason = 'Ladies section is fully booked for this time slot (3/3)';
+          reason = `Ladies section is fully booked for this time slot (${ladiesCount}/${slotMaxLadies})`;
         }
       } else if (normalizedGender === 'gents') {
-        if (gentsCount >= 3) {
+        if (gentsCount >= slotMaxGents) {
           isFull = true;
-          reason = 'Gents section is fully booked for this time slot (3/3)';
+          reason = `Gents section is fully booked for this time slot (${gentsCount}/${slotMaxGents})`;
         }
       } else {
-        // If gender not specified, full only if both departments are full (3 gents + 3 ladies)
-        if (gentsCount >= 3 && ladiesCount >= 3) {
+        // If gender not specified, full only if both departments reached capacity
+        if (gentsCount >= slotMaxGents && ladiesCount >= slotMaxLadies) {
           isFull = true;
           reason = 'All sections fully booked for this time slot';
         }
@@ -354,20 +422,20 @@ export class SlotService {
           timeSlot: slot,
           isAvailable: false,
           bookedCount,
-          maxCapacity: 3,
+          maxCapacity: targetMaxCapacity,
           status: 'full',
           reason,
         };
       }
 
-      if (bookedCount === 2) {
+      if (targetMaxCapacity > 1 && bookedCount >= targetMaxCapacity - 1 && bookedCount < targetMaxCapacity) {
         return {
           timeSlot: slot,
           isAvailable: true,
           bookedCount,
-          maxCapacity: 3,
+          maxCapacity: targetMaxCapacity,
           status: 'filling_fast',
-          reason: '2 of 3 spots reserved (Filling fast)',
+          reason: `${bookedCount} of ${targetMaxCapacity} spots reserved (Filling fast)`,
         };
       }
 
@@ -375,7 +443,7 @@ export class SlotService {
         timeSlot: slot,
         isAvailable: true,
         bookedCount,
-        maxCapacity: 3,
+        maxCapacity: targetMaxCapacity,
         status: 'available',
       };
     });
@@ -504,11 +572,15 @@ export class SlotService {
       }
     }
 
-    // 3. Department capacity check (Max 3 bookings per slot for Gents, 3 for Ladies)
+    // 3. Department capacity check (Configurable per slot & per gender)
     const normalizedGender = (gender || 'gents').toLowerCase();
     const isLadies = normalizedGender.includes('ladi') || normalizedGender.includes('female');
     const targetDepartment = isLadies ? 'ladies' : 'gents';
     const departmentLabel = isLadies ? 'Ladies Section' : 'Gents Section';
+
+    const capacityConfig = await SlotService.getSlotCapacityConfig();
+    const { gents: slotMaxGents, ladies: slotMaxLadies } = SlotService.getCapacityForSlot(capacityConfig, timeSlot);
+    const maxAllowed = isLadies ? slotMaxLadies : slotMaxGents;
 
     const departmentBookingsCount = await prisma.booking.count({
       where: {
@@ -521,9 +593,9 @@ export class SlotService {
       },
     });
 
-    if (departmentBookingsCount >= 3) {
+    if (departmentBookingsCount >= maxAllowed) {
       throw new AppError(
-        `The ${departmentLabel} has reached its maximum capacity of 3 concurrent appointments for ${timeSlot} on ${date}. Please select an adjacent time slot.`,
+        `The ${departmentLabel} has reached its maximum capacity of ${maxAllowed} concurrent appointments for ${timeSlot} on ${date}. Please select an adjacent time slot.`,
         409
       );
     }

@@ -54,6 +54,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             badge: 'DEV',
             badgeColor: 'bg-emerald-600/90 text-white',
           },
+          {
+            id: 'developer-settings' as NavTab,
+            label: 'Developer Settings',
+            icon: 'terminal',
+            badge: 'DEV',
+            badgeColor: 'bg-amber-600 text-white',
+          },
         ]
       : []),
   ];

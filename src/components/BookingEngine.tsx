@@ -143,7 +143,47 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     ? (BOOKING_HEADINGS.find((h) => h.id === initialFound.id || (h.category === initialFound.category && h.gender === selectedGender)) || availableHeadings[0])
     : availableHeadings[0];
 
-  const [selectedService, setSelectedService] = useState(defaultHeading);
+  // Multi-service selection support
+  const [selectedServices, setSelectedServices] = useState<(typeof defaultHeading)[]>([defaultHeading]);
+  const selectedService = selectedServices[0] || defaultHeading;
+
+  const combinedPrice = useMemo(
+    () => selectedServices.reduce((sum, s) => sum + (s.price || 0), 0),
+    [selectedServices]
+  );
+
+  const combinedDuration = useMemo(
+    () => selectedServices.reduce((sum, s) => sum + (s.duration || 30), 0),
+    [selectedServices]
+  );
+
+  const combinedServiceName = useMemo(
+    () => selectedServices.map((s) => s.name).join(' + '),
+    [selectedServices]
+  );
+
+  const isServiceSelected = (id: string) => selectedServices.some((s) => s.id === id);
+
+  const toggleService = (heading: typeof defaultHeading) => {
+    setSelectedServices((prev) => {
+      const exists = prev.some((s) => s.id === heading.id);
+      if (exists) {
+        if (prev.length <= 1) {
+          return prev; // keep at least 1 selected
+        }
+        return prev.filter((s) => s.id !== heading.id);
+      } else {
+        return [...prev, heading];
+      }
+    });
+  };
+
+  const handleServiceChange = (headingId: string) => {
+    const found = availableHeadings.find((h) => h.id === headingId);
+    if (found) {
+      toggleService(found);
+    }
+  };
 
   // Live stylists synchronized with Dashboard / Backend
   // Start empty – populated from /api/stylists so only real dashboard stylists show
@@ -311,7 +351,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
     const newHeadings = BOOKING_HEADINGS.filter((h) => h.gender === newGender);
     if (newHeadings.length > 0) {
-      setSelectedService(newHeadings[0]);
+      setSelectedServices([newHeadings[0]]);
     }
 
     const newArtisans = stylistsList.filter((a) => matchesStylistGender(a.gender, newGender));
@@ -332,7 +372,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
       const matchingHeading = BOOKING_HEADINGS.find((h) => h.id === found.id || (h.category === found.category && h.gender === g))
         || BOOKING_HEADINGS.filter((h) => h.gender === g)[0];
       if (matchingHeading) {
-        setSelectedService(matchingHeading);
+        setSelectedServices([matchingHeading]);
       }
       const filteredArtisans = stylistsList.filter((a) => matchesStylistGender(a.gender, g));
       if (selectedArtisan !== 'Any Stylist' && !filteredArtisans.some((a) => a.name === selectedArtisan)) {
@@ -451,11 +491,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     } else {
       setCurrentMonthIndex((m) => m + 1);
     }
-  };
-
-  const handleServiceChange = (headingId: string) => {
-    const s = availableHeadings.find((item) => item.id === headingId);
-    if (s) setSelectedService(s);
   };
 
   const dateObj = new Date(currentYear, currentMonthIndex, selectedDay);
@@ -759,7 +794,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     // 4. Reset selected service to first available heading of the current department
     const currentHeadings = BOOKING_HEADINGS.filter((h) => h.gender === selectedGender);
     if (currentHeadings.length > 0) {
-      setSelectedService(currentHeadings[0]);
+      setSelectedServices([currentHeadings[0]]);
     }
 
     // 5. Smooth scroll back to top of the booking engine
@@ -841,7 +876,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         customerPhone: digitsOnly,
         countryCode: phoneCountryCode,
         customerEmail: email.trim() || undefined,
-        serviceId: selectedService.id,
+        serviceId: selectedServices[0].id,
+        serviceIds: selectedServices.map((s) => s.id),
         stylistId: cleanStylist,
         gender: selectedGender,
         date: isoDateStr,
@@ -906,10 +942,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         bookingRef: serverRef,
         managementToken: json.data?.managementToken || createdBooking?.managementToken || serverRef,
         customerName: cleanName,
-        serviceId: selectedService.id,
-        serviceName: selectedService.name,
-        price: selectedService.price,
-        duration: selectedService.duration,
+        serviceId: selectedServices[0].id,
+        serviceName: combinedServiceName,
+        price: combinedPrice,
+        duration: combinedDuration,
         date: dateString,
         dayOfMonth: selectedDay,
         time: selectedTime,
@@ -1168,12 +1204,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
                 {/* Touch-Friendly Services Cards */}
                 <div className="space-y-2.5 pt-1 max-h-[420px] overflow-y-auto pr-0.5">
+                  <div className="flex items-center justify-between px-1 text-[11px] text-[#525a55] font-semibold">
+                    <span>Tap any service to select or deselect</span>
+                    <span className="text-[#fe753c] font-bold">{selectedServices.length} selected</span>
+                  </div>
                   {filteredHeadings.map((heading) => {
-                    const isSelected = selectedService.id === heading.id;
+                    const isSelected = isServiceSelected(heading.id);
                     return (
                       <div
                         key={`m-${heading.id}`}
-                        onClick={() => setSelectedService(heading)}
+                        onClick={() => toggleService(heading)}
                         className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative flex items-start justify-between gap-3 ${
                           isSelected
                             ? 'bg-[#0f2d22]/5 border-[#112e20] ring-2 ring-[#112e20]/25 shadow-xs'
@@ -1181,9 +1221,16 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         }`}
                       >
                         <div className="space-y-1 min-w-0 flex-1">
-                          <h4 className="text-[14.5px] font-bold text-[#112e20] leading-snug">
-                            {heading.name}
-                          </h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-[14.5px] font-bold text-[#112e20] leading-snug">
+                              {heading.name}
+                            </h4>
+                            {isSelected && (
+                              <span className="text-[9.5px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-[#fe753c]/15 text-[#fe753c]">
+                                Selected
+                              </span>
+                            )}
+                          </div>
 
                           {heading.tagline && (
                             <p className="text-[11.5px] text-[#424844]/80 line-clamp-1">
@@ -1192,8 +1239,8 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           )}
                         </div>
 
-                        {/* Radio Check Circle */}
-                        <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all mt-0.5 ${
+                        {/* Checkbox Icon */}
+                        <div className={`w-5 h-5 rounded-md shrink-0 flex items-center justify-center transition-all mt-0.5 ${
                           isSelected
                             ? 'bg-[#fe753c] text-white shadow-xs'
                             : 'border-2 border-[#c2c8c2]'
@@ -1211,11 +1258,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                 <div className="pt-2 border-t border-[#c2c8c2]/40 space-y-2">
                   <div className="bg-[#f0f5f1] rounded-xl p-2.5 flex items-center justify-between">
                     <div className="min-w-0 flex-1 pr-2">
-                      <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#424844]/70">Selected Treatment</p>
-                      <p className="text-[13px] font-bold text-[#112e20] truncate">{selectedService.name}</p>
+                      <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#424844]/70">
+                        Selected Treatments ({selectedServices.length})
+                      </p>
+                      <p className="text-[13px] font-bold text-[#112e20] truncate">{combinedServiceName}</p>
                     </div>
                     <span className="text-[11px] font-bold text-[#185341] bg-[#072f23]/10 px-2.5 py-1 rounded-full shrink-0">
-                      Selected
+                      {selectedServices.length} Selected
                     </span>
                   </div>
 
@@ -1224,7 +1273,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     onClick={() => goToMobileStep(2)}
                     className="w-full py-3.5 px-4 rounded-xl bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14px] shadow-[0_4px_16px_rgba(254,117,60,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                   >
-                    <span>Continue to Schedule</span>
+                    <span>Continue to Schedule ({selectedServices.length} Service{selectedServices.length > 1 ? 's' : ''})</span>
                     <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
                   </button>
                 </div>
@@ -1242,11 +1291,11 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     className="inline-flex items-center gap-1 text-[12px] font-bold text-[#185341] hover:text-[#112e20] cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                    <span>Change Service</span>
+                    <span>Change Services ({selectedServices.length})</span>
                   </button>
 
-                  <span className="text-[11px] font-semibold text-[#112e20] bg-[#f0f5f1] px-2.5 py-0.5 rounded-full truncate max-w-[170px]">
-                    {selectedService.name}
+                  <span className="text-[11px] font-semibold text-[#112e20] bg-[#f0f5f1] px-2.5 py-0.5 rounded-full truncate max-w-[170px]" title={combinedServiceName}>
+                    {combinedServiceName}
                   </span>
                 </div>
 
@@ -1626,7 +1675,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         {selectedGender === 'gents' ? 'Gents Salon' : 'Ladies Lounge'}
                       </span>
                       <h4 className="text-[15.5px] font-bold text-white font-display-hero">
-                        {selectedService.name}
+                        {combinedServiceName}
                       </h4>
                     </div>
                     <div className="text-right">
@@ -1864,51 +1913,93 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
               </div>
 
               {/* 1. Service Selection */}
-              <div className="space-y-2.5 pt-1 border-t border-[#c2c8c2]/30">
+              <div className="space-y-3 pt-1 border-t border-[#c2c8c2]/30">
                 <div className="flex items-center justify-between">
                   <h3 className="text-[14.5px] sm:text-[16px] font-semibold text-[#112e20] tracking-tight font-title-md flex items-center gap-2">
                     <span className="w-5 h-5 rounded-full bg-[#112e20]/10 text-[#112e20] text-[11px] font-bold inline-flex items-center justify-center">
                       1
                     </span>
-                    <span>Select {selectedGender === 'gents' ? 'Gents' : 'Ladies'} Service</span>
+                    <span>Select {selectedGender === 'gents' ? 'Gents' : 'Ladies'} Services</span>
                   </h3>
-                  <span className="text-[11px] sm:text-[12px] text-[#424844]">Includes diagnosis & style</span>
+                  <span className="text-[11px] sm:text-[12px] text-[#424844] font-medium">
+                    {selectedServices.length} selected • Tap to select multiple
+                  </span>
                 </div>
+
+                {/* Selected Services Tags / Pills */}
+                {selectedServices.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/40">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#424844]/80 mr-1 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-emerald-700">check_circle</span>
+                      Active:
+                    </span>
+                    {selectedServices.map((srv) => (
+                      <span
+                        key={`chip-${srv.id}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#112e20] text-white text-[12px] font-semibold shadow-xs"
+                      >
+                        <span>{srv.name}</span>
+                        {selectedServices.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleService(srv);
+                            }}
+                            className="w-4 h-4 rounded-full hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white cursor-pointer"
+                            title={`Remove ${srv.name}`}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <div className="relative">
                     <select
-                      value={selectedService.id}
-                      onChange={(e) => handleServiceChange(e.target.value)}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          handleServiceChange(e.target.value);
+                        }
+                      }}
                       className="w-full px-3.5 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-title-md text-[13.5px] sm:text-[15px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors shadow-sm"
                     >
-                      {availableHeadings.map((heading) => (
-                        <option key={heading.id} value={heading.id}>
-                          {heading.name}
-                        </option>
-                      ))}
+                      <option value="">+ Add or toggle another treatment...</option>
+                      {availableHeadings.map((heading) => {
+                        const isSel = isServiceSelected(heading.id);
+                        return (
+                          <option key={heading.id} value={heading.id}>
+                            {isSel ? `✓ ${heading.name} (Selected)` : `+ ${heading.name}`}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 
-                  {/* Quick Select Buttons (Swipeable on Mobile) */}
+                  {/* Multi-Select Service Pills Grid */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                     <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps whitespace-nowrap">
-                      Popular:
+                      Quick Pick:
                     </span>
-                    {availableHeadings.slice(0, 5).map((heading) => {
-                      const isSelected = selectedService.id === heading.id;
+                    {availableHeadings.slice(0, 6).map((heading) => {
+                      const isSelected = isServiceSelected(heading.id);
                       return (
                         <button
                           key={heading.id}
-                          onClick={() => setSelectedService(heading)}
-                          className={`px-3 py-1 rounded-full text-[11.5px] sm:text-[12px] font-medium whitespace-nowrap transition-all cursor-pointer ${
+                          onClick={() => toggleService(heading)}
+                          className={`px-3 py-1 rounded-full text-[11.5px] sm:text-[12px] font-medium whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
                             isSelected
                               ? 'bg-[#112e20] text-white font-semibold shadow-sm'
                               : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:border-[#112e20]/40'
                           }`}
                           type="button"
                         >
-                          {heading.name}
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{heading.name}</span>
                         </button>
                       );
                     })}
@@ -2342,7 +2433,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9eb6aa] font-label-caps">
-                      Selected Treatment
+                      Selected Treatment{selectedServices.length > 1 ? `s (${selectedServices.length})` : ''}
                     </p>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#18392d] text-[#fe753c] text-[10px] font-bold uppercase tracking-wider border border-[#fe753c]/30">
                       <span className="material-symbols-outlined text-[13px]">
@@ -2353,10 +2444,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                   </div>
                   <div>
                     <h3 className="text-white font-headline-sm text-[18px] sm:text-[22px] font-semibold tracking-normal font-display-hero">
-                      {selectedService.name}
+                      {combinedServiceName}
                     </h3>
                     <p className="text-[12px] text-[#9eb6aa] mt-0.5">
-                      {selectedService.categoryLabel} • {selectedArtisan}
+                      {selectedServices.map((s) => s.categoryLabel).filter((v, i, a) => a.indexOf(v) === i).join(', ')} • {selectedArtisan}
                     </p>
                   </div>
                 </div>
@@ -2392,7 +2483,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                         Estimated Duration
                       </span>
                     </div>
-                    <span className="text-[12.5px] font-bold text-white">{selectedService.duration} Minutes</span>
+                    <span className="text-[12.5px] font-bold text-white">{combinedDuration} Minutes</span>
                   </div>
 
                   {notes.trim() && (

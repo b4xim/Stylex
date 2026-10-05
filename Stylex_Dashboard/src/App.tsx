@@ -17,6 +17,7 @@ import {
   SystemRole,
   AdminNotification,
   StoreNotice,
+  SlotCapacityConfig,
 } from './types';
 import {
   INITIAL_APPOINTMENTS,
@@ -50,6 +51,7 @@ import { ClientsView } from './components/ClientsView';
 import { ConciergeView } from './components/ConciergeView';
 import { SettingsView } from './components/SettingsView';
 import { SiteAnalyticsView } from './components/SiteAnalyticsView';
+import { DeveloperSettingsView } from './components/DeveloperSettingsView';
 import { AdminSignIn } from './components/AdminSignIn';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { UserModal } from './components/modals/UserModal';
@@ -380,6 +382,15 @@ export default function App() {
       badge: 'Special Notice',
       buttonText: 'Got It',
     };
+  });
+
+  // Slot Capacity per Gender Configuration (DEVELOPER)
+  const [slotCapacityConfig, setSlotCapacityConfig] = useState<SlotCapacityConfig>(() => {
+    return safeParse<SlotCapacityConfig>('stylex_slot_capacity_config', {
+      defaultGents: 3,
+      defaultLadies: 3,
+      slotOverrides: {},
+    });
   });
 
   // Modals state
@@ -803,6 +814,11 @@ export default function App() {
               setStoreNotice(normalized);
               safeSetItem('stylex_store_notice', JSON.stringify(normalized));
             }
+          }
+
+          if (liveSettings.slotCapacityConfig && typeof liveSettings.slotCapacityConfig === 'object') {
+            setSlotCapacityConfig(liveSettings.slotCapacityConfig);
+            safeSetItem('stylex_slot_capacity_config', JSON.stringify(liveSettings.slotCapacityConfig));
           }
         }
       } catch (e) {
@@ -2055,6 +2071,22 @@ export default function App() {
     }
   };
 
+  const handleSaveSlotCapacityConfig = async (newConfig: SlotCapacityConfig) => {
+    setSlotCapacityConfig(newConfig);
+    safeSetItem('stylex_slot_capacity_config', JSON.stringify(newConfig));
+
+    try {
+      if (!DashboardApi.getToken()) await DashboardApi.silentLogin();
+      await DashboardApi.updateSettings({
+        slotCapacityConfig: newConfig,
+      });
+      addToast('success', 'Capacity Settings Saved', 'Time slot limits per gender updated successfully.');
+    } catch (e) {
+      console.warn('API sync warning for slot capacity:', e);
+      addToast('warning', 'Saved Locally', 'Saved to browser cache. Failed to sync to cloud.');
+    }
+  };
+
   const handleToggleDarkMode = (enabled: boolean) => {
     setSettings((prev) => ({ ...prev, darkMode: enabled }));
     addToast(
@@ -2479,6 +2511,16 @@ export default function App() {
 
           {currentTab === 'site-analytics' && isDeveloper && (
             <SiteAnalyticsView currentUser={currentUser} />
+          )}
+
+          {currentTab === 'developer-settings' && isDeveloper && (
+            <DeveloperSettingsView
+              settings={settings}
+              slotCapacityConfig={slotCapacityConfig}
+              onSaveSlotCapacityConfig={handleSaveSlotCapacityConfig}
+              onToggleMaintenanceMode={handleToggleMaintenanceMode}
+              currentUser={currentUser}
+            />
           )}
         </main>
       </div>

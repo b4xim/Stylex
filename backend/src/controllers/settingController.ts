@@ -55,6 +55,14 @@ export class SettingController {
           settingsMap.storeNotice.isActive === true || settingsMap.storeNotice.isActive === 'true';
       }
 
+      if (!settingsMap.slotCapacityConfig || typeof settingsMap.slotCapacityConfig !== 'object') {
+        settingsMap.slotCapacityConfig = {
+          defaultGents: 3,
+          defaultLadies: 3,
+          slotOverrides: {},
+        };
+      }
+
       res.status(200).json({ success: true, data: settingsMap });
     } catch (error) {
       next(error);
