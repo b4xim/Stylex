@@ -238,10 +238,16 @@ export default function App() {
 
   // Modals state
   const [confirmedBooking, setConfirmedBooking] = useState<BookingState | null>(null);
+  const [bookingSessionKey, setBookingSessionKey] = useState<number>(0);
   const [activeReel, setActiveReel] = useState<ReelItem | null>(null);
   const [activePortfolioItem, setActivePortfolioItem] = useState<PortfolioWork | null>(null);
 
   const [activeSection, setActiveSection] = useState<string>('home');
+
+  const handleBookingConfirmed = (booking: BookingState) => {
+    setConfirmedBooking(booking);
+    setBookingSessionKey((prev) => prev + 1);
+  };
 
   // Sync browser back/forward buttons
   useEffect(() => {
@@ -424,11 +430,12 @@ export default function App() {
           /* Dedicated Standalone /booking Page */
           <BookingPage
             selectedServiceId={selectedServiceId}
-            onConfirmBooking={(booking) => setConfirmedBooking(booking)}
+            onConfirmBooking={handleBookingConfirmed}
             onNavigateHome={() => navigate('/')}
             onScrollToSection={(sectionId) => navigate('/', sectionId)}
             isEngineActive={isBookingEngineActive}
             onTriggerPausedModal={() => setIsBookingPausedModalOpen(true)}
+            bookingKey={bookingSessionKey}
           />
         ) : (
           /* Full Homepage with All Curated Sections & In-Page Booking Card */
@@ -444,8 +451,9 @@ export default function App() {
 
             {/* In-Page Interactive Concierge Booking Engine (Preserved on Homepage) */}
             <BookingEngine
+              key={`booking-home-${bookingSessionKey}`}
               initialServiceId={selectedServiceId}
-              onConfirmBooking={(booking) => setConfirmedBooking(booking)}
+              onConfirmBooking={handleBookingConfirmed}
               isEngineActive={isBookingEngineActive}
               onTriggerPausedModal={() => setIsBookingPausedModalOpen(true)}
             />
@@ -474,9 +482,14 @@ export default function App() {
       {/* Modals */}
       <BookingModal
         booking={confirmedBooking}
-        onClose={() => setConfirmedBooking(null)}
+        onClose={() => {
+          setConfirmedBooking(null);
+          setBookingSessionKey((prev) => prev + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         onManageBooking={(token) => {
           setConfirmedBooking(null);
+          setBookingSessionKey((prev) => prev + 1);
           setManageBookingToken(token);
           setIsManageBookingOpen(true);
         }}

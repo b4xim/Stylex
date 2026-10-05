@@ -10,6 +10,7 @@ interface BookingPageProps {
   onScrollToSection: (sectionId: string) => void;
   isEngineActive?: boolean;
   onTriggerPausedModal?: () => void;
+  bookingKey?: number;
 }
 
 export const BookingPage: React.FC<BookingPageProps> = ({
@@ -18,6 +19,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
   onNavigateHome: _onNavigateHome,
   isEngineActive = true,
   onTriggerPausedModal,
+  bookingKey,
 }) => {
   return (
     <div className="w-full bg-[#f6faf7] min-h-screen">
@@ -69,6 +71,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
       {/* Main Interactive Booking Engine Card Section */}
       <section className="w-full relative z-20">
         <BookingEngine
+          key={`booking-page-${bookingKey || 0}`}
           initialServiceId={selectedServiceId}
           onConfirmBooking={onConfirmBooking}
           showHeader={false}

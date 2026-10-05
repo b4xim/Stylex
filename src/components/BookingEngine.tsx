@@ -1687,6 +1687,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           if (nameError) setNameError('');
                         }}
                         placeholder="Your full name"
+                        autoComplete="off"
                         required
                         className="w-full px-3 py-3 bg-transparent text-[#181d1b] text-[13.5px] placeholder-[#424844]/50 focus:outline-none font-medium"
                       />
@@ -1726,6 +1727,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           if (phoneError) setPhoneError('');
                         }}
                         placeholder="Mobile number"
+                        autoComplete="off"
                         required
                         className="w-full px-3 py-3 bg-transparent text-[#181d1b] text-[13.5px] placeholder-[#424844]/50 focus:outline-none font-medium"
                       />
@@ -1758,6 +1760,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           if (emailError) setEmailError('');
                         }}
                         placeholder="For calendar invite & confirmation"
+                        autoComplete="off"
                         className="w-full px-3 py-3 bg-transparent text-[#181d1b] text-[13.5px] placeholder-[#424844]/50 focus:outline-none font-medium"
                       />
                     </div>
