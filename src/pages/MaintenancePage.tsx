@@ -18,23 +18,12 @@ export const MaintenancePage: React.FC = () => {
 
       {/* Top Header / Brand Logo */}
       <header className="relative z-10 w-full py-6 px-6 sm:px-12 flex items-center justify-between border-b border-white/10 backdrop-blur-md bg-[#071a12]/60">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <img
             src={LOGO_URL}
             alt="StyleX Signature Salon"
-            className="h-10 w-auto object-contain brightness-110"
-            onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = 'none';
-            }}
+            className="h-8 sm:h-10 w-auto object-contain brightness-110"
           />
-          <div className="flex flex-col">
-            <span className="font-serif tracking-widest text-lg font-bold uppercase text-white leading-tight">
-              StyleX
-            </span>
-            <span className="text-[10px] tracking-widest uppercase text-[#a6d0be] font-medium">
-              Signature Salon • Tirur
-            </span>
-          </div>
         </div>
 
         {/* Live Status indicator */}
