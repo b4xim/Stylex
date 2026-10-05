@@ -158,7 +158,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   );
 
   const combinedServiceName = useMemo(
-    () => selectedServices.map((s) => s.name).join(' + '),
+    () => (selectedServices.length > 0 ? selectedServices.map((s) => s.name).join(' + ') : 'No Service Selected'),
     [selectedServices]
   );
 
@@ -168,9 +168,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     setSelectedServices((prev) => {
       const exists = prev.some((s) => s.id === heading.id);
       if (exists) {
-        if (prev.length <= 1) {
-          return prev; // keep at least 1 selected
-        }
         return prev.filter((s) => s.id !== heading.id);
       } else {
         return [...prev, heading];
@@ -409,6 +406,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [mobileCategoryFilter, setMobileCategoryFilter] = useState<string>('all');
 
   const goToMobileStep = (step: 1 | 2 | 3) => {
+    if ((step === 2 || step === 3) && selectedServices.length === 0) {
+      alert('Please select at least one service to continue.');
+      return;
+    }
     setMobileStep(step);
     const el = document.getElementById('booking-engine');
     if (el) {
@@ -807,6 +808,11 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const handleSubmit = async () => {
     if (!isEngineActive) {
       onTriggerPausedModal?.();
+      return;
+    }
+
+    if (!selectedServices || selectedServices.length === 0) {
+      alert('Please select at least one service to complete your reservation.');
       return;
     }
 
@@ -1256,24 +1262,43 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
                 {/* Bottom Continue Action Bar */}
                 <div className="pt-2 border-t border-[#c2c8c2]/40 space-y-2">
-                  <div className="bg-[#f0f5f1] rounded-xl p-2.5 flex items-center justify-between">
+                  <div className={`rounded-xl p-2.5 flex items-center justify-between transition-colors ${
+                    selectedServices.length === 0 ? 'bg-amber-50 border border-amber-200' : 'bg-[#f0f5f1]'
+                  }`}>
                     <div className="min-w-0 flex-1 pr-2">
                       <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#424844]/70">
-                        Selected Treatments ({selectedServices.length})
+                        {selectedServices.length === 0 ? 'No Treatment Selected' : `Selected Treatments (${selectedServices.length})`}
                       </p>
-                      <p className="text-[13px] font-bold text-[#112e20] truncate">{combinedServiceName}</p>
+                      <p className={`text-[13px] font-bold truncate ${
+                        selectedServices.length === 0 ? 'text-amber-800' : 'text-[#112e20]'
+                      }`}>
+                        {selectedServices.length === 0 ? 'Tap any service above to select' : combinedServiceName}
+                      </p>
                     </div>
-                    <span className="text-[11px] font-bold text-[#185341] bg-[#072f23]/10 px-2.5 py-1 rounded-full shrink-0">
-                      {selectedServices.length} Selected
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
+                      selectedServices.length === 0
+                        ? 'text-amber-800 bg-amber-200/60'
+                        : 'text-[#185341] bg-[#072f23]/10'
+                    }`}>
+                      {selectedServices.length === 0 ? 'Required' : `${selectedServices.length} Selected`}
                     </span>
                   </div>
 
                   <button
                     type="button"
+                    disabled={selectedServices.length === 0}
                     onClick={() => goToMobileStep(2)}
-                    className="w-full py-3.5 px-4 rounded-xl bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14px] shadow-[0_4px_16px_rgba(254,117,60,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                    className={`w-full py-3.5 px-4 rounded-xl font-bold text-[14px] transition-all flex items-center justify-center gap-2 ${
+                      selectedServices.length === 0
+                        ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed shadow-none'
+                        : 'bg-[#fe753c] hover:bg-[#e0622a] text-white shadow-[0_4px_16px_rgba(254,117,60,0.35)] cursor-pointer active:scale-98'
+                    }`}
                   >
-                    <span>Continue to Schedule ({selectedServices.length} Service{selectedServices.length > 1 ? 's' : ''})</span>
+                    <span>
+                      {selectedServices.length === 0
+                        ? 'Select at least 1 service to continue'
+                        : `Continue to Schedule (${selectedServices.length} Service${selectedServices.length > 1 ? 's' : ''})`}
+                    </span>
                     <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
                   </button>
                 </div>
@@ -1921,89 +1946,58 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     </span>
                     <span>Select {selectedGender === 'gents' ? 'Gents' : 'Ladies'} Services</span>
                   </h3>
-                  <span className="text-[11px] sm:text-[12px] text-[#424844] font-medium">
-                    {selectedServices.length} selected • Tap to select multiple
+                  <span className={`text-[12px] font-semibold transition-colors ${
+                    selectedServices.length === 0 ? 'text-amber-700 font-bold' : 'text-[#185341]'
+                  }`}>
+                    {selectedServices.length === 0
+                      ? 'Select at least 1 service'
+                      : `${selectedServices.length} selected (Tap to toggle)`}
                   </span>
                 </div>
 
-                {/* Selected Services Tags / Pills */}
-                {selectedServices.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/40">
-                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#424844]/80 mr-1 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px] text-emerald-700">check_circle</span>
-                      Active:
-                    </span>
-                    {selectedServices.map((srv) => (
-                      <span
-                        key={`chip-${srv.id}`}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#112e20] text-white text-[12px] font-semibold shadow-xs"
+                {/* Simple & Clean 2-Column Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {availableHeadings.map((heading) => {
+                    const isSelected = isServiceSelected(heading.id);
+                    return (
+                      <button
+                        key={heading.id}
+                        type="button"
+                        onClick={() => toggleService(heading)}
+                        className={`group p-3 rounded-xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#112e20] text-white border-[#112e20] shadow-sm ring-1 ring-[#112e20]'
+                            : 'bg-white hover:bg-[#f6faf7] border-[#c2c8c2]/60 hover:border-[#112e20]/40 text-[#181d1b]'
+                        }`}
                       >
-                        <span>{srv.name}</span>
-                        {selectedServices.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleService(srv);
-                            }}
-                            className="w-4 h-4 rounded-full hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white cursor-pointer"
-                            title={`Remove ${srv.name}`}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[13.5px] font-bold truncate ${
+                            isSelected ? 'text-white' : 'text-[#112e20]'
+                          }`}>
+                            {heading.name}
+                          </p>
+                          <p className={`text-[11px] truncate mt-0.5 ${
+                            isSelected ? 'text-[#caead5]' : 'text-[#525a55]'
+                          }`}>
+                            {heading.durationLabel || `${heading.duration} mins`} • ₹{heading.startingPrice || heading.price}
+                          </p>
+                        </div>
 
-                <div className="space-y-2">
-                  <div className="relative">
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          handleServiceChange(e.target.value);
-                        }
-                      }}
-                      className="w-full px-3.5 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-title-md text-[13.5px] sm:text-[15px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors shadow-sm"
-                    >
-                      <option value="">+ Add or toggle another treatment...</option>
-                      {availableHeadings.map((heading) => {
-                        const isSel = isServiceSelected(heading.id);
-                        return (
-                          <option key={heading.id} value={heading.id}>
-                            {isSel ? `✓ ${heading.name} (Selected)` : `+ ${heading.name}`}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  {/* Multi-Select Service Pills Grid */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#424844]/70 font-label-caps whitespace-nowrap">
-                      Quick Pick:
-                    </span>
-                    {availableHeadings.slice(0, 6).map((heading) => {
-                      const isSelected = isServiceSelected(heading.id);
-                      return (
-                        <button
-                          key={heading.id}
-                          onClick={() => toggleService(heading)}
-                          className={`px-3 py-1 rounded-full text-[11.5px] sm:text-[12px] font-medium whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
+                        {/* Checkbox indicator */}
+                        <div
+                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
                             isSelected
-                              ? 'bg-[#112e20] text-white font-semibold shadow-sm'
-                              : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:border-[#112e20]/40'
+                              ? 'bg-[#fe753c] text-white shadow-xs'
+                              : 'border-2 border-[#c2c8c2] group-hover:border-[#112e20]/50'
                           }`}
-                          type="button"
                         >
-                          <span>{isSelected ? '✓' : '+'}</span>
-                          <span>{heading.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                          {isSelected && (
+                            <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -2433,7 +2427,7 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9eb6aa] font-label-caps">
-                      Selected Treatment{selectedServices.length > 1 ? `s (${selectedServices.length})` : ''}
+                      Selected Treatment{selectedServices.length > 1 ? `s (${selectedServices.length})` : selectedServices.length === 1 ? ' (1)' : ''}
                     </p>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#18392d] text-[#fe753c] text-[10px] font-bold uppercase tracking-wider border border-[#fe753c]/30">
                       <span className="material-symbols-outlined text-[13px]">
@@ -2443,11 +2437,15 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-white font-headline-sm text-[18px] sm:text-[22px] font-semibold tracking-normal font-display-hero">
+                    <h3 className={`font-headline-sm text-[18px] sm:text-[22px] font-semibold tracking-normal font-display-hero ${
+                      selectedServices.length === 0 ? 'text-[#fe753c]' : 'text-white'
+                    }`}>
                       {combinedServiceName}
                     </h3>
                     <p className="text-[12px] text-[#9eb6aa] mt-0.5">
-                      {selectedServices.map((s) => s.categoryLabel).filter((v, i, a) => a.indexOf(v) === i).join(', ')} • {selectedArtisan}
+                      {selectedServices.length > 0
+                        ? `${selectedServices.map((s) => s.categoryLabel).filter((v, i, a) => a.indexOf(v) === i).join(', ')} • ${selectedArtisan}`
+                        : `Please select treatment(s) on the left • ${selectedArtisan}`}
                     </p>
                   </div>
                 </div>
