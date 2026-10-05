@@ -1,0 +1,28 @@
+# ==============================================================================
+# StyleX Signature Salon - Robots.txt
+# Flagship Luxury Salon: One Arcade, KG Padi Rd, Tirur, Kerala
+# Official Domain: https://stylexsalon.in
+# ==============================================================================
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /uploads/private/
+
+# Specific major search engine crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# Crawl optimization
+Crawl-delay: 1
+
+# XML Sitemap
+Sitemap: https://stylexsalon.in/sitemap.xml

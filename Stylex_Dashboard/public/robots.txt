@@ -1,0 +1,8 @@
+# ==============================================================================
+# StyleX Signature Salon - Admin Dashboard
+# Domain: https://dashboard.stylexsalon.in
+# Disallow all indexing and crawling for administrative control panel
+# ==============================================================================
+
+User-agent: *
+Disallow: /

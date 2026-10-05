@@ -9,8 +9,33 @@ server {
     listen 80;
     server_name stylexsalon.in www.stylexsalon.in dashboard.stylexsalon.in stylexsignaturesalon.in www.stylexsignaturesalon.in;
 
+    # ACME Challenge for Let's Encrypt SSL Certificates
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
+    }
+
+    # Security: Block hidden files & directories (.env, .git, etc.) on port 80
+    location ~ /\.(?!well-known) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Security: Block sensitive file extension probes on port 80
+    location ~* \.(env(\..*)?|git.*|bak|backup|old|conf|config|sql|ini|log|sh|tar|gz|zip)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Security: Block common scanner exploits on port 80
+    location ~* /(phpmyadmin|pma|wp-login|wp-admin|xmlrpc|\.aws|\.docker) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
     }
 
     location / {
@@ -42,6 +67,36 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
+
+    # Security: Block hidden files & directories (.env, .git, etc.)
+    location ~ /\.(?!well-known) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Security: Block sensitive file extension probes
+    location ~* \.(env(\..*)?|git.*|bak|backup|old|conf|config|sql|ini|log|sh|tar|gz|zip)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Security: Block common scanner exploits
+    location ~* /(phpmyadmin|pma|wp-login|wp-admin|xmlrpc|\.aws|\.docker) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Robots exclusion for dashboard
+    location = /robots.txt {
+        log_not_found off;
+        access_log off;
+    }
 
     # Compression
     gzip on;
@@ -103,6 +158,41 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
+
+    # Security: Block hidden files & directories (.env, .git, etc.)
+    location ~ /\.(?!well-known) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Security: Block sensitive file extension probes
+    location ~* \.(env(\..*)?|git.*|bak|backup|old|conf|config|sql|ini|log|sh|tar|gz|zip)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Security: Block common scanner exploits
+    location ~* /(phpmyadmin|pma|wp-login|wp-admin|xmlrpc|\.aws|\.docker) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        return 404;
+    }
+
+    # Robots & Sitemap
+    location = /robots.txt {
+        log_not_found off;
+        access_log off;
+    }
+
+    location = /sitemap.xml {
+        log_not_found off;
+        access_log off;
+    }
 
     # Compression
     gzip on;
