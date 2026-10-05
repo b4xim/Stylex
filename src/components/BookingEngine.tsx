@@ -1976,11 +1976,13 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           }`}>
                             {heading.name}
                           </p>
-                          <p className={`text-[11px] truncate mt-0.5 ${
-                            isSelected ? 'text-[#caead5]' : 'text-[#525a55]'
-                          }`}>
-                            {heading.durationLabel || `${heading.duration} mins`} • ₹{heading.startingPrice || heading.price}
-                          </p>
+                          {heading.tagline && (
+                            <p className={`text-[11px] truncate mt-0.5 ${
+                              isSelected ? 'text-[#caead5]' : 'text-[#525a55]'
+                            }`}>
+                              {heading.tagline}
+                            </p>
+                          )}
                         </div>
 
                         {/* Checkbox indicator */}
