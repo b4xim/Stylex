@@ -175,6 +175,46 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     });
   };
 
+  const handlePrimaryServiceChange = (serviceId: string) => {
+    if (!serviceId) {
+      setSelectedServices([]);
+      return;
+    }
+    const found = availableHeadings.find((h) => h.id === serviceId);
+    if (!found) return;
+    setSelectedServices((prev) => {
+      if (prev.length === 0) return [found];
+      const rest = prev.slice(1).filter((s) => s.id !== found.id);
+      return [found, ...rest];
+    });
+  };
+
+  const handleUpdateServiceAtIndex = (index: number, serviceId: string) => {
+    const found = availableHeadings.find((h) => h.id === serviceId);
+    if (!found) return;
+    setSelectedServices((prev) => {
+      const next = [...prev];
+      if (next.some((s, i) => i !== index && s.id === found.id)) {
+        return prev;
+      }
+      next[index] = found;
+      return next;
+    });
+  };
+
+  const handleRemoveServiceAtIndex = (index: number) => {
+    setSelectedServices((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddAdditionalService = () => {
+    const unselected = availableHeadings.find(
+      (h) => !selectedServices.some((s) => s.id === h.id)
+    );
+    if (unselected) {
+      setSelectedServices((prev) => [...prev, unselected]);
+    }
+  };
+
   const handleServiceChange = (headingId: string) => {
     const found = availableHeadings.find((h) => h.id === headingId);
     if (found) {
@@ -1944,62 +1984,109 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                     <span className="w-5 h-5 rounded-full bg-[#112e20]/10 text-[#112e20] text-[11px] font-bold inline-flex items-center justify-center">
                       1
                     </span>
-                    <span>Select {selectedGender === 'gents' ? 'Gents' : 'Ladies'} Services</span>
+                    <span>Select {selectedGender === 'gents' ? 'Gents' : 'Ladies'} Service</span>
                   </h3>
-                  <span className={`text-[12px] font-semibold transition-colors ${
-                    selectedServices.length === 0 ? 'text-amber-700 font-bold' : 'text-[#185341]'
-                  }`}>
-                    {selectedServices.length === 0
-                      ? 'Select at least 1 service'
-                      : `${selectedServices.length} selected (Tap to toggle)`}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {selectedServices.length > 0 ? (
+                      <span className="text-[11.5px] font-bold text-[#185341] bg-[#072f23]/10 px-2.5 py-0.5 rounded-full">
+                        {selectedServices.length} {selectedServices.length === 1 ? 'Service' : 'Services'} Selected
+                      </span>
+                    ) : (
+                      <span className="text-[11.5px] font-bold text-amber-700 bg-amber-500/15 px-2.5 py-0.5 rounded-full">
+                        Required
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Simple & Clean 2-Column Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {availableHeadings.map((heading) => {
-                    const isSelected = isServiceSelected(heading.id);
-                    return (
-                      <button
-                        key={heading.id}
-                        type="button"
-                        onClick={() => toggleService(heading)}
-                        className={`group p-3 rounded-xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#112e20] text-white border-[#112e20] shadow-sm ring-1 ring-[#112e20]'
-                            : 'bg-white hover:bg-[#f6faf7] border-[#c2c8c2]/60 hover:border-[#112e20]/40 text-[#181d1b]'
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[13.5px] font-bold truncate ${
-                            isSelected ? 'text-white' : 'text-[#112e20]'
-                          }`}>
-                            {heading.name}
-                          </p>
-                          {heading.tagline && (
-                            <p className={`text-[11px] truncate mt-0.5 ${
-                              isSelected ? 'text-[#caead5]' : 'text-[#525a55]'
-                            }`}>
-                              {heading.tagline}
-                            </p>
-                          )}
-                        </div>
+                {/* Primary Service Dropdown */}
+                <div className="space-y-2.5">
+                  <div className="relative flex items-center gap-2">
+                    <select
+                      value={selectedServices[0]?.id || ''}
+                      onChange={(e) => handlePrimaryServiceChange(e.target.value)}
+                      className={`w-full px-3.5 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[#f0f5f1] border text-[#181d1b] font-title-md text-[13.5px] sm:text-[15px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer transition-colors shadow-sm ${
+                        selectedServices.length === 0 ? 'border-amber-400 bg-amber-50/40' : 'border-[#c2c8c2]/60 hover:border-[#112e20]/40'
+                      }`}
+                    >
+                      <option value="">-- Select a Service --</option>
+                      {availableHeadings.map((heading) => (
+                        <option key={heading.id} value={heading.id}>
+                          {heading.name}
+                        </option>
+                      ))}
+                    </select>
 
-                        {/* Checkbox indicator */}
-                        <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected
-                              ? 'bg-[#fe753c] text-white shadow-xs'
-                              : 'border-2 border-[#c2c8c2] group-hover:border-[#112e20]/50'
-                          }`}
-                        >
-                          {isSelected && (
-                            <span className="material-symbols-outlined text-[14px] font-bold">check</span>
-                          )}
-                        </div>
+                    {selectedServices.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handlePrimaryServiceChange('')}
+                        className="px-2.5 py-2 text-[11px] font-bold text-[#525a55] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Deselect service"
+                      >
+                        Clear
                       </button>
+                    )}
+                  </div>
+
+                  {/* Additional Services List (revealed when user adds them) */}
+                  {selectedServices.slice(1).map((service, index) => {
+                    const actualIndex = index + 1;
+                    return (
+                      <div key={`extra-${service.id || actualIndex}`} className="space-y-1 pt-1">
+                        <div className="flex items-center justify-between px-1">
+                          <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844]/80 font-label-caps flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px] text-[#fe753c]">add_task</span>
+                            <span>Additional Service {selectedServices.length > 2 ? `#${actualIndex}` : ''}</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveServiceAtIndex(actualIndex)}
+                            className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={service.id}
+                            onChange={(e) => handleUpdateServiceAtIndex(actualIndex, e.target.value)}
+                            className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/60 text-[#181d1b] font-title-md text-[13px] sm:text-[14px] font-semibold focus:outline-none focus:border-[#112e20] cursor-pointer hover:border-[#112e20]/40 transition-colors shadow-xs"
+                          >
+                            {availableHeadings.map((heading) => {
+                              const isTaken = selectedServices.some((s, i) => i !== actualIndex && s.id === heading.id);
+                              return (
+                                <option key={heading.id} value={heading.id} disabled={isTaken}>
+                                  {heading.name} {isTaken ? '(Already selected)' : ''}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      </div>
                     );
                   })}
+
+                  {/* Add Additional Service Button */}
+                  {selectedServices.length > 0 && selectedServices.length < availableHeadings.length && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleAddAdditionalService}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12.5px] font-bold text-[#112e20] bg-[#112e20]/5 hover:bg-[#112e20]/10 border border-[#112e20]/20 hover:border-[#112e20]/40 transition-all cursor-pointer active:scale-98"
+                      >
+                        <span className="material-symbols-outlined text-[16px] text-[#fe753c]">add_circle</span>
+                        <span>+ Add Additional Service</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedServices.length === 0 && (
+                    <p className="text-[11.5px] text-amber-700 font-semibold px-1">
+                      Please select a service from the dropdown above to proceed.
+                    </p>
+                  )}
                 </div>
               </div>
 
