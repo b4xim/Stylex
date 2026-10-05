@@ -22,22 +22,25 @@ export const BookingPage: React.FC<BookingPageProps> = ({
   return (
     <div className="w-full bg-[#f6faf7] min-h-screen">
       {/* Dedicated Booking Hero Banner (Slimmed for Mobile, Rich for Desktop) */}
-      <section className="w-full bg-gradient-to-b from-[#031b14] via-[#05261d] to-[#041d16] text-white pt-8 sm:pt-14 pb-8 sm:pb-20 px-3 sm:px-6 lg:px-12 relative overflow-hidden border-b border-[#144e3d]">
+      <section className="w-full bg-gradient-to-b from-[#031b14] via-[#05261d] to-[#041d16] text-white pt-5 sm:pt-14 pb-5 sm:pb-20 px-3 sm:px-6 lg:px-12 relative overflow-hidden border-b border-[#144e3d]">
         {/* Subtle Decorative Ambient Glows */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#fe753c]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#185341]/25 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto relative z-10 space-y-3 sm:space-y-6 text-center">
+        <div className="max-w-5xl mx-auto relative z-10 space-y-2 sm:space-y-6 text-center">
+          {/* Mobile Badge */}
+          <div className="inline-flex sm:hidden items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-[#caead5] text-[10.5px] font-semibold border border-white/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#fe753c] animate-pulse"></span>
+            <span>Tirur Flagship • Pay at Salon</span>
+          </div>
+
           {/* Page Heading */}
-          <div className="space-y-1.5 sm:space-y-3">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight font-display-hero text-white leading-tight">
+          <div className="space-y-1 sm:space-y-3">
+            <h1 className="text-xl sm:text-4xl md:text-5xl font-extrabold tracking-tight font-display-hero text-white leading-tight">
               Reserve Your Appointment
             </h1>
             <p className="hidden sm:block max-w-2xl mx-auto text-[#caead5]/90 text-[14.5px] sm:text-[16px] leading-relaxed">
               Curate your look with our master stylists. Select your signature service, preferred stylist, and reservation slot with instantaneous WhatsApp confirmation.
-            </p>
-            <p className="sm:hidden text-[12px] text-[#caead5]/80 font-medium">
-              Tirur Outlet • Open Daily 10:00 AM – 1:00 AM • Pay at Salon
             </p>
           </div>
 
@@ -64,7 +67,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({
       </section>
 
       {/* Main Interactive Booking Engine Card Section */}
-      <section className="w-full relative z-20 -mt-4 sm:-mt-8">
+      <section className="w-full relative z-20 -mt-2 sm:-mt-8 px-2 sm:px-4 lg:px-8">
         <BookingEngine
           initialServiceId={selectedServiceId}
           onConfirmBooking={onConfirmBooking}
@@ -74,58 +77,36 @@ export const BookingPage: React.FC<BookingPageProps> = ({
         />
       </section>
 
-      {/* Mobile-Only Streamlined Trust & Support Strip (Clean, Fast, Zero Clutter) */}
-      <section className="md:hidden max-w-lg mx-auto px-4 pt-2 pb-10 space-y-3.5">
-        <div className="bg-white rounded-2xl p-4 border border-[#c2c8c2]/50 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-[12px] font-bold text-[#112e20] flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[17px] text-[#fe753c]">verified_user</span>
-              <span>StyleX Tirur Guarantee</span>
-            </div>
-            <span className="text-[10px] font-bold text-[#185341] uppercase tracking-wider bg-[#072f23]/10 px-2 py-0.5 rounded-full">
-              Zero Prepayment
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-[11px] text-[#424844] pt-1 border-t border-[#c2c8c2]/30">
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
-              <span>Pay at Tirur desk</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
-              <span>WhatsApp confirmation</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
-              <span>Free reschedule</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
-              <span>Open until 1:00 AM</span>
-            </div>
-          </div>
+      {/* Mobile-Only Streamlined Trust & Support Strip (Clean, Modern, Zero Clutter) */}
+      <section className="md:hidden max-w-sm mx-auto px-4 pt-2 pb-8 text-center space-y-2.5">
+        <div className="flex items-center justify-center gap-3 text-[11px] text-[#424844] font-medium">
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+            <span>Zero Prepayment</span>
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-emerald-600">check_circle</span>
+            <span>WhatsApp Confirmation</span>
+          </span>
         </div>
 
-        {/* 1-Tap Quick Action Buttons on Mobile */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <a
             href={`tel:${SALON_DATA.phoneNumberClean}`}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-white border border-[#c2c8c2]/60 text-[#112e20] font-semibold text-[12px] flex items-center justify-center gap-1.5 shadow-sm active:bg-gray-50"
+            className="flex-1 py-2 px-3 rounded-xl bg-white border border-[#c2c8c2]/50 text-[#112e20] font-semibold text-[11.5px] flex items-center justify-center gap-1.5 shadow-xs"
           >
-            <span className="material-symbols-outlined text-[16px] text-[#fe753c]">call</span>
+            <span className="material-symbols-outlined text-[15px] text-[#fe753c]">call</span>
             <span>Call Desk</span>
           </a>
           <a
             href={`https://wa.me/${SALON_DATA.whatsappNumber}?text=${encodeURIComponent('Hello StyleX Concierge, I need assistance with my booking.')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 py-2.5 px-3 rounded-xl bg-[#042018] text-white font-semibold text-[12px] flex items-center justify-center gap-1.5 shadow-sm active:bg-[#072f23]"
+            className="flex-1 py-2 px-3 rounded-xl bg-[#042018] text-white font-semibold text-[11.5px] flex items-center justify-center gap-1.5 shadow-xs"
           >
-            <svg className="w-[15px] h-[15px] fill-[#fe753c]" viewBox="0 0 24 24">
-              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-            </svg>
-            <span>WhatsApp</span>
+            <span className="material-symbols-outlined text-[15px] text-[#fe753c]">chat</span>
+            <span>WhatsApp Help</span>
           </a>
         </div>
       </section>

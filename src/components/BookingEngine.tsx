@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BOOKING_HEADINGS, SERVICES, MASTER_ARTISANS, TIME_SLOTS, SALON_DATA } from '../data/salonData.ts';
 import { BookingState } from '../types.ts';
 
@@ -363,6 +363,43 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
   const [showNotes, setShowNotes] = useState(false);
   const [showCalendarOnMobile, setShowCalendarOnMobile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modern Mobile 3-Step Wizard Navigation
+  const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
+  const [mobileCategoryFilter, setMobileCategoryFilter] = useState<string>('all');
+
+  const goToMobileStep = (step: 1 | 2 | 3) => {
+    setMobileStep(step);
+    const el = document.getElementById('booking-engine');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const mobileCategories = useMemo(() => {
+    const cats = new Set<string>();
+    availableHeadings.forEach((h) => {
+      if (h.category) cats.add(h.category);
+    });
+    return ['all', ...Array.from(cats)];
+  }, [availableHeadings]);
+
+  const getCategoryLabel = (cat: string) => {
+    switch (cat) {
+      case 'all': return 'All Services';
+      case 'hair': return 'Hair & Styling';
+      case 'skin': return 'Skin Care';
+      case 'spa': return 'Hair Spa';
+      case 'bridal': return 'Bridal Suite';
+      case 'groom': return 'Grooming';
+      default: return cat.charAt(0).toUpperCase() + cat.slice(1);
+    }
+  };
+
+  const filteredHeadings = useMemo(() => {
+    if (mobileCategoryFilter === 'all') return availableHeadings;
+    return availableHeadings.filter((h) => h.category === mobileCategoryFilter);
+  }, [availableHeadings, mobileCategoryFilter]);
 
   // Guest Contact Information (Full Name & Mobile compulsory, Email optional without "optional" label)
   const [fullName, setFullName] = useState('');
@@ -909,22 +946,66 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
 
           {/* Step Indicator Header Bar */}
           <div className="py-3 sm:py-6 border-b border-[#c2c8c2]/40 px-4 sm:px-8 bg-[#f0f5f1]/50">
-            {/* Mobile: Ultra-compact Modern Progress Bar */}
+            {/* Mobile: Interactive Modern Step Wizard Progress Bar */}
             <div className="flex sm:hidden items-center justify-between text-[11px] font-semibold text-[#112e20]">
-              <span className="flex items-center gap-1.5 text-[#112e20]">
-                <span className="w-5 h-5 rounded-full bg-[#112e20] text-white text-[10px] font-bold flex items-center justify-center">1</span>
+              <button
+                type="button"
+                onClick={() => goToMobileStep(1)}
+                className={`flex items-center gap-1.5 cursor-pointer transition-colors ${
+                  mobileStep === 1 ? 'text-[#112e20] font-bold' : 'text-emerald-700'
+                }`}
+              >
+                <span className={`w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center transition-all ${
+                  mobileStep === 1 ? 'bg-[#112e20] ring-2 ring-[#112e20]/30' : 'bg-emerald-600'
+                }`}>
+                  {mobileStep > 1 ? '✓' : '1'}
+                </span>
                 <span>Service</span>
-              </span>
+              </button>
+
               <span className="text-[#c2c8c2]">›</span>
-              <span className="flex items-center gap-1.5 text-[#fe753c]">
-                <span className="w-5 h-5 rounded-full bg-[#fe753c] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#fe753c]/30">2</span>
+
+              <button
+                type="button"
+                onClick={() => goToMobileStep(2)}
+                className={`flex items-center gap-1.5 cursor-pointer transition-colors ${
+                  mobileStep === 2 ? 'text-[#fe753c] font-bold' : mobileStep > 2 ? 'text-emerald-700' : 'text-[#424844]/60'
+                }`}
+              >
+                <span className={`w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center transition-all ${
+                  mobileStep === 2
+                    ? 'bg-[#fe753c] ring-2 ring-[#fe753c]/30'
+                    : mobileStep > 2
+                    ? 'bg-emerald-600'
+                    : 'bg-[#c2c8c2] text-[#424844]'
+                }`}>
+                  {mobileStep > 2 ? '✓' : '2'}
+                </span>
                 <span>Date & Time</span>
-              </span>
+              </button>
+
               <span className="text-[#c2c8c2]">›</span>
-              <span className="flex items-center gap-1.5 text-[#424844]/60">
-                <span className="w-5 h-5 rounded-full bg-[#e5e9e6] text-[#424844] text-[10px] font-bold flex items-center justify-center">3</span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedTime) goToMobileStep(3);
+                }}
+                className={`flex items-center gap-1.5 transition-colors ${
+                  selectedTime ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
+                } ${
+                  mobileStep === 3 ? 'text-[#112e20] font-bold' : 'text-[#424844]/60'
+                }`}
+              >
+                <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-all ${
+                  mobileStep === 3
+                    ? 'bg-[#112e20] text-white ring-2 ring-[#112e20]/30'
+                    : 'bg-[#e5e9e6] text-[#424844]'
+                }`}>
+                  3
+                </span>
                 <span>Confirm</span>
-              </span>
+              </button>
             </div>
 
             {/* Desktop: Full 3-column Step Display */}
@@ -970,8 +1051,738 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
             </div>
           </div>
 
-          {/* Interactive Booking Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 p-3.5 sm:p-6 lg:p-8 bg-[#f0f5f1]/40 items-stretch">
+          {/* ========================================================================= */}
+          {/* MOBILE VIEW: Streamlined, Ultra-Clean 3-Step Wizard (Visible on < lg) */}
+          {/* ========================================================================= */}
+          <div className="block lg:hidden">
+            {/* STEP 1: SELECT SERVICE */}
+            {mobileStep === 1 && (
+              <div className="p-4 sm:p-6 space-y-4">
+                {/* Department Toggle */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#112e20] flex items-center gap-1.5 font-label-caps">
+                      <span className="material-symbols-outlined text-[16px] text-[#fe753c]">storefront</span>
+                      <span>Department</span>
+                    </label>
+                    <span className="text-[10.5px] font-semibold text-[#185341] bg-[#072f23]/10 px-2.5 py-0.5 rounded-full">
+                      {selectedGender === 'gents' ? 'Gents Salon' : 'Ladies Lounge'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-[#f0f5f1] rounded-2xl border border-[#c2c8c2]/50">
+                    <button
+                      type="button"
+                      onClick={() => handleGenderChange('gents')}
+                      className={`py-2.5 px-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        selectedGender === 'gents'
+                          ? 'bg-[#112e20] text-white shadow-sm'
+                          : 'text-[#424844] hover:text-[#112e20]'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[19px]">man</span>
+                      <span className="text-[13.5px]">Gents</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleGenderChange('ladies')}
+                      className={`py-2.5 px-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        selectedGender === 'ladies'
+                          ? 'bg-[#112e20] text-white shadow-sm'
+                          : 'text-[#424844] hover:text-[#112e20]'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[19px]">woman</span>
+                      <span className="text-[13.5px]">Ladies</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category Filter Pills */}
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                    {mobileCategories.map((cat) => {
+                      const isCatSelected = mobileCategoryFilter === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setMobileCategoryFilter(cat)}
+                          className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                            isCatSelected
+                              ? 'bg-[#112e20] text-white shadow-xs'
+                              : 'bg-[#f0f5f1] text-[#424844] border border-[#c2c8c2]/50 hover:bg-[#e4ece6]'
+                          }`}
+                        >
+                          {getCategoryLabel(cat)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Touch-Friendly Services Cards */}
+                <div className="space-y-2.5 pt-1 max-h-[420px] overflow-y-auto pr-0.5">
+                  {filteredHeadings.map((heading) => {
+                    const isSelected = selectedService.id === heading.id;
+                    return (
+                      <div
+                        key={`m-${heading.id}`}
+                        onClick={() => setSelectedService(heading)}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative flex items-start justify-between gap-3 ${
+                          isSelected
+                            ? 'bg-[#0f2d22]/5 border-[#112e20] ring-2 ring-[#112e20]/25 shadow-xs'
+                            : 'bg-white border-[#c2c8c2]/50 hover:border-[#112e20]/30 hover:bg-[#fcfdfc]'
+                        }`}
+                      >
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <h4 className="text-[14.5px] font-bold text-[#112e20] leading-snug">
+                            {heading.name}
+                          </h4>
+
+                          {heading.tagline && (
+                            <p className="text-[11.5px] text-[#424844]/80 line-clamp-1">
+                              {heading.tagline}
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-2 pt-0.5 text-[12px]">
+                            <span className="font-extrabold text-[#112e20]">
+                              ₹{heading.price}
+                            </span>
+                            <span className="text-[#c2c8c2]">•</span>
+                            <span className="text-[#424844]/80 flex items-center gap-1 font-medium">
+                              <span className="material-symbols-outlined text-[13px] text-[#fe753c]">schedule</span>
+                              <span>{heading.duration} mins</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Radio Check Circle */}
+                        <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all mt-0.5 ${
+                          isSelected
+                            ? 'bg-[#fe753c] text-white shadow-xs'
+                            : 'border-2 border-[#c2c8c2]'
+                        }`}>
+                          {isSelected && (
+                            <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom Continue Action Bar */}
+                <div className="pt-2 border-t border-[#c2c8c2]/40 space-y-2">
+                  <div className="bg-[#f0f5f1] rounded-xl p-2.5 flex items-center justify-between">
+                    <div className="min-w-0 pr-2">
+                      <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#424844]/70">Selected Treatment</p>
+                      <p className="text-[13px] font-bold text-[#112e20] truncate">{selectedService.name}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[13.5px] font-extrabold text-[#112e20]">₹{selectedService.price}</p>
+                      <p className="text-[10.5px] text-[#424844]/80">{selectedService.duration} min</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => goToMobileStep(2)}
+                    className="w-full py-3.5 px-4 rounded-xl bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14px] shadow-[0_4px_16px_rgba(254,117,60,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <span>Continue to Schedule</span>
+                    <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: SELECT DATE & TIME & STYLIST */}
+            {mobileStep === 2 && (
+              <div className="p-4 sm:p-6 space-y-4">
+                {/* Quick Breadcrumb Switch */}
+                <div className="flex items-center justify-between pb-1.5 border-b border-[#c2c8c2]/30">
+                  <button
+                    type="button"
+                    onClick={() => goToMobileStep(1)}
+                    className="inline-flex items-center gap-1 text-[12px] font-bold text-[#185341] hover:text-[#112e20] cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                    <span>Change Service</span>
+                  </button>
+
+                  <span className="text-[11px] font-semibold text-[#112e20] bg-[#f0f5f1] px-2.5 py-0.5 rounded-full truncate max-w-[170px]">
+                    {selectedService.name}
+                  </span>
+                </div>
+
+                {/* 1. Date Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11.5px] font-bold uppercase tracking-wider text-[#112e20] flex items-center gap-1.5 font-label-caps">
+                      <span className="material-symbols-outlined text-[16px] text-[#fe753c]">calendar_month</span>
+                      <span>Select Date</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendarOnMobile(!showCalendarOnMobile)}
+                      className="text-[11px] font-bold text-[#fe753c] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                      <span>{showCalendarOnMobile ? 'Hide Calendar' : 'Full Month'}</span>
+                    </button>
+                  </div>
+
+                  {/* Horizontal Scrollable Day Cards */}
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {next7Days.map((item) => {
+                      const isSelected = selectedDay === item.dayNum && currentMonthIndex === item.monthIndex;
+                      const chipStatus = getBlackoutStatus(item.dayNum);
+                      const isChipClosed = chipStatus.isFullDayClosed;
+                      return (
+                        <button
+                          key={`m-day-${item.year}-${item.monthIndex}-${item.dayNum}`}
+                          type="button"
+                          disabled={isChipClosed}
+                          onClick={() => {
+                            setSelectedDay(item.dayNum);
+                            setCurrentMonthIndex(item.monthIndex);
+                            setCurrentYear(item.year);
+                          }}
+                          className={`flex-shrink-0 w-16 py-2.5 px-1 rounded-xl text-center transition-all cursor-pointer relative ${
+                            isSelected
+                              ? 'bg-[#112e20] text-white shadow-md ring-2 ring-[#fe753c]'
+                              : isChipClosed
+                              ? 'bg-red-50 text-red-500 border border-red-200 cursor-not-allowed opacity-60'
+                              : 'bg-[#f0f5f1] text-[#181d1b] border border-[#c2c8c2]/50 hover:bg-[#eaefeb]'
+                          }`}
+                        >
+                          <div className={`text-[10px] uppercase font-bold ${
+                            isSelected ? 'text-[#fe753c]' : isChipClosed ? 'text-red-500' : 'text-[#424844]/80'
+                          }`}>
+                            {item.dayLabel}
+                          </div>
+                          <div className="text-[15px] font-extrabold leading-tight mt-0.5">
+                            {item.dayNum}
+                          </div>
+                          <div className={`text-[9.5px] ${isSelected ? 'text-[#caead5]' : isChipClosed ? 'text-red-500 font-bold' : 'text-[#424844]/60'}`}>
+                            {isChipClosed ? 'Closed' : monthNames[item.monthIndex].slice(0, 3)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Full Month Calendar Matrix (Toggled on Mobile) */}
+                  {showCalendarOnMobile && (
+                    <div className="bg-[#f0f5f1] border border-[#c2c8c2]/40 rounded-2xl p-3.5 space-y-2 mt-2">
+                      <div className="flex items-center justify-between pb-2 border-b border-[#c2c8c2]/40">
+                        <span className="font-bold text-[14px] text-[#112e20]">
+                          {monthNames[currentMonthIndex]} {currentYear}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={handlePrevMonth}
+                            disabled={isCurrentOrPastMonth}
+                            type="button"
+                            className="w-7 h-7 rounded-full border border-[#c2c8c2]/50 flex items-center justify-center text-[#181d1b] disabled:opacity-30 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">chevron_left</span>
+                          </button>
+                          <button
+                            onClick={handleNextMonth}
+                            type="button"
+                            className="w-7 h-7 rounded-full border border-[#c2c8c2]/50 flex items-center justify-center text-[#181d1b] cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">chevron_right</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-7 text-center gap-1">
+                        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                          <span key={`hd-${i}`} className="text-[10px] font-bold text-[#424844]/70">
+                            {d}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1 text-center text-[12px]">
+                        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                          <span key={`pad-m-${i}`} className="h-7 text-[#424844]/20 flex items-center justify-center">
+                            •
+                          </span>
+                        ))}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                          const dNum = i + 1;
+                          const isSel = selectedDay === dNum;
+                          const dBlackout = getBlackoutStatus(dNum);
+                          const isClosed = dBlackout.isFullDayClosed;
+                          const todayO = getSalonNow();
+                          todayO.setHours(0, 0, 0, 0);
+                          const cellO = new Date(currentYear, currentMonthIndex, dNum);
+                          cellO.setHours(0, 0, 0, 0);
+                          const isP = cellO.getTime() < todayO.getTime();
+
+                          return (
+                            <button
+                              key={`m-cal-${dNum}`}
+                              type="button"
+                              disabled={isP || isClosed}
+                              onClick={() => {
+                                setSelectedDay(dNum);
+                                setShowCalendarOnMobile(false);
+                              }}
+                              className={`h-7 rounded-lg flex items-center justify-center text-[12px] font-semibold cursor-pointer ${
+                                isP
+                                  ? 'text-neutral-400 opacity-40 line-through'
+                                  : isSel
+                                  ? 'bg-[#112e20] text-white ring-2 ring-[#fe753c]'
+                                  : isClosed
+                                  ? 'text-red-500 bg-red-50/70 border border-red-200/50'
+                                  : 'text-[#181d1b] hover:bg-[#eaefeb]'
+                              }`}
+                            >
+                              {dNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Time Slots Section */}
+                <div className="space-y-3 pt-1 border-t border-[#c2c8c2]/30">
+                  {(() => {
+                    const currentBlackout = getBlackoutStatus(selectedDay);
+                    if (currentBlackout.isFullDayClosed) {
+                      return (
+                        <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-center">
+                          <span className="material-symbols-outlined text-[20px] text-red-600 mb-0.5">block</span>
+                          <p className="text-[12.5px] font-bold text-red-900">
+                            {currentBlackout.fullDayTitle || 'Salon Closed on This Date'}
+                          </p>
+                          <p className="text-[11px] text-red-700 mt-0.5">
+                            Please select an alternative date above to reserve your slot.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    const allSlotsPast = timeSlots.every((s) =>
+                      isSlotInPast(s, selectedDay, currentMonthIndex, currentYear)
+                    );
+
+                    const morningSlots = timeSlots.filter((slot) => {
+                      const v = parseHourToValue(slot);
+                      return v !== null && v < 17;
+                    });
+                    const eveningSlots = timeSlots.filter((slot) => {
+                      const v = parseHourToValue(slot);
+                      return v !== null && v >= 17;
+                    });
+
+                    const renderSlotItem = (slot: string) => {
+                      const isSelected = selectedTime === slot;
+                      const isSlotBlocked = currentBlackout.blockedSlots.includes(slot);
+                      const occ = slotOccupancy[slot];
+                      const bookedCount = occ?.bookedCount || 0;
+                      const isFull = isSlotBlocked || (occ ? !occ.isAvailable || occ.status === 'full' || bookedCount >= 3 : false);
+                      const isPast = isSlotInPast(slot, selectedDay, currentMonthIndex, currentYear);
+                      const isDisabled = isPast || isFull;
+                      const isFillingFast = !isDisabled && (occ ? occ.status === 'filling_fast' || bookedCount === 2 : false);
+
+                      return (
+                        <button
+                          key={`m-slot-${slot}`}
+                          type="button"
+                          disabled={isDisabled}
+                          onClick={() => setSelectedTime(slot)}
+                          className={`py-2.5 px-1 rounded-xl text-[12px] font-semibold transition-all text-center relative select-none cursor-pointer ${
+                            isFull
+                              ? 'bg-red-50/70 text-red-400 border border-red-200/80 cursor-not-allowed opacity-60'
+                              : isPast
+                              ? 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-40 line-through'
+                              : isSelected
+                              ? 'bg-[#fe753c] text-white font-bold shadow-md ring-2 ring-[#fe753c]/40 border-2 border-[#fe753c]'
+                              : isFillingFast
+                              ? 'bg-white text-amber-700 border-2 border-amber-400 hover:bg-amber-500 hover:text-white'
+                              : 'bg-white text-[#185341] border border-emerald-600/40 hover:bg-[#185341] hover:text-white'
+                          }`}
+                        >
+                          <span>{slot}</span>
+                          {isFillingFast && !isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 absolute top-1.5 right-1.5" />
+                          )}
+                        </button>
+                      );
+                    };
+
+                    return (
+                      <div className="space-y-3">
+                        {allSlotsPast && (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-1">
+                            <p className="text-[12px] font-bold text-amber-900">
+                              Today's Slots Have Concluded
+                            </p>
+                            <p className="text-[11px] text-amber-800">
+                              Please choose tomorrow to reserve your slot.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const tomorrow = new Date(getSalonNow());
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setSelectedDay(tomorrow.getDate());
+                                setCurrentMonthIndex(tomorrow.getMonth());
+                                setCurrentYear(tomorrow.getFullYear());
+                              }}
+                              className="mt-1 px-3 py-1 bg-[#112e20] text-white text-[11px] font-semibold rounded-lg hover:bg-[#185341]"
+                            >
+                              Reserve for Tomorrow
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Morning & Afternoon Group */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-[#424844] uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-[15px] text-amber-500">wb_sunny</span>
+                            <span>Day Slots (10 AM – 4 PM)</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {morningSlots.map(renderSlotItem)}
+                          </div>
+                        </div>
+
+                        {/* Evening & Night Group */}
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-[#424844] uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-[15px] text-indigo-500">nights_stay</span>
+                            <span>Evening Slots (5 PM – 12 AM)</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {eveningSlots.map(renderSlotItem)}
+                          </div>
+                        </div>
+
+                        {/* Status Legend */}
+                        <div className="flex items-center justify-between text-[10.5px] text-[#424844] pt-0.5 px-1">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span>Available</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                            <span>Filling Fast</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-red-400" />
+                            <span>Full</span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 3. Preferred Stylist */}
+                <div className="space-y-1.5 pt-2 border-t border-[#c2c8c2]/30">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#424844]">
+                      Preferred Stylist
+                    </label>
+                    <span className="text-[10px] text-[#424844]/70 bg-[#f0f5f1] px-2 py-0.5 rounded-full">
+                      Optional
+                    </span>
+                  </div>
+                  <select
+                    value={selectedArtisan}
+                    onChange={(e) => setSelectedArtisan(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#c2c8c2]/60 text-[#181d1b] text-[13px] font-medium focus:outline-none focus:border-[#112e20]"
+                  >
+                    <option value="Any Stylist">Any Stylist (Recommended - Fastest Seating)</option>
+                    {availableArtisans.map((a) => {
+                      const leaveStatus = getStylistLeaveStatus(a.name, a.id);
+                      return (
+                        <option
+                          key={`m-stylist-${a.id || a.name}`}
+                          value={a.name}
+                          disabled={leaveStatus.isUnavailable}
+                        >
+                          {a.name}{leaveStatus.isUnavailable ? ` • [${leaveStatus.notice}]` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* 4. Special Requests / Notes (Collapsible) */}
+                <div className="pt-1 border-t border-[#c2c8c2]/30">
+                  <button
+                    type="button"
+                    onClick={() => setShowNotes(!showNotes)}
+                    className="text-[12px] font-semibold text-[#185341] flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-[#fe753c]">
+                      {showNotes ? 'remove_circle_outline' : 'add_circle_outline'}
+                    </span>
+                    <span>{showNotes ? 'Hide special request' : 'Add special request or extra services (optional)'}</span>
+                  </button>
+                  {showNotes && (
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Mention any extra services or special requests..."
+                      rows={2}
+                      className="w-full mt-2 px-3 py-2 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-[12.5px] text-[#181d1b] resize-none focus:outline-none focus:border-[#112e20]"
+                    />
+                  )}
+                </div>
+
+                {/* Bottom Continue Action Bar */}
+                <div className="pt-2 border-t border-[#c2c8c2]/40 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToMobileStep(1)}
+                    className="py-3 px-3 rounded-xl bg-[#f0f5f1] text-[#112e20] font-bold text-[13px] border border-[#c2c8c2]/50 flex items-center justify-center cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!selectedTime}
+                    onClick={() => goToMobileStep(3)}
+                    className="flex-1 py-3.5 px-4 rounded-xl bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14px] shadow-[0_4px_16px_rgba(254,117,60,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <span>Continue to Your Details</span>
+                    <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: GUEST DETAILS & CONFIRMATION */}
+            {mobileStep === 3 && (
+              <div className="p-4 sm:p-6 space-y-4">
+                {/* Header Bar */}
+                <div className="flex items-center justify-between pb-1.5 border-b border-[#c2c8c2]/30">
+                  <button
+                    type="button"
+                    onClick={() => goToMobileStep(2)}
+                    className="inline-flex items-center gap-1 text-[12px] font-bold text-[#185341] hover:text-[#112e20] cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                    <span>Change Schedule</span>
+                  </button>
+                  <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    <span>Final Step</span>
+                  </span>
+                </div>
+
+                {/* Digital Reservation Pass (Luxury Card) */}
+                <div className="bg-[#071a14] text-white rounded-2xl p-4 border border-[#1d5644] shadow-md space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold tracking-wider text-[#fe753c]">
+                        {selectedGender === 'gents' ? 'Gents Salon' : 'Ladies Lounge'}
+                      </span>
+                      <h4 className="text-[15.5px] font-bold text-white font-display-hero">
+                        {selectedService.name}
+                      </h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[16px] font-extrabold text-[#fe753c]">₹{selectedService.price}</p>
+                      <p className="text-[10px] text-[#9eb6aa]">{selectedService.duration} mins</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[12px]">
+                    <div className="bg-[#0f2d22] p-2.5 rounded-xl border border-white/10 space-y-0.5">
+                      <span className="text-[9.5px] uppercase font-bold text-[#9eb6aa] block">Date</span>
+                      <p className="font-semibold text-white flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px] text-[#fe753c]">calendar_today</span>
+                        <span className="truncate">{dateString}</span>
+                      </p>
+                    </div>
+
+                    <div className="bg-[#0f2d22] p-2.5 rounded-xl border border-white/10 space-y-0.5">
+                      <span className="text-[9.5px] uppercase font-bold text-[#9eb6aa] block">Time Slot</span>
+                      <p className="font-semibold text-[#fe753c] flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">schedule</span>
+                        <span>{selectedTime}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-[#caead5] pt-0.5">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px] text-[#fe753c]">person</span>
+                      <span>Stylist: {selectedArtisan}</span>
+                    </span>
+                    <span className="bg-[#18392d] px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-400">
+                      Pay at Salon Desk
+                    </span>
+                  </div>
+                </div>
+
+                {/* Contact Inputs */}
+                <div className="space-y-3 pt-1">
+                  {/* Full Name */}
+                  <div className="space-y-1">
+                    <label className="text-[11.5px] font-bold uppercase tracking-wider text-[#112e20] flex items-center justify-between">
+                      <span>Your Name *</span>
+                    </label>
+                    <div className={`flex items-center rounded-xl bg-[#f0f5f1] border ${
+                      nameError ? 'border-red-500 ring-1 ring-red-400' : 'border-[#c2c8c2]/60'
+                    } focus-within:border-[#112e20] focus-within:bg-white transition-all overflow-hidden`}>
+                      <span className="pl-3 text-[#424844] flex items-center">
+                        <span className="material-symbols-outlined text-[18px]">person</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          if (nameError) setNameError('');
+                        }}
+                        placeholder="Your full name"
+                        required
+                        className="w-full px-3 py-3 bg-transparent text-[#181d1b] text-[13.5px] placeholder-[#424844]/50 focus:outline-none font-medium"
+                      />
+                    </div>
+                    {nameError && (
+                      <p className="text-[11px] text-red-600 font-medium flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">error</span>
+                        <span>{nameError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className="space-y-1">
+                    <label className="text-[11.5px] font-bold uppercase tracking-wider text-[#112e20] flex items-center justify-between">
+                      <span>WhatsApp / Mobile *</span>
+                    </label>
+                    <div className={`flex items-center rounded-xl bg-[#f0f5f1] border ${
+                      phoneError ? 'border-red-500 ring-1 ring-red-400' : 'border-[#c2c8c2]/60'
+                    } focus-within:border-[#112e20] focus-within:bg-white transition-all overflow-hidden`}>
+                      <select
+                        value={phoneCountryCode}
+                        onChange={(e) => setPhoneCountryCode(e.target.value)}
+                        className="py-3 pl-2.5 pr-1 bg-transparent text-[#181d1b] font-semibold text-[13px] focus:outline-none cursor-pointer border-r border-[#c2c8c2]/50"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={`m-cc-${c.code + c.country}`} value={c.code}>
+                            {c.flag} {c.code}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          if (phoneError) setPhoneError('');
+                        }}
+                        placeholder="Mobile number"
+                        required
+                        className="w-full px-3 py-3 bg-transparent text-[#181d1b] text-[13.5px] placeholder-[#424844]/50 focus:outline-none font-medium"
+                      />
+                    </div>
+                    {phoneError && (
+                      <p className="text-[11px] text-red-600 font-medium flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">error</span>
+                        <span>{phoneError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Email Address */}
+                  <div className="space-y-1">
+                    <label className="text-[11.5px] font-bold uppercase tracking-wider text-[#112e20] flex items-center justify-between">
+                      <span>Email Address</span>
+                      <span className="text-[10px] text-[#424844]/60 font-normal">Optional</span>
+                    </label>
+                    <div className={`flex items-center rounded-xl bg-[#f0f5f1] border ${
+                      emailError ? 'border-red-500 ring-1 ring-red-400' : 'border-[#c2c8c2]/60'
+                    } focus-within:border-[#112e20] focus-within:bg-white transition-all overflow-hidden`}>
+                      <span className="pl-3 text-[#424844] flex items-center">
+                        <span className="material-symbols-outlined text-[18px]">mail</span>
+                      </span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (emailError) setEmailError('');
+                        }}
+                        placeholder="For calendar invite & confirmation"
+                        className="w-full px-3 py-3 bg-transparent text-[#181d1b] text-[13.5px] placeholder-[#424844]/50 focus:outline-none font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trust Guarantee */}
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200/60 rounded-xl space-y-1 text-[11px] text-[#185341]">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                    <span className="material-symbols-outlined text-[15px] text-emerald-700">verified</span>
+                    <span>Instant Confirmation Guaranteed</span>
+                  </div>
+                  <p className="text-[10.5px] leading-tight text-emerald-800">
+                    Confirmation & Google Calendar sync dispatched directly to your WhatsApp. Pay at our Tirur outlet after your service.
+                  </p>
+                </div>
+
+                {/* Final Submit Button */}
+                <div className="pt-2 border-t border-[#c2c8c2]/40 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToMobileStep(2)}
+                    className="py-3.5 px-3 rounded-xl bg-[#f0f5f1] text-[#112e20] font-bold text-[13px] border border-[#c2c8c2]/50 flex items-center justify-center cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting || !isEngineActive}
+                    onClick={handleSubmit}
+                    className="flex-1 py-4 px-4 rounded-xl bg-[#fe753c] hover:bg-[#e0622a] text-white font-bold text-[14.5px] shadow-[0_4px_16px_rgba(254,117,60,0.45)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-60"
+                  >
+                    {!isEngineActive ? (
+                      <>
+                        <span className="material-symbols-outlined text-[18px]">pause_circle</span>
+                        <span>Booking Paused</span>
+                      </>
+                    ) : isSubmitting ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                        <span>Securing Slot...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Confirm Appointment</span>
+                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ========================================================================= */}
+          {/* DESKTOP VIEW: Full Side-by-Side Atelier Layout (Visible on >= lg) */}
+          {/* ========================================================================= */}
+          <div className="hidden lg:grid grid-cols-12 gap-5 sm:gap-6 p-6 lg:p-8 bg-[#f0f5f1]/40 items-stretch">
             {/* Left 7 Columns: Interactive Selectors */}
             <div className="lg:col-span-7 space-y-5 sm:space-y-7 p-4 sm:p-8 bg-white rounded-2xl sm:rounded-3xl border border-[#c2c8c2]/50 shadow-md">
               {/* Atelier Department Selector: Gents vs Ladies */}
