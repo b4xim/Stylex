@@ -728,6 +728,47 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
     }
   }, [selectedDay, currentMonthIndex, currentYear, liveBlockedSlots, weekSchedule]);
 
+  // Reset booking engine inputs and step navigation to initial clean defaults
+  const resetBookingForm = () => {
+    // 1. Reset guest contact details & validation errors
+    setFullName('');
+    setPhoneNumber('');
+    setEmail('');
+    setNameError('');
+    setPhoneError('');
+    setEmailError('');
+    setNotes('');
+    setShowNotes(false);
+    setSelectedArtisan('Any Stylist');
+
+    // 2. Reset date & time to current salon day & first valid time slot
+    const sNow = getSalonNow();
+    setCurrentMonthIndex(sNow.getMonth());
+    setCurrentYear(sNow.getFullYear());
+    setSelectedDay(sNow.getDate());
+    const firstValid = TIME_SLOTS.find(
+      (s) => !isSlotInPast(s, sNow.getDate(), sNow.getMonth(), sNow.getFullYear())
+    );
+    setSelectedTime(firstValid || TIME_SLOTS[0]);
+
+    // 3. Reset mobile wizard navigation
+    setMobileStep(1);
+    setMobileCategoryFilter('all');
+    setShowCalendarOnMobile(false);
+
+    // 4. Reset selected service to first available heading of the current department
+    const currentHeadings = BOOKING_HEADINGS.filter((h) => h.gender === selectedGender);
+    if (currentHeadings.length > 0) {
+      setSelectedService(currentHeadings[0]);
+    }
+
+    // 5. Smooth scroll back to top of the booking engine
+    const el = document.getElementById('booking-engine');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleSubmit = async () => {
     if (!isEngineActive) {
       onTriggerPausedModal?.();
@@ -880,6 +921,9 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         phone: cleanPhone,
         email: email.trim(),
       });
+
+      // Reset the booking engine state back to defaults
+      resetBookingForm();
     } catch (err) {
       console.error('Booking network error:', err);
       alert('Network error connecting to StyleX reservation servers. Please check your connection and try again.');
