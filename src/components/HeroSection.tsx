@@ -32,7 +32,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onReserveClick, onExpl
             </h1>
 
             <p className="text-[#c2cec6] text-[15px] sm:text-[16px] max-w-xl leading-relaxed font-normal">
-              Step inside Tirur’s premier signature salon at One Arcade, KG Padi Road. Experience professional haircutting, custom coloring, rejuvenating facials, and complete bridal packages.
+              Step inside StyleX, Tirur’s premier signature salon at One Arcade, KG Padi Road. Experience professional haircutting, hair botox, rejuvenating facials, and bespoke bridal &amp; groom makeovers in Tirur.
             </p>
 
             {/* CTAs */}
