@@ -124,7 +124,7 @@ export const MaintenancePage: React.FC = () => {
         </div>
 
         {/* ============================================================== */}
-        {/* Location Map Section */}
+        {/* Location Map Section (Matches Clientside Homepage Map) */}
         {/* ============================================================== */}
         <div className="w-full max-w-4xl flex flex-col items-center">
           <div className="flex items-center gap-2 mb-4">
@@ -134,60 +134,79 @@ export const MaintenancePage: React.FC = () => {
             </h3>
           </div>
 
-          {/* Interactive Map Card */}
-          <div className="w-full rounded-3xl overflow-hidden border border-[#185341] shadow-2xl bg-[#031b14] relative flex flex-col">
-            {/* Embedded Google Map Iframe for Real Interactive Navigation */}
-            <div className="w-full h-80 sm:h-96 relative">
-              <iframe
-                title="StyleX Signature Salon Location Map"
-                src={`https://maps.google.com/maps?q=${TIRUR_COORDINATES[0]},${TIRUR_COORDINATES[1]}&hl=en&z=16&output=embed`}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
+          {/* Interactive Luxury Brand Map Card */}
+          <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-[#031b14] border border-[#185341] min-h-[460px] sm:min-h-[520px] flex flex-col group select-none">
+            {/* Static High-Res Brand Cartography Map Image */}
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
+              <img
+                src="/images/tirur_map_snapshot.jpg"
+                alt="StyleX Signature Salon Tirur Location Map"
+                className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                 loading="lazy"
-                allowFullScreen
-                className="w-full h-full grayscale-[25%] contrast-[110%] opacity-90"
               />
+              {/* Subtle Luxury Vignette & Brand Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#021811]/90 via-[#021811]/25 to-[#021811]/70 pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(2,24,17,0.6)_100%)] pointer-events-none" />
             </div>
 
-            {/* Address Banner Below Map */}
-            <div className="p-5 sm:p-6 bg-[#042018] border-t border-[#185341] flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-[#fe753c]/20 border border-[#fe753c]/30 flex items-center justify-center text-[#fe753c] shrink-0 mt-0.5">
+            {/* Top Bar: Address & Verified Flagship Badge */}
+            <div className="relative z-10 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+              <div className="bg-[#031b14]/90 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border border-[#185341] flex items-center gap-2 text-white font-label-md text-[12px] sm:text-[13px] font-semibold">
+                <span className="material-symbols-outlined text-[#fe753c] text-[18px]">location_on</span>
+                <span className="truncate">{SALON_DATA.addressLine1}, {SALON_DATA.addressLine2}, Tirur</span>
+              </div>
+
+              <div className="bg-[#042018]/90 text-[#a6d0be] backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#185341] shadow-xl text-[11px] font-bold tracking-wide flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#fe753c] animate-pulse" />
+                <span>Tirur Outlet • Map Overview</span>
+              </div>
+            </div>
+
+            {/* Center Floating Salon Atelier Interactive Card (links to Maps) */}
+            <div className="relative z-10 my-auto mx-auto px-4 py-8 pointer-events-auto">
+              <a
+                href={SALON_DATA.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-5 sm:p-6 rounded-2xl bg-[#031b14]/90 backdrop-blur-xl border border-[#185341] shadow-[0_12px_40px_rgba(0,0,0,0.7)] text-center max-w-[280px] sm:max-w-[320px] transition-all transform hover:-translate-y-1 hover:border-[#fe753c] hover:shadow-[0_16px_45px_rgba(254,117,60,0.25)] group/card"
+              >
+                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-[#fe753c]/20 border border-[#fe753c]/40 flex items-center justify-center text-[#fe753c] group-hover/card:scale-110 transition-transform">
                   <span className="material-symbols-outlined text-[20px]">storefront</span>
                 </div>
-                <div>
-                  <h4 className="font-bold text-white text-sm sm:text-base">StyleX Signature Salon</h4>
-                  <p className="text-xs sm:text-sm text-[#a6d0be] mt-0.5">
-                    {SALON_DATA.addressLine1}, {SALON_DATA.addressLine2}, {SALON_DATA.city} - {SALON_DATA.pincode}
-                  </p>
-                  <p className="text-[11px] text-[#7ea696] mt-1">
-                    🕒 Hours: Open Daily 10:00 AM – 1:00 AM
-                  </p>
+                <h4 className="font-bold text-white text-[15px] sm:text-[16px]">StyleX Signature Salon</h4>
+                <p className="text-[#a6d0be] text-[12px] mt-0.5">One Arcade, Near Lenskart, KG Padi Rd</p>
+                <p className="text-[#7ea696] text-[11px] mt-1 font-medium">🕒 Open Daily 10:00 AM – 1:00 AM</p>
+                <div className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fe753c] text-white text-[11px] font-bold shadow-md">
+                  <span>Open in Google Maps</span>
+                  <span className="material-symbols-outlined text-[13px]">arrow_outward</span>
+                </div>
+              </a>
+            </div>
+
+            {/* Bottom Actions & Transit Information */}
+            <div className="relative z-10 p-4 sm:p-5 mt-auto flex flex-col sm:flex-row items-center justify-between gap-3 pointer-events-auto">
+              {/* Transit Distance Badges */}
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#caead5]/90">
+                <div className="bg-[#031b14]/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>Tirur Rly Stn: ~1.2 km</span>
+                </div>
+                <div className="bg-[#031b14]/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>Bus Stand: ~900 m</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-                <a
-                  href={directionsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs border border-white/20 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">directions</span>
-                  <span>Get Directions</span>
-                </a>
-
-                <a
-                  href={SALON_DATA.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#fe753c] hover:bg-[#e6632c] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
-                >
-                  <span>Google Maps</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
-                </a>
-              </div>
+              {/* Direct Directions Action */}
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#fe753c] hover:bg-[#e8652d] text-white font-label-md text-[12.5px] font-bold shadow-[0_4px_16px_rgba(254,117,60,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[17px]">directions</span>
+                <span>Get Driving Directions</span>
+              </a>
             </div>
           </div>
         </div>
