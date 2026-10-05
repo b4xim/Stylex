@@ -1148,10 +1148,6 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                           )}
 
                           <div className="flex items-center gap-2 pt-0.5 text-[12px]">
-                            <span className="font-extrabold text-[#112e20]">
-                              ₹{heading.price}
-                            </span>
-                            <span className="text-[#c2c8c2]">•</span>
                             <span className="text-[#424844]/80 flex items-center gap-1 font-medium">
                               <span className="material-symbols-outlined text-[13px] text-[#fe753c]">schedule</span>
                               <span>{heading.duration} mins</span>
@@ -1182,8 +1178,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       <p className="text-[13px] font-bold text-[#112e20] truncate">{selectedService.name}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[13.5px] font-extrabold text-[#112e20]">₹{selectedService.price}</p>
-                      <p className="text-[10.5px] text-[#424844]/80">{selectedService.duration} min</p>
+                      <p className="text-[12px] font-bold text-[#112e20] flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px] text-[#fe753c]">schedule</span>
+                        <span>{selectedService.duration} min</span>
+                      </p>
                     </div>
                   </div>
 
@@ -1598,8 +1596,10 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
                       </h4>
                     </div>
                     <div className="text-right">
-                      <p className="text-[16px] font-extrabold text-[#fe753c]">₹{selectedService.price}</p>
-                      <p className="text-[10px] text-[#9eb6aa]">{selectedService.duration} mins</p>
+                      <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[#caead5] bg-[#0f2d22] border border-white/10 px-2.5 py-1 rounded-full">
+                        <span className="material-symbols-outlined text-[13px] text-[#fe753c]">schedule</span>
+                        <span>{selectedService.duration} mins</span>
+                      </span>
                     </div>
                   </div>
 
