@@ -19,6 +19,7 @@ interface OverviewViewProps {
   onManageBooking: (apt: Appointment) => void;
   globalSearchQuery?: string;
   currentUser?: UserAccount;
+  lastSyncedTime?: Date;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -38,10 +39,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onManageBooking,
   globalSearchQuery = '',
   currentUser,
+  lastSyncedTime,
 }) => {
   const canDownloadRunSheet = currentUser ? (currentUser.role === 'Admin' || currentUser.role === 'Developer') : false;
   const [localSearch, setLocalSearch] = useState('');
   const [isScheduleCollapsedMobile, setIsScheduleCollapsedMobile] = useState(false);
+
+  const formattedSyncTime = useMemo(() => {
+    const d = lastSyncedTime || new Date();
+    return d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }, [lastSyncedTime]);
 
   const getInitialsBg = (initials: string) => {
     if (initials === 'CV') return 'bg-[#112e20] text-white';
@@ -128,7 +139,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-[11px] font-bold tracking-wider uppercase text-[#727973] dark:text-[#8d9e94]">
-                Tirur Outlet
+                Tirur Outlet • Sync {formattedSyncTime}
               </span>
             </div>
             <h1 className="font-serif text-2xl text-[#112e20] dark:text-white font-bold tracking-tight mt-0.5">
@@ -187,7 +198,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </span>
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#112e20]"></span>
             <span className="text-xs text-[#424844]">
-              Tirur Outlet • Station Sync 10:42 AM
+              Tirur Outlet • Station Sync {formattedSyncTime}
             </span>
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-[#112e20] tracking-tight">

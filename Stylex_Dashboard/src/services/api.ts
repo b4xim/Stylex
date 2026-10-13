@@ -206,7 +206,9 @@ export class DashboardApi {
   public static async getServices(): Promise<ServiceItem[]> {
     const res = await this.request('/services?includeInactive=true');
     const rawList = res?.data || [];
-    return rawList.map(mapBackendServiceToItem);
+    return rawList
+      .filter((s: any) => s.id !== 'legacy-archived-service')
+      .map(mapBackendServiceToItem);
   }
 
   public static async createService(service: any) {

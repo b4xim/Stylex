@@ -194,9 +194,16 @@ export default function App() {
     return Array.isArray(parsed) ? parsed : INITIAL_APPOINTMENTS;
   });
 
+  const [lastSyncedTime, setLastSyncedTime] = useState<Date>(() => new Date());
+
   const [services, setServices] = useState<ServiceItem[]>(() => {
     const parsed = safeParse<ServiceItem[]>('stylex_tirur_v6_services', INITIAL_SERVICES);
-    return Array.isArray(parsed) ? parsed : INITIAL_SERVICES;
+    const deletedIds = safeParse<string[]>('stylex_deleted_service_ids', []) || [];
+    const deletedSet = new Set(deletedIds);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((s) => !deletedSet.has(s.id));
+    }
+    return INITIAL_SERVICES;
   });
 
   const [weekSchedule, setWeekSchedule] = useState<DaySchedule[]>(() => {
@@ -586,8 +593,15 @@ export default function App() {
       // 2. Fetch live services
       try {
         const liveServices = await DashboardApi.getServices();
-        if (Array.isArray(liveServices) && liveServices.length > 0) {
-          setServices(liveServices);
+        if (Array.isArray(liveServices)) {
+          const deletedIds = safeParse<string[]>('stylex_deleted_service_ids', []) || [];
+          const deletedSet = new Set(deletedIds);
+          const filtered = liveServices.filter((s) => !deletedSet.has(s.id));
+          setServices(filtered);
+          try {
+            safeSetItem('stylex_tirur_v6_services', JSON.stringify(filtered));
+            safeSetItem('stylex_services', JSON.stringify(filtered));
+          } catch {}
         }
       } catch (e) {
         console.warn('Live services fetch:', e);
@@ -841,6 +855,7 @@ export default function App() {
 
       // Mark initial load completed
       isInitialDataLoadedRef.current = true;
+      setLastSyncedTime(new Date());
     } catch (err) {
       console.warn('Live data sync encountered an error:', err);
     }
@@ -992,6 +1007,7 @@ export default function App() {
               }
             }
           } catch {}
+          setLastSyncedTime(new Date());
         } catch {}
       }, 15000);
       return () => clearInterval(interval);
@@ -1453,6 +1469,10 @@ export default function App() {
     setServices(updated);
 
     try {
+      const deletedIds = safeParse<string[]>('stylex_deleted_service_ids', []) || [];
+      if (deletedIds.includes(service.id)) {
+        safeSetItem('stylex_deleted_service_ids', JSON.stringify(deletedIds.filter((x) => x !== service.id)));
+      }
       safeSetItem('stylex_tirur_v6_services', JSON.stringify(updated));
       safeSetItem('stylex_services', JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
@@ -1505,6 +1525,10 @@ export default function App() {
     setServices(updated);
 
     try {
+      const deletedIds = safeParse<string[]>('stylex_deleted_service_ids', []) || [];
+      if (!deletedIds.includes(id)) {
+        safeSetItem('stylex_deleted_service_ids', JSON.stringify([...deletedIds, id]));
+      }
       safeSetItem('stylex_tirur_v6_services', JSON.stringify(updated));
       safeSetItem('stylex_services', JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
@@ -2364,6 +2388,7 @@ export default function App() {
               onManageBooking={(apt) => setManagedAppointment(apt)}
               globalSearchQuery={globalSearchQuery}
               currentUser={currentUser}
+              lastSyncedTime={lastSyncedTime}
             />
           )}
 

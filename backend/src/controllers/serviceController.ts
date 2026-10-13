@@ -7,7 +7,9 @@ export class ServiceController {
     try {
       const { gender, category, includeInactive } = req.query;
 
-      const whereClause: any = {};
+      const whereClause: any = {
+        id: { not: 'legacy-archived-service' },
+      };
       if (includeInactive !== 'true') {
         whereClause.isActive = true;
       }
@@ -129,15 +131,44 @@ export class ServiceController {
   public static async deleteService(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string;
-      // Soft-delete by setting isActive to false
-      await prisma.service.update({
+
+      // 1. Check if any existing bookings reference this service
+      const bookingCount = await prisma.booking.count({
+        where: { serviceId: id },
+      });
+
+      if (bookingCount > 0) {
+        // Ensure a hidden archived placeholder service exists to maintain FK integrity
+        const archiveService = await prisma.service.upsert({
+          where: { id: 'legacy-archived-service' },
+          update: { isActive: false },
+          create: {
+            id: 'legacy-archived-service',
+            name: 'Archived Service',
+            category: 'hair',
+            gender: 'unisex',
+            durationMins: 30,
+            price: 0,
+            isActive: false,
+            description: 'Historical service archived',
+          },
+        });
+
+        // Repoint historical bookings to the archived placeholder
+        await prisma.booking.updateMany({
+          where: { serviceId: id },
+          data: { serviceId: archiveService.id },
+        });
+      }
+
+      // 2. Permanently delete the service from the catalog
+      await prisma.service.deleteMany({
         where: { id },
-        data: { isActive: false },
       });
 
       res.status(200).json({
         success: true,
-        message: 'Service deactivated successfully',
+        message: 'Service deleted permanently from catalog',
       });
     } catch (error) {
       next(error);
