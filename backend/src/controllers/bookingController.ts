@@ -407,9 +407,144 @@ export class BookingController {
         },
       });
 
+      // If status changed to CANCELLED, send salon cancellation notification via WhatsApp & Email
+      if (status === 'CANCELLED') {
+        const fullPhone = updated.guestPhone?.replace(/[^0-9]/g, '') || `91${updated.customer.phone}`;
+        WhatsAppService.sendBookingCancelled({
+          customerName: updated.guestName || updated.customer.name,
+          customerPhone: fullPhone,
+          bookingRef: updated.bookingRef,
+          serviceName: updated.service.name,
+          date: updated.date,
+          timeSlot: updated.timeSlot,
+          cancelledBySalon: true,
+          reason: notes || 'Cancelled by salon reception',
+        }).catch((e) => console.error('WhatsApp salon cancellation error:', e));
+
+        const clientEmail = updated.guestEmail || updated.customer.email;
+        if (clientEmail) {
+          EmailService.sendBookingCancelled({
+            toEmail: clientEmail,
+            customerName: updated.guestName || updated.customer.name,
+            bookingRef: updated.bookingRef,
+            serviceName: updated.service.name,
+            date: updated.date,
+            timeSlot: updated.timeSlot,
+          }).catch((e) => console.error('Email cancellation error:', e));
+        }
+      }
+
       res.status(200).json({
         success: true,
         message: `Booking updated to ${status || 'new state'}`,
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Admin: Update booking details (date, time, stylist, status, notes)
+   */
+  public static async updateBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const { date, timeSlot, stylistId, status, notes, paymentStatus } = req.body;
+
+      const existing = await prisma.booking.findUnique({
+        where: { id },
+        include: { customer: true, service: true, stylist: true },
+      });
+
+      if (!existing) {
+        throw new AppError('Booking not found', 404);
+      }
+
+      let targetStylistId = existing.stylistId;
+      if (stylistId !== undefined) {
+        targetStylistId = stylistId || null;
+      }
+
+      const isRescheduled = (date && date !== existing.date) || (timeSlot && timeSlot !== existing.timeSlot) || (stylistId !== undefined && stylistId !== existing.stylistId);
+      const isCancellation = status === 'CANCELLED' && existing.status !== 'CANCELLED';
+
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: {
+          ...(date ? { date } : {}),
+          ...(timeSlot ? { timeSlot } : {}),
+          ...(stylistId !== undefined ? { stylistId: targetStylistId } : {}),
+          ...(status ? { status } : {}),
+          ...(paymentStatus ? { paymentStatus } : {}),
+          ...(notes !== undefined ? { notes } : {}),
+        },
+        include: { customer: true, service: true, stylist: true },
+      });
+
+      const fullPhone = updated.guestPhone?.replace(/[^0-9]/g, '') || `91${updated.customer.phone}`;
+      const clientEmail = updated.guestEmail || updated.customer.email;
+
+      if (isCancellation) {
+        WhatsAppService.sendBookingCancelled({
+          customerName: updated.guestName || updated.customer.name,
+          customerPhone: fullPhone,
+          bookingRef: updated.bookingRef,
+          serviceName: updated.service.name,
+          date: updated.date,
+          timeSlot: updated.timeSlot,
+          cancelledBySalon: true,
+          reason: notes || 'Cancelled by salon reception',
+        }).catch((e) => console.error('WhatsApp salon cancellation error:', e));
+
+        if (clientEmail) {
+          EmailService.sendBookingCancelled({
+            toEmail: clientEmail,
+            customerName: updated.guestName || updated.customer.name,
+            bookingRef: updated.bookingRef,
+            serviceName: updated.service.name,
+            date: updated.date,
+            timeSlot: updated.timeSlot,
+          }).catch((e) => console.error('Email cancellation error:', e));
+        }
+      } else if (isRescheduled && updated.status !== 'CANCELLED') {
+        const rawAppUrl = env.APP_URL || '';
+        const clientPortalUrl = (!rawAppUrl || rawAppUrl.includes('localhost:5000') || rawAppUrl.includes('127.0.0.1'))
+          ? 'https://stylexsalon.in'
+          : rawAppUrl.replace(/\/+$/, '');
+        const manageUrl = `${clientPortalUrl}/?manage=${updated.managementToken || updated.bookingRef}`;
+
+        WhatsAppService.sendBookingRescheduled({
+          bookingRef: updated.bookingRef,
+          customerName: updated.guestName || updated.customer.name,
+          customerPhone: fullPhone,
+          serviceName: updated.service.name,
+          date: updated.date,
+          timeSlot: updated.timeSlot,
+          total: updated.total,
+          stylistName: updated.stylist?.name,
+          manageUrl,
+          updatedBySalon: true,
+        }).catch((e) => console.error('WhatsApp salon update error:', e));
+
+        if (clientEmail) {
+          EmailService.sendBookingRescheduled({
+            toEmail: clientEmail,
+            customerName: updated.guestName || updated.customer.name,
+            bookingRef: updated.bookingRef,
+            serviceName: updated.service.name,
+            date: updated.date,
+            timeSlot: updated.timeSlot,
+            total: updated.total,
+            stylistName: updated.stylist?.name,
+            manageUrl,
+          }).catch((e) => console.error('Email reschedule notification error:', e));
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Booking updated successfully',
         data: updated,
       });
     } catch (error) {

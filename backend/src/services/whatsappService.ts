@@ -12,6 +12,7 @@ export interface BookingNotificationPayload {
   total: number;
   stylistName?: string;
   manageUrl?: string;
+  updatedBySalon?: boolean;
 }
 
 export class WhatsAppService {
@@ -128,6 +129,9 @@ export class WhatsAppService {
     try {
       const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
       const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
+      const isSalon = payload.updatedBySalon;
+      const title = isSalon ? `🔄 *StyleX Appointment Updated by Salon!*` : `🔄 *StyleX Appointment Rescheduled!*`;
+      const greeting = isSalon ? `Your reservation has been updated by the salon reception.` : `Your reservation has been successfully updated.`;
 
       const response = await axios.post(
         url,
@@ -138,13 +142,13 @@ export class WhatsAppService {
           type: 'text',
           text: {
             preview_url: false,
-            body: `🔄 *StyleX Appointment Rescheduled!*\n\n` +
+            body: `${title}\n\n` +
               `Dear *${payload.customerName}*,\n` +
-              `Your reservation has been successfully updated.\n\n` +
+              `${greeting}\n\n` +
               `🔖 *Booking Ref:* ${payload.bookingRef}\n` +
               `💇 *Service:* ${payload.serviceName}\n` +
-              `📅 *New Date:* ${payload.date}\n` +
-              `⏰ *New Time:* ${payload.timeSlot}\n` +
+              `📅 *Date:* ${payload.date}\n` +
+              `⏰ *Time:* ${payload.timeSlot}\n` +
               `${payload.stylistName ? `👤 *Stylist:* ${payload.stylistName}\n` : ''}\n` +
               (payload.manageUrl ? `📲 *View / Manage:* ${payload.manageUrl}\n\n` : '') +
               `📍 *Location:* StyleX Flagship, One Arcade, Tirur\n` +
@@ -231,7 +235,7 @@ export class WhatsAppService {
    * Sends an automated cancellation notification via WhatsApp Bot or Meta Cloud API
    */
   public static async sendBookingCancelled(
-    payload: { customerName: string; customerPhone: string; bookingRef: string; serviceName: string; date: string; timeSlot: string }
+    payload: { customerName: string; customerPhone: string; bookingRef: string; serviceName: string; date: string; timeSlot: string; cancelledBySalon?: boolean; reason?: string }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (WhatsAppBotService.isConnected()) {
       const botRes = await WhatsAppBotService.sendBookingCancelled(payload);
@@ -243,13 +247,17 @@ export class WhatsAppService {
     const phoneId = env.WHATSAPP_PHONE_NUMBER_ID;
 
     if (!token || !phoneId) {
-      console.log(`ℹ️ [WhatsApp Service] Cancellation notification logged for ${payload.customerPhone} (Ref: ${payload.bookingRef})`);
+      console.log(`ℹ️ [WhatsApp Service] Cancellation notification logged for ${payload.customerPhone} (Ref: ${payload.bookingRef}, cancelledBySalon: ${!!payload.cancelledBySalon})`);
       return { success: true, messageId: `SIMULATED_CANCEL_${Date.now()}` };
     }
 
     try {
       const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
       const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
+      const isSalon = payload.cancelledBySalon;
+      const title = isSalon ? `❌ *StyleX Appointment Cancelled by Salon*` : `❌ *StyleX Appointment Cancelled*`;
+      const actionText = isSalon ? `has been *cancelled by the salon*.` : `has been cancelled.`;
+      const reasonPart = payload.reason ? `*Reason:* ${payload.reason}\n\n` : '';
 
       const response = await axios.post(
         url,
@@ -260,10 +268,11 @@ export class WhatsAppService {
           type: 'text',
           text: {
             preview_url: false,
-            body: `❌ *StyleX Appointment Cancelled*\n\n` +
+            body: `${title}\n\n` +
               `Dear *${payload.customerName}*,\n` +
-              `Your reservation (${payload.bookingRef}) for *${payload.serviceName}* on ${payload.date} at ${payload.timeSlot} has been cancelled.\n\n` +
-              `If you wish to book a new appointment in the future, visit us at: https://stylexsalon.in/booking\n\n` +
+              `Your reservation (${payload.bookingRef}) for *${payload.serviceName}* on ${payload.date} at ${payload.timeSlot} ${actionText}\n\n` +
+              reasonPart +
+              `If you wish to reschedule or have any questions, please contact our reception at +91 96561 11149 or visit: https://stylexsalon.in/booking\n\n` +
               `We hope to welcome you soon!\n` +
               `StyleX Signature Salon Tirur • +91 96561 11149`,
           },

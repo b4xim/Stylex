@@ -70,6 +70,38 @@ export const getWhatsAppManageUrl = (
 };
 
 /**
+ * Generates direct WhatsApp cancellation notification message from salon
+ */
+export const getWhatsAppCancelledBySalonUrl = (
+  phone: string,
+  clientName?: string,
+  serviceName?: string,
+  dateStr?: string,
+  time?: string,
+  bookingRef?: string,
+  reason?: string
+): string => {
+  if (!phone) return 'https://wa.me/';
+  const digits = phone.replace(/[^0-9]/g, '');
+  let cleanPhone = digits;
+  if (digits.length === 10) {
+    cleanPhone = `91${digits}`;
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    cleanPhone = `91${digits.slice(1)}`;
+  }
+
+  const message =
+    `❌ *StyleX Signature Salon — Appointment Cancelled by Salon*\n\n` +
+    `Dear ${clientName || 'Valued Guest'},\n` +
+    `Your reservation (${bookingRef || ''}) for ${serviceName || 'your appointment'}${dateStr ? ` on ${dateStr}` : ''}${time ? ` at ${time}` : ''} has been *cancelled by the salon*.\n\n` +
+    (reason ? `*Reason:* ${reason}\n\n` : '') +
+    `For any assistance or to reschedule at your convenience, please call our reception at +91 96561 11149 or visit:\nhttps://stylexsalon.in/booking\n\n` +
+    `StyleX Signature Salon Tirur • +91 96561 11149`;
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+};
+
+/**
  * Official SVG WhatsApp icon component
  */
 export const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (

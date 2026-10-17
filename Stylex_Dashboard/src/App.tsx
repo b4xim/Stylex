@@ -1282,13 +1282,26 @@ export default function App() {
     }
   };
 
-  const handleUpdateBooking = (updated: Appointment) => {
+  const handleUpdateBooking = async (updated: Appointment) => {
     setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
     addToast(
       'success',
       'Booking Updated',
       `Reservation for ${updated.clientName} updated successfully.`
     );
+
+    try {
+      const foundStylist = stylists.find((s) => s.name === updated.stylistName);
+      await DashboardApi.updateBooking(updated.id, {
+        date: updated.dateStr,
+        timeSlot: updated.time,
+        stylistId: foundStylist?.id,
+        status: updated.status,
+        notes: updated.notes,
+      });
+    } catch (err) {
+      console.warn('Backend API update booking failed:', err);
+    }
   };
 
   const handleCancelBooking = async (aptId: string, reason?: string) => {
@@ -1394,27 +1407,52 @@ export default function App() {
       window.dispatchEvent(new Event('storage'));
     } catch {}
 
+    const defaultAvatar = 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&q=80&w=200';
+    const avatarToSave = updated.avatar || defaultAvatar;
+    const specialtyToSave = updated.specialty || updated.role || 'Master Hair Stylist';
+
     try {
       if (exists) {
         await DashboardApi.updateStylist(updated.id, {
           name: updated.name,
           role: updated.role,
           gender: updated.gender || 'both',
-          specialty: updated.specialty,
-          imageUrl: updated.avatar,
+          specialty: specialtyToSave,
+          imageUrl: avatarToSave,
+          isActive: updated.isAvailableToday,
         });
       } else {
         await DashboardApi.createStylist({
-          id: updated.id || updated.name.toLowerCase().replace(/\s+/g, '-'),
+          id: updated.id || updated.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           name: updated.name,
           role: updated.role,
           gender: updated.gender || 'both',
-          specialty: updated.specialty || 'Master Hair Stylist',
-          imageUrl: updated.avatar,
+          specialty: specialtyToSave,
+          imageUrl: avatarToSave,
+          isActive: updated.isAvailableToday,
         });
       }
     } catch (err) {
       console.warn('Backend API stylist save error:', err);
+    }
+  };
+
+  const handleToggleStylistAvailability = async (id: string) => {
+    const current = stylists.find((s) => s.id === id);
+    if (!current) return;
+    const nextVal = !current.isAvailableToday;
+    const nextStylists = stylists.map((s) => (s.id === id ? { ...s, isAvailableToday: nextVal } : s));
+    setStylists(nextStylists);
+    try {
+      safeSetItem('stylex_tirur_v6_stylists', JSON.stringify(nextStylists));
+      safeSetItem('stylex_stylists', JSON.stringify(nextStylists));
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
+
+    try {
+      await DashboardApi.updateStylist(id, { isActive: nextVal });
+    } catch (err) {
+      console.warn('Backend API stylist availability update error:', err);
     }
   };
 
@@ -2435,6 +2473,7 @@ export default function App() {
               onAddStylist={handleOpenAddStylist}
               onEditStylist={handleOpenEditStylist}
               onDeleteStylist={handleDeleteStylist}
+              onToggleStylistAvailability={handleToggleStylistAvailability}
               globalSearchQuery={globalSearchQuery}
               currentUser={currentUser}
             />

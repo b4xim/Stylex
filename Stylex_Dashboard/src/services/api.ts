@@ -194,6 +194,13 @@ export class DashboardApi {
     });
   }
 
+  public static async updateBooking(id: string, data: { date?: string; timeSlot?: string; stylistId?: string; status?: string; notes?: string }) {
+    return this.request(`/bookings/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   public static async resendWhatsApp(id: string) {
     return this.request(`/bookings/${id}/resend-whatsapp`, {
       method: 'POST',
@@ -624,6 +631,7 @@ export function mapBackendServiceToItem(s: any): ServiceItem {
     durationMin: s.durationMins || 45,
     description: s.description || '',
     showOnWebsite: s.isActive ?? true,
+    gender: s.gender === 'unisex' ? 'both' : (s.gender || 'both'),
   };
 }
 

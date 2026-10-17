@@ -11,6 +11,7 @@ interface ArtisansViewProps {
   onAddStylist: () => void;
   onEditStylist: (stylist: Stylist) => void;
   onDeleteStylist: (id: string) => void;
+  onToggleStylistAvailability?: (id: string) => void;
   globalSearchQuery?: string;
   currentUser?: UserAccount;
 }
@@ -24,6 +25,7 @@ export const ArtisansView: React.FC<ArtisansViewProps> = ({
   onAddStylist,
   onEditStylist,
   onDeleteStylist,
+  onToggleStylistAvailability,
   globalSearchQuery = '',
   currentUser,
 }) => {
@@ -52,6 +54,9 @@ export const ArtisansView: React.FC<ArtisansViewProps> = ({
     setArtisanList((prev) =>
       prev.map((s) => (s.id === id ? { ...s, isAvailableToday: !s.isAvailableToday } : s))
     );
+    if (onToggleStylistAvailability) {
+      onToggleStylistAvailability(id);
+    }
   };
 
   const filteredLeaves = stylistLeaves.filter((l) => {

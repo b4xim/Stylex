@@ -35,13 +35,15 @@ export class StylistController {
 
   public static async createStylist(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id, name, role, gender = 'both', specialty, bio, imageUrl, rating = 4.9, experience } = req.body;
+      const { id, name, role, gender = 'both', specialty, bio, imageUrl, rating = 4.9, experience, isActive = true } = req.body;
 
-      if (!name || !role || !specialty || !imageUrl) {
-        throw new AppError('Name, role, specialty, and imageUrl are required', 400);
+      if (!name || !role) {
+        throw new AppError('Name and role are required', 400);
       }
 
       const slugId = id || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const finalImageUrl = imageUrl || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&q=80&w=200';
+      const finalSpecialty = specialty || role || 'Master Hair Stylist';
 
       const stylist = await prisma.stylist.create({
         data: {
@@ -49,12 +51,12 @@ export class StylistController {
           name,
           role,
           gender,
-          specialty,
+          specialty: finalSpecialty,
           bio,
-          imageUrl,
-          rating: parseFloat(rating),
+          imageUrl: finalImageUrl,
+          rating: typeof rating === 'string' ? parseFloat(rating) : rating,
           experience,
-          isActive: true,
+          isActive: typeof isActive === 'boolean' ? isActive : true,
         },
       });
 

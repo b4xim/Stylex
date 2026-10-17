@@ -14,6 +14,7 @@ export interface WhatsAppNotificationPayload {
   total: number;
   stylistName?: string;
   manageUrl?: string;
+  updatedBySalon?: boolean;
 }
 
 export interface WhatsAppBotStatus {
@@ -323,15 +324,23 @@ export class WhatsAppBotService {
 
     try {
       const chatId = this.formatChatId(payload.customerPhone);
+      const isSalon = payload.updatedBySalon;
+      const title = isSalon
+        ? `🔄 *StyleX Signature Salon — Appointment Updated by Salon* 🔄`
+        : `🔄 *StyleX Signature Salon — Appointment Rescheduled* 🔄`;
+      const greeting = isSalon
+        ? `Your reservation details have been updated by our salon team:`
+        : `Your appointment has been updated to your requested schedule:`;
+
       const text =
-        `🔄 *StyleX Signature Salon — Appointment Rescheduled* 🔄\n\n` +
+        `${title}\n\n` +
         `── ✦ ──\n\n` +
         `🔖 Booking Reference: *${payload.bookingRef}*\n\n` +
         `Dear *${payload.customerName}*,\n` +
-        `Your appointment has been updated to your requested schedule:\n\n` +
+        `${greeting}\n\n` +
         `💇 *Service:* ${payload.serviceName}\n` +
-        `📅 *New Date:* ${payload.date}\n` +
-        `⏰ *New Time Slot:* ${payload.timeSlot} IST\n` +
+        `📅 *Date:* ${payload.date}\n` +
+        `⏰ *Time Slot:* ${payload.timeSlot} IST\n` +
         `${payload.stylistName ? `✂️ *Stylist:* ${payload.stylistName}\n` : ''}` +
         (payload.manageUrl ? `\n📲 *View or Adjust Online:*\n${payload.manageUrl}\n` : '') +
         `\n📍 *Salon Address:* One Arcade, Near Lenskart, KG Padi Rd, Tirur\n` +
@@ -387,7 +396,7 @@ export class WhatsAppBotService {
    * Sends automated cancellation confirmation
    */
   public static async sendBookingCancelled(
-    payload: { customerPhone: string; customerName: string; bookingRef: string; serviceName: string; date: string; timeSlot: string }
+    payload: { customerPhone: string; customerName: string; bookingRef: string; serviceName: string; date: string; timeSlot: string; cancelledBySalon?: boolean; reason?: string }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (!this.isClientConnected || !this.client) {
       return { success: false, error: 'WhatsApp bot is not connected' };
@@ -395,13 +404,19 @@ export class WhatsAppBotService {
 
     try {
       const chatId = this.formatChatId(payload.customerPhone);
+      const isSalon = payload.cancelledBySalon;
+      const title = isSalon ? '❌ *StyleX Signature Salon — Appointment Cancelled by Salon*' : '❌ *StyleX Signature Salon — Appointment Cancelled*';
+      const actionText = isSalon ? 'has been *cancelled by the salon*.' : 'has been cancelled.';
+      const reasonLine = payload.reason ? `\n*Reason:* ${payload.reason}\n` : '';
+
       const text =
-        `❌ *StyleX Signature Salon — Appointment Cancelled*\n` +
+        `${title}\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `🔖 Reference: *${payload.bookingRef}*\n\n` +
         `Dear *${payload.customerName}*,\n` +
-        `Your appointment for *${payload.serviceName}* on ${payload.date} at ${payload.timeSlot} has been cancelled.\n\n` +
-        `If you would like to book a future session at any time, please visit:\n` +
+        `Your appointment for *${payload.serviceName}* on ${payload.date} at ${payload.timeSlot} ${actionText}\n` +
+        `${reasonLine}\n` +
+        `If you would like to book another time slot, please visit:\n` +
         `https://stylexsalon.in/booking\n\n` +
         `📞 *Salon Helpline:* +91 96561 11149`;
 

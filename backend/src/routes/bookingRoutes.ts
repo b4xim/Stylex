@@ -14,6 +14,7 @@ router.patch('/manage/:token/cancel', BookingController.cancelBooking);
 
 // Dashboard endpoints (resilient auth)
 router.get('/', optionalAuthenticateToken, BookingController.listBookings);
+router.patch('/:id', optionalAuthenticateToken, BookingController.updateBooking);
 router.patch('/:id/status', optionalAuthenticateToken, BookingController.updateBookingStatus);
 router.delete('/:id', optionalAuthenticateToken, BookingController.deleteBooking);
 router.post('/:id/resend-whatsapp', optionalAuthenticateToken, BookingController.resendWhatsApp);
