@@ -23,6 +23,9 @@ export interface Appointment {
   clientInitials: string;
   clientTier?: 'VIP Platinum' | 'VIP Gold' | 'VIP Member' | 'New Guest' | 'Standard';
   serviceName: string;
+  serviceId?: string;
+  stylistId?: string;
+  gender?: 'gents' | 'ladies';
   station: string;
   stylistName: string;
   stylistAvatar: string;

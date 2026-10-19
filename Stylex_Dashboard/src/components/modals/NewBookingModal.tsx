@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Appointment, ServiceItem, Stylist, StylistLeave, BlackoutDate } from '../../types';
+import { BOOKING_HEADINGS, matchesStylistGender } from '../../data/bookingHeadings';
 
 interface NewBookingModalProps {
   isOpen: boolean;
@@ -22,11 +23,15 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   onAddBooking,
   initialDate,
 }) => {
+  const [selectedGender, setSelectedGender] = useState<'gents' | 'ladies'>('gents');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  const [selectedServiceId, setSelectedServiceId] = useState(services[0]?.id || '');
-  const [selectedStylistId, setSelectedStylistId] = useState(stylists[0]?.id || '');
+  
+  // Initialize with first heading of gents
+  const defaultHeading = BOOKING_HEADINGS.find((h) => h.gender === 'gents');
+  const [selectedServiceId, setSelectedServiceId] = useState(defaultHeading?.id || '');
+  const [selectedStylistId, setSelectedStylistId] = useState(''); // "" = Any Available Stylist
   const [time, setTime] = useState('11:00 AM');
   const todayYMD = new Date().toISOString().split('T')[0];
   const [dateStr, setDateStr] = useState(initialDate || todayYMD);
@@ -34,8 +39,50 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const [slotOccupancy, setSlotOccupancy] = useState<Record<string, { bookedCount: number; maxCapacity: number; status: 'available' | 'filling_fast' | 'full'; isAvailable: boolean }>>({});
 
   const targetDateYMD = dateStr.toLowerCase() === 'today' ? todayYMD : dateStr;
-  const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
-  const selectedStylist = stylists.find((s) => s.id === selectedStylistId) || stylists[0];
+
+  // Headings and custom services matching selected gender
+  const availableHeadings = BOOKING_HEADINGS.filter((h) => h.gender === selectedGender);
+  const customServices = services.filter((s) => {
+    // Only include services that aren't already represented by a canonical heading
+    const isHeading = BOOKING_HEADINGS.some((h) => h.id === s.id || h.name.toLowerCase() === s.name.toLowerCase());
+    if (isHeading) return false;
+    if (!s.gender || s.gender === 'both') return true;
+    return s.gender === selectedGender;
+  });
+
+  // Stylists matching selected gender
+  const availableStylists = stylists.filter((st) => matchesStylistGender(st.gender, selectedGender));
+
+  // Resolved selected service details
+  const selectedHeading = BOOKING_HEADINGS.find((h) => h.id === selectedServiceId);
+  const selectedCustomService = services.find((s) => s.id === selectedServiceId);
+  const currentServiceName = selectedHeading?.name || selectedCustomService?.name || availableHeadings[0]?.name || 'Hair Cut / Styling';
+  const currentDurationMin = selectedHeading?.duration || selectedCustomService?.durationMin || 35;
+  const currentPrice = selectedHeading?.startingPrice || selectedCustomService?.price || 250;
+
+  // Resolved selected stylist
+  const selectedStylist = stylists.find((s) => s.id === selectedStylistId);
+
+  // Handle gender switch
+  const handleGenderToggle = (newGender: 'gents' | 'ladies') => {
+    if (newGender === selectedGender) return;
+    setSelectedGender(newGender);
+
+    const firstHeading = BOOKING_HEADINGS.find((h) => h.gender === newGender);
+    if (firstHeading) {
+      setSelectedServiceId(firstHeading.id);
+    }
+
+    // Check if currently selected stylist matches new gender
+    if (selectedStylistId) {
+      const isMatch = stylists.some(
+        (st) => st.id === selectedStylistId && matchesStylistGender(st.gender, newGender)
+      );
+      if (!isMatch) {
+        setSelectedStylistId(''); // Reset to Any Available Stylist
+      }
+    }
+  };
 
   React.useEffect(() => {
     if (isOpen) {
@@ -43,12 +90,12 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     }
   }, [isOpen, initialDate]);
 
+  // Fetch real-time slot occupancy matching selected gender & date
   React.useEffect(() => {
     if (!isOpen) return;
     const fetchSlots = async () => {
       try {
-        const gender = selectedService?.gender || 'gents';
-        const res = await fetch(`/api/bookings/slots?date=${targetDateYMD}&gender=${gender}`);
+        const res = await fetch(`/api/bookings/slots?date=${targetDateYMD}&gender=${selectedGender}`);
         if (!res.ok) return;
         const json = await res.json().catch(() => null);
         if (json?.success && Array.isArray(json?.data)) {
@@ -61,7 +108,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
       } catch {}
     };
     fetchSlots();
-  }, [isOpen, targetDateYMD, selectedServiceId]);
+  }, [isOpen, targetDateYMD, selectedGender]);
 
   if (!isOpen) return null;
 
@@ -99,17 +146,22 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
       .join('')
       .toUpperCase() || 'GT';
 
+    const defaultStation = selectedGender === 'gents' ? 'Styling Station Chair 1' : 'Ladies Salon Suite';
+
     const newBooking: Appointment = {
       id: `apt-${Date.now()}`,
       time,
-      durationMin: selectedService?.durationMin || 60,
+      durationMin: currentDurationMin,
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim() || '+91 96561 11149',
       clientEmail: clientEmail.trim() || undefined,
       clientInitials: initials,
-      serviceName: selectedService ? selectedService.name : 'Custom Atelier Ritual',
-      station: selectedStylist ? selectedStylist.station : 'Styling Station Chair 1',
-      stylistName: selectedStylist ? selectedStylist.name : 'Niya',
+      serviceName: currentServiceName,
+      serviceId: selectedHeading?.id || selectedCustomService?.id,
+      stylistId: selectedStylist?.id,
+      gender: selectedGender,
+      station: selectedStylist ? selectedStylist.station : defaultStation,
+      stylistName: selectedStylist ? selectedStylist.name : 'Any Available Stylist',
       stylistAvatar: selectedStylist ? selectedStylist.avatar : '',
       status: 'BOOKED',
       dateStr,
@@ -144,6 +196,39 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {/* Gender / Department Selection Toggle */}
+          <div>
+            <label className="block text-xs font-semibold text-[#181d1b] mb-1.5">
+              Client Department / Section
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleGenderToggle('gents')}
+                className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                  selectedGender === 'gents'
+                    ? 'bg-[#112e20] text-white border-[#112e20] shadow-sm ring-2 ring-[#112e20]/20'
+                    : 'bg-[#f0f5f1] text-[#424844] border-[#c2c8c2]/50 hover:bg-[#e4ebe5]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">man</span>
+                <span>Gents Salon</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGenderToggle('ladies')}
+                className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                  selectedGender === 'ladies'
+                    ? 'bg-[#9b4521] text-white border-[#9b4521] shadow-sm ring-2 ring-[#9b4521]/20'
+                    : 'bg-[#f0f5f1] text-[#424844] border-[#c2c8c2]/50 hover:bg-[#e4ebe5]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">woman</span>
+                <span>Ladies Salon</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#181d1b] mb-1">
@@ -199,18 +284,29 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#181d1b] mb-1">
-                Salon Ritual / Service
+                Salon Ritual / Service ({selectedGender === 'gents' ? 'Gents' : 'Ladies'})
               </label>
               <select
                 value={selectedServiceId}
                 onChange={(e) => setSelectedServiceId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-[#f0f5f1] border border-[#c2c8c2]/40 text-sm focus:bg-white focus:ring-1 focus:ring-[#112e20] outline-none"
               >
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.durationMin} mins)
-                  </option>
-                ))}
+                <optgroup label={`${selectedGender === 'gents' ? 'Gents' : 'Ladies'} Booking Catalog`}>
+                  {availableHeadings.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name} ({h.duration} mins) — ₹{h.startingPrice}
+                    </option>
+                  ))}
+                </optgroup>
+                {customServices.length > 0 && (
+                  <optgroup label="Additional Custom Services">
+                    {customServices.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.durationMin} mins) — ₹{s.price}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
             <div>
@@ -222,13 +318,14 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 onChange={(e) => setSelectedStylistId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-[#f0f5f1] border border-[#c2c8c2]/40 text-sm focus:bg-white focus:ring-1 focus:ring-[#112e20] outline-none"
               >
-                {stylists.map((st) => {
+                <option value="">Any Available Stylist (First Available)</option>
+                {availableStylists.map((st) => {
                   const hasLeave = stylistLeaves.find(
                     (l) => l.stylistId === st.id || l.stylistName.toLowerCase() === st.name.toLowerCase()
                   );
                   return (
                     <option key={st.id} value={st.id}>
-                      {st.name} ({st.role}){hasLeave ? ` • ⚠️ [On Leave: ${hasLeave.date}]` : ''}
+                      {st.name} — {st.role || st.station}{hasLeave ? ` • ⚠️ [On Leave: ${hasLeave.date}]` : ''}
                     </option>
                   );
                 })}
@@ -236,8 +333,8 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             </div>
           </div>
 
-            {/* Selected Stylist Leave Warning */}
-          {(() => {
+          {/* Selected Stylist Leave Warning */}
+          {selectedStylistId && (() => {
             const leave = stylistLeaves.find(
               (l) => l.stylistId === selectedStylistId || (selectedStylist?.name && l.stylistName && l.stylistName.toLowerCase() === selectedStylist.name.toLowerCase())
             );
@@ -269,7 +366,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-semibold text-[#181d1b]">
-                Time Slot (1-Hour)
+                Time Slot ({selectedGender === 'gents' ? 'Gents Section' : 'Ladies Salon Suite'})
               </label>
               {blockedSlotsList.length > 0 && (
                 <span className="text-[11px] text-amber-700 font-medium flex items-center gap-1">
@@ -365,11 +462,15 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           {/* Reservation Summary */}
           <div className="p-3.5 rounded-xl bg-[#f0f5f1] border border-[#dfe4e0] flex items-center justify-between text-xs">
             <div>
-              <span className="font-semibold text-[#112e20]">Estimated Duration: {selectedService?.durationMin || 60} mins</span>
-              <p className="text-[#424844] mt-0.5">Assigned to stylist station upon guest arrival</p>
+              <span className="font-semibold text-[#112e20]">
+                {currentServiceName} ({selectedGender === 'gents' ? 'Gents' : 'Ladies'})
+              </span>
+              <p className="text-[#424844] mt-0.5">
+                Estimated Duration: {currentDurationMin} mins • Starting from ₹{currentPrice}
+              </p>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-[#112e20] text-white font-bold text-[11px] uppercase tracking-wider">
-              Confirmed Booking
+              {selectedStylist ? selectedStylist.name : 'First Available Stylist'}
             </span>
           </div>
 

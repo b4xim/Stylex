@@ -1128,15 +1128,15 @@ export default function App() {
     playBookingNotificationSound();
 
     try {
-      const selectedService = services.find((s) => s.name === newBooking.serviceName) || services[0];
-      const selectedStylist = stylists.find((st) => st.name === newBooking.stylistName);
+      const selectedService = services.find((s) => s.id === newBooking.serviceId || s.name === newBooking.serviceName) || services[0];
+      const selectedStylist = stylists.find((st) => (newBooking.stylistId && st.id === newBooking.stylistId) || st.name === newBooking.stylistName);
 
       const res = await DashboardApi.createBooking({
         customerName: newBooking.clientName,
         customerPhone: newBooking.clientPhone.replace(/\s+/g, ''),
         customerEmail: newBooking.clientEmail,
-        serviceId: selectedService?.id || 'signature-service',
-        stylistId: selectedStylist?.id,
+        serviceId: newBooking.serviceId || selectedService?.id || 'signature-service',
+        stylistId: newBooking.stylistId || selectedStylist?.id,
         date: newBooking.dateStr,
         timeSlot: newBooking.time,
         notes: newBooking.notes,
@@ -1178,17 +1178,17 @@ export default function App() {
 
     try {
       const todayYMD = new Date().toISOString().split('T')[0];
-      const selectedService = services.find((s) => s.name === walkIn.serviceName) || services[0];
-      const selectedStylist = stylists.find((st) => st.name === walkIn.stylistName);
+      const selectedService = services.find((s) => s.id === walkIn.serviceId || s.name === walkIn.serviceName) || services[0];
+      const selectedStylist = stylists.find((st) => (walkIn.stylistId && st.id === walkIn.stylistId) || st.name === walkIn.stylistName);
 
       const res = await DashboardApi.createBooking({
         customerName: walkIn.clientName,
         customerPhone: walkIn.clientPhone.replace(/\s+/g, ''),
-        serviceId: selectedService?.id || 'signature-service',
-        stylistId: selectedStylist?.id,
+        serviceId: walkIn.serviceId || selectedService?.id || 'signature-service',
+        stylistId: walkIn.stylistId || selectedStylist?.id,
         date: todayYMD,
         timeSlot: walkIn.time,
-        notes: 'Walk-in Guest',
+        notes: walkIn.notes || 'Walk-in Guest',
         source: 'WALK_IN',
       });
 
