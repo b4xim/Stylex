@@ -267,13 +267,9 @@ export class WhatsAppBotService {
    * Formats Indian mobile numbers to WhatsApp JID (e.g. 919876543210@c.us)
    */
   private static formatChatId(phone: string): string {
-    let clean = phone.replace(/[^0-9]/g, '');
-    if (clean.length === 10) {
-      clean = `91${clean}`;
-    } else if (clean.length === 11 && clean.startsWith('0')) {
-      clean = `91${clean.slice(1)}`;
-    }
-    return `${clean}@c.us`;
+    const clean = phone.replace(/[^0-9]/g, '');
+    const tenDigits = clean.slice(-10);
+    return `91${tenDigits}@c.us`;
   }
 
   /**

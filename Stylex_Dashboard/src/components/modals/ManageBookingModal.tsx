@@ -29,6 +29,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
   const [notes, setNotes] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
       setNotes(appointment.notes || '');
       setCancellationReason('');
       setShowDeleteConfirm(false);
+      setShowCancelConfirm(false);
       setCopiedLink(false);
     }
   }, [appointment, isOpen, stylists]);
@@ -48,6 +50,11 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (status === 'CANCELLED' && appointment.status !== 'CANCELLED') {
+      setShowCancelConfirm(true);
+      return;
+    }
+
     const stylist = stylists.find((s) => s.id === selectedStylistId);
 
     const updated: Appointment = {
@@ -64,8 +71,13 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
     onClose();
   };
 
-  const handleQuickCancel = () => {
-    const reason = cancellationReason.trim() || 'Cancelled by reception management';
+  const handleQuickCancelClick = () => {
+    setShowCancelConfirm(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelConfirm(false);
+    const reason = cancellationReason.trim() || 'Cancelled by salon reception';
     onCancelBooking(appointment.id, reason);
     onClose();
   };
@@ -323,7 +335,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={handleQuickCancel}
+                  onClick={handleQuickCancelClick}
                   className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1 flex-shrink-0"
                 >
                   <span className="material-symbols-outlined text-[14px]">close</span>
@@ -369,6 +381,85 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* In-UI Confirmation Dialog for Booking Cancellation */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="bg-white dark:bg-[#15201a] rounded-2xl shadow-2xl w-full max-w-md border border-[#c2c8c2]/40 dark:border-white/10 p-6 overflow-hidden animate-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[26px]">event_busy</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-[#112e20] dark:text-white leading-tight">
+                  Confirm Booking Cancellation?
+                </h3>
+                <p className="text-xs text-[#526058] dark:text-[#a0aca4] mt-2 leading-relaxed">
+                  Are you sure you want to cancel the reservation for <strong className="text-[#112e20] dark:text-white">{appointment.clientName}</strong>?
+                </p>
+
+                {/* Booking Details Card */}
+                <div className="mt-3 p-3 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#dfe4e0] dark:border-white/10 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-[#727973] dark:text-[#a0aca4]">Service:</span>
+                    <span className="font-semibold text-[#181d1b] dark:text-white">{appointment.serviceName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#727973] dark:text-[#a0aca4]">Schedule:</span>
+                    <span className="font-semibold text-[#181d1b] dark:text-white">{appointment.dateStr} at {appointment.time}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#727973] dark:text-[#a0aca4]">Guest Phone:</span>
+                    <span className="font-semibold text-[#181d1b] dark:text-white">{appointment.clientPhone}</span>
+                  </div>
+                </div>
+
+                {/* Cancellation Reason Input */}
+                <div className="mt-3">
+                  <label className="block text-[11px] font-semibold text-[#181d1b] dark:text-white mb-1">
+                    Cancellation Reason
+                  </label>
+                  <input
+                    type="text"
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    placeholder="e.g. Guest requested cancellation, emergency, etc."
+                    className="w-full px-3 py-2 rounded-lg bg-white dark:bg-[#121915] border border-stone-300 dark:border-white/10 text-xs text-[#181d1b] dark:text-white placeholder:text-neutral-400 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/30 outline-none transition-all"
+                  />
+                </div>
+
+                {/* WhatsApp Notice Info */}
+                <div className="mt-3 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[16px] shrink-0 text-rose-600 dark:text-rose-400 mt-0.5">chat</span>
+                  <span>An automated WhatsApp cancellation notice stating <em>"Cancelled by the salon"</em> will be sent to the guest immediately.</span>
+                </div>
+
+                <div className="flex items-center gap-2.5 mt-5 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="px-4 py-2 text-xs font-semibold text-[#424844] dark:text-[#a0aca4] hover:bg-[#eaefeb] dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                  >
+                    Keep Booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmCancel}
+                    className="px-5 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600 rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                    <span>Yes, Cancel Booking</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* In-UI Confirmation Dialog for Booking Deletion */}
       {showDeleteConfirm && (

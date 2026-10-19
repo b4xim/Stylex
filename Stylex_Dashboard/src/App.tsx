@@ -1131,9 +1131,12 @@ export default function App() {
       const selectedService = services.find((s) => s.id === newBooking.serviceId || s.name === newBooking.serviceName) || services[0];
       const selectedStylist = stylists.find((st) => (newBooking.stylistId && st.id === newBooking.stylistId) || st.name === newBooking.stylistName);
 
+      const rawPhoneDigits = newBooking.clientPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = rawPhoneDigits.slice(-10);
+
       const res = await DashboardApi.createBooking({
         customerName: newBooking.clientName,
-        customerPhone: newBooking.clientPhone.replace(/\s+/g, ''),
+        customerPhone: cleanPhone || newBooking.clientPhone.replace(/\s+/g, ''),
         customerEmail: newBooking.clientEmail,
         serviceId: newBooking.serviceId || selectedService?.id || 'signature-service',
         stylistId: newBooking.stylistId || selectedStylist?.id,
@@ -1181,9 +1184,12 @@ export default function App() {
       const selectedService = services.find((s) => s.id === walkIn.serviceId || s.name === walkIn.serviceName) || services[0];
       const selectedStylist = stylists.find((st) => (walkIn.stylistId && st.id === walkIn.stylistId) || st.name === walkIn.stylistName);
 
+      const rawPhoneDigits = walkIn.clientPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = rawPhoneDigits.slice(-10);
+
       const res = await DashboardApi.createBooking({
         customerName: walkIn.clientName,
-        customerPhone: walkIn.clientPhone.replace(/\s+/g, ''),
+        customerPhone: cleanPhone || walkIn.clientPhone.replace(/\s+/g, ''),
         serviceId: walkIn.serviceId || selectedService?.id || 'signature-service',
         stylistId: walkIn.stylistId || selectedStylist?.id,
         date: todayYMD,

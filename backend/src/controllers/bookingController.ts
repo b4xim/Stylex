@@ -260,7 +260,8 @@ export class BookingController {
       });
 
       // 5. Trigger Asynchronous Notifications (Non-blocking)
-      const fullPhone = `${countryCode}${customerPhone.replace(/[^0-9]/g, '')}`;
+      const cleanPhoneDigits = (result.guestPhone || result.customer.phone || customerPhone || '').replace(/[^0-9]/g, '');
+      const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
       const rawAppUrl = env.APP_URL || '';
       const clientPortalUrl = (!rawAppUrl || rawAppUrl.includes('localhost:5000') || rawAppUrl.includes('127.0.0.1'))
         ? 'https://stylexsalon.in'
@@ -409,7 +410,8 @@ export class BookingController {
 
       // If status changed to CANCELLED, send salon cancellation notification via WhatsApp & Email
       if (status === 'CANCELLED') {
-        const fullPhone = updated.guestPhone?.replace(/[^0-9]/g, '') || `91${updated.customer.phone}`;
+        const cleanPhoneDigits = (updated.guestPhone || updated.customer.phone || '').replace(/[^0-9]/g, '');
+        const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
         WhatsAppService.sendBookingCancelled({
           customerName: updated.guestName || updated.customer.name,
           customerPhone: fullPhone,
@@ -482,7 +484,8 @@ export class BookingController {
         include: { customer: true, service: true, stylist: true },
       });
 
-      const fullPhone = updated.guestPhone?.replace(/[^0-9]/g, '') || `91${updated.customer.phone}`;
+      const cleanPhoneDigits = (updated.guestPhone || updated.customer.phone || '').replace(/[^0-9]/g, '');
+      const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
       const clientEmail = updated.guestEmail || updated.customer.email;
 
       if (isCancellation) {
@@ -856,7 +859,8 @@ export class BookingController {
         ? 'https://stylexsalon.in'
         : rawAppUrl.replace(/\/+$/, '');
       const manageUrl = `${clientPortalUrl}/?manage=${updated.managementToken || updated.bookingRef}`;
-      const fullPhone = booking.guestPhone?.replace(/[^0-9]/g, '') || `91${booking.customer.phone}`;
+      const cleanPhoneDigits = (updated.guestPhone || updated.customer.phone || '').replace(/[^0-9]/g, '');
+      const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
 
       WhatsAppService.sendBookingRescheduled({
         bookingRef: updated.bookingRef,
@@ -868,6 +872,7 @@ export class BookingController {
         total: updated.total,
         stylistName: updated.stylist?.name,
         manageUrl,
+        updatedBySalon: true,
       }).catch((e) => console.error('WhatsApp reschedule notification error:', e));
 
       const clientEmail = updated.guestEmail || updated.customer.email;
@@ -973,7 +978,8 @@ export class BookingController {
       });
 
       // Dispatch async notifications
-      const fullPhone = booking.guestPhone?.replace(/[^0-9]/g, '') || `91${booking.customer.phone}`;
+      const cleanPhoneDigits = (booking.guestPhone || booking.customer.phone || '').replace(/[^0-9]/g, '');
+      const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
       WhatsAppService.sendBookingCancelled({
         customerName: booking.guestName || booking.customer.name,
         customerPhone: fullPhone,
@@ -981,6 +987,8 @@ export class BookingController {
         serviceName: booking.service.name,
         date: booking.date,
         timeSlot: booking.timeSlot,
+        cancelledBySalon: false,
+        reason: cancelNote,
       }).catch((e) => console.error('WhatsApp cancellation error:', e));
 
       const clientEmail = booking.guestEmail || booking.customer.email;

@@ -17,10 +17,19 @@ export interface BookingNotificationPayload {
 
 export class WhatsAppService {
   /**
+   * Normalizes any Indian phone number into 91XXXXXXXXXX
+   */
+  public static formatDestinationPhone(phone: string): string {
+    const digits = phone.replace(/[^0-9]/g, '');
+    const tenDigits = digits.slice(-10);
+    return `91${tenDigits}`;
+  }
+
+  /**
    * Generates a direct WhatsApp click-to-chat URL with pre-filled message
    */
   public static generateDirectChatUrl(phone: string, text: string): string {
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const cleanPhone = this.formatDestinationPhone(phone);
     const encodedText = encodeURIComponent(text);
     return `https://wa.me/${cleanPhone}?text=${encodedText}`;
   }
@@ -61,7 +70,7 @@ export class WhatsAppService {
     }
 
     try {
-      const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = this.formatDestinationPhone(payload.customerPhone);
       const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
 
       const response = await axios.post(
@@ -127,7 +136,7 @@ export class WhatsAppService {
     }
 
     try {
-      const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = this.formatDestinationPhone(payload.customerPhone);
       const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
       const isSalon = payload.updatedBySalon;
       const title = isSalon ? `🔄 *StyleX Appointment Updated by Salon!*` : `🔄 *StyleX Appointment Rescheduled!*`;
@@ -191,7 +200,7 @@ export class WhatsAppService {
     }
 
     try {
-      const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = this.formatDestinationPhone(payload.customerPhone);
       const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
 
       const response = await axios.post(
@@ -252,7 +261,7 @@ export class WhatsAppService {
     }
 
     try {
-      const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
+      const cleanPhone = this.formatDestinationPhone(payload.customerPhone);
       const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
       const isSalon = payload.cancelledBySalon;
       const title = isSalon ? `❌ *StyleX Appointment Cancelled by Salon*` : `❌ *StyleX Appointment Cancelled*`;
