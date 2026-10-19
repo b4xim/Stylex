@@ -294,7 +294,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 <optgroup label={`${selectedGender === 'gents' ? 'Gents' : 'Ladies'} Booking Catalog`}>
                   {availableHeadings.map((h) => (
                     <option key={h.id} value={h.id}>
-                      {h.name} ({h.duration} mins) — ₹{h.startingPrice}
+                      {h.name} ({h.duration} mins)
                     </option>
                   ))}
                 </optgroup>
@@ -302,7 +302,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   <optgroup label="Additional Custom Services">
                     {customServices.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name} ({s.durationMin} mins) — ₹{s.price}
+                        {s.name} ({s.durationMin} mins)
                       </option>
                     ))}
                   </optgroup>
@@ -466,7 +466,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 {currentServiceName} ({selectedGender === 'gents' ? 'Gents' : 'Ladies'})
               </span>
               <p className="text-[#424844] mt-0.5">
-                Estimated Duration: {currentDurationMin} mins • Starting from ₹{currentPrice}
+                Estimated Duration: {currentDurationMin} mins
               </p>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-[#112e20] text-white font-bold text-[11px] uppercase tracking-wider">

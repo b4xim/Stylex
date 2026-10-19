@@ -204,7 +204,7 @@ export const ExpressWalkInModal: React.FC<ExpressWalkInModalProps> = ({
               <optgroup label={`${selectedGender === 'gents' ? 'Gents' : 'Ladies'} Booking Catalog`}>
                 {availableHeadings.map((h) => (
                   <option key={h.id} value={h.id}>
-                    {h.name} ({h.duration} mins) — ₹{h.startingPrice}
+                    {h.name} ({h.duration} mins)
                   </option>
                 ))}
               </optgroup>
@@ -212,7 +212,7 @@ export const ExpressWalkInModal: React.FC<ExpressWalkInModalProps> = ({
                 <optgroup label="Additional Custom Services">
                   {customServices.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} ({s.durationMin} mins) — ₹{s.price}
+                      {s.name} ({s.durationMin} mins)
                     </option>
                   ))}
                 </optgroup>
@@ -242,7 +242,7 @@ export const ExpressWalkInModal: React.FC<ExpressWalkInModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px] text-[#112e20]">info</span>
               <span>
-                {currentServiceName} • {currentDurationMin} mins • ₹{currentPrice}
+                {currentServiceName} • {currentDurationMin} mins
               </span>
             </div>
             <span className="text-[11px] font-bold text-[#112e20] uppercase tracking-wider">
