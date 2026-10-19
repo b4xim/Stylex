@@ -173,13 +173,7 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
             />
           </div>
 
-          {/* Top-Left Tag */}
-          <div className="absolute top-2.5 sm:top-5 left-2.5 sm:left-5 z-20 pointer-events-none">
-            <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#112e20]/10 shadow-md text-[#112e20] font-label-caps text-[9.5px] sm:text-[11px] uppercase tracking-wider font-bold">
-              <span className="material-symbols-outlined text-[13px] sm:text-[15px] text-[#9b4521]">workspace_premium</span>
-              <span>{currentSlide.tag}</span>
-            </div>
-          </div>
+
 
           {slides.length > 1 && (
             <>
