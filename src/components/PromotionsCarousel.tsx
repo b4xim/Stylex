@@ -173,7 +173,13 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
             />
           </div>
 
-
+          {/* Top-Left Tag - Hidden on mobile, visible on desktop */}
+          <div className="hidden sm:block absolute top-5 left-5 z-20 pointer-events-none">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#112e20]/10 shadow-md text-[#112e20] font-label-caps text-[11px] uppercase tracking-wider font-bold">
+              <span className="material-symbols-outlined text-[15px] text-[#9b4521]">workspace_premium</span>
+              <span>{currentSlide.tag}</span>
+            </div>
+          </div>
 
           {slides.length > 1 && (
             <>
