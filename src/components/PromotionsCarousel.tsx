@@ -36,6 +36,18 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
   });
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-advance carousel banner every 5 seconds
+  useEffect(() => {
+    if (!slides || slides.length <= 1 || isPaused) return;
+
+    const timer = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [slides.length, currentSlideIndex, isPaused]);
 
   useEffect(() => {
     const applyBanners = (list: any[]) => {
@@ -110,13 +122,20 @@ export const PromotionsCarousel: React.FC<PromotionsCarouselProps> = ({ onSelect
     <section className="w-full bg-[#f6faf7] py-8 sm:py-10 px-4 sm:px-6 lg:px-12 relative" id="promotions-carousel">
       <div className="max-w-7xl mx-auto w-full">
         {/* Carousel Frame */}
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-[#112e20]/20 bg-[#112e20] group w-full">
+        <div
+          className="relative rounded-3xl overflow-hidden shadow-2xl border border-[#112e20]/20 bg-[#112e20] group w-full"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+        >
           {/* Main Visual Display */}
           <div className="w-full aspect-[16/7] sm:aspect-[21/9] lg:aspect-[24/9] min-h-[220px] sm:min-h-[280px] flex items-center justify-center relative bg-gradient-to-b from-[#08241b] to-[#051812] cursor-pointer"
                onClick={() => onSelectPromo(currentSlide.id)}>
             <img
+              key={currentSlide.id || currentSlideIndex}
               alt={currentSlide.title}
-              className="w-full h-full object-contain select-none transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+              className="w-full h-full object-contain select-none transition-all duration-700 ease-out group-hover:scale-[1.01] animate-in fade-in"
               src={currentSlide.imageUrl}
             />
           </div>
