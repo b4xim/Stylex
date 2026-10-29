@@ -7,6 +7,31 @@ import { SlotService } from '../services/slotService';
 import { WhatsAppService } from '../services/whatsappService';
 import { EmailService } from '../services/emailService';
 
+const CANONICAL_BOOKING_HEADINGS: Record<
+  string,
+  { name: string; category: string; gender: string; durationMins: number; price: number; description: string }
+> = {
+  // Gents Headings
+  'gents-cut-styling': { name: 'Hair Cut / Styling', category: 'Hair & Styling', gender: 'gents', durationMins: 35, price: 250, description: 'Hair Cut, Beard Styling & Shaving' },
+  'gents-hair-spa': { name: 'Hair Spa / Treatment', category: 'Hair Spa', gender: 'gents', durationMins: 45, price: 700, description: 'Hair Spa & Dandruff Treatment' },
+  'gents-hair-texture': { name: 'Hair Texture', category: 'Hair & Styling', gender: 'gents', durationMins: 90, price: 3000, description: 'Smoothening, Botox & Keratin' },
+  'gents-hair-color': { name: 'Hair Color', category: 'Hair & Styling', gender: 'gents', durationMins: 45, price: 600, description: 'Global, Highlights & Beard Color' },
+  'gents-skin-care': { name: 'Skin Care', category: 'Facial & Glow', gender: 'gents', durationMins: 60, price: 1000, description: 'Clean Up, Facials & Hydra Facial' },
+  'gents-de-tan': { name: 'De-Tan', category: 'Facial & Glow', gender: 'gents', durationMins: 30, price: 500, description: 'Face & Neck, Arms & Body De-Tan' },
+  'gents-pedi-mani': { name: 'Pedicure & Manicure', category: 'Spa & Wellness', gender: 'gents', durationMins: 45, price: 800, description: 'Basic & Spa Pedicure / Manicure' },
+  'gents-pre-grooming': { name: 'Pre-Grooming Packages', category: 'Bridal & Groom', gender: 'gents', durationMins: 120, price: 3500, description: 'Groom Make Up & Comprehensive Grooming' },
+
+  // Ladies Headings
+  'ladies-cut-styling': { name: 'Hair Cut / Styling', category: 'Hair & Styling', gender: 'ladies', durationMins: 45, price: 450, description: 'Change Over, Layer, Bob & Split Ends' },
+  'ladies-hair-spa': { name: 'Hair Spa Treatment', category: 'Hair Spa', gender: 'ladies', durationMins: 60, price: 1000, description: 'L\'Oreal, Organic & Deep Conditioning' },
+  'ladies-hair-treatment': { name: 'Hair Treatment', category: 'Hair & Styling', gender: 'ladies', durationMins: 120, price: 3500, description: 'Botox, Keratin & Nanoplastia' },
+  'ladies-hair-color': { name: 'Hair Color & Colouring', category: 'Hair & Styling', gender: 'ladies', durationMins: 90, price: 2000, description: 'Global, Balayage, Highlights & Touch Up' },
+  'ladies-skin-care': { name: 'Skin Care', category: 'Facial & Glow', gender: 'ladies', durationMins: 60, price: 1200, description: 'Clean Up, Facials & Hydra Facial' },
+  'ladies-tan-wax': { name: 'Tan Removal & Waxing', category: 'Facial & Glow', gender: 'ladies', durationMins: 45, price: 600, description: 'Rica Waxing, Honey Wax & De-Tan' },
+  'ladies-nails-mani-pedi': { name: 'Nails, Manicure & Pedicure', category: 'Spa & Wellness', gender: 'ladies', durationMins: 60, price: 1000, description: 'Gel Nails, Nail Art, Spa Pedicure & Manicure' },
+  'ladies-pre-bridal': { name: 'Pre-Bridal Packages', category: 'Bridal & Groom', gender: 'ladies', durationMins: 180, price: 6000, description: 'Bridal Glow, Pampering & Wedding Packages' },
+};
+
 export class BookingController {
   /**
    * Public: Query available time slots for a given date
@@ -47,6 +72,7 @@ export class BookingController {
         customerEmail,
         serviceId,
         serviceIds,
+        serviceName,
         secondaryServiceId,
         stylistId,
         gender,
@@ -98,44 +124,87 @@ export class BookingController {
         ? serviceIds.map(String)
         : [serviceId, secondaryServiceId].filter(Boolean).map(String);
 
+      // Ensure any canonical heading from the catalog is auto-upserted in the database
+      for (const sid of requestedIds) {
+        const canonical = CANONICAL_BOOKING_HEADINGS[sid];
+        if (canonical) {
+          try {
+            await prisma.service.upsert({
+              where: { id: sid },
+              update: {
+                name: canonical.name,
+                category: canonical.category,
+                gender: canonical.gender,
+                durationMins: canonical.durationMins,
+                price: canonical.price,
+                description: canonical.description,
+                isActive: true,
+              },
+              create: {
+                id: sid,
+                name: canonical.name,
+                category: canonical.category,
+                gender: canonical.gender,
+                durationMins: canonical.durationMins,
+                price: canonical.price,
+                description: canonical.description,
+                isActive: true,
+              },
+            });
+          } catch (e) {
+            console.warn(`Could not auto-upsert canonical service ${sid}:`, e);
+          }
+        }
+      }
+
       let matchedServices = await prisma.service.findMany({
         where: {
           OR: requestedIds.map((sid) => ({ id: sid })),
         },
       });
 
-      // If no exact IDs matched, try searching by name or fallback
+      // If no exact IDs matched, resolve using requested serviceName or canonical heading
       if (matchedServices.length === 0) {
+        const targetSid = serviceId || requestedIds[0] || 'signature-service';
+        const targetName = serviceName || (CANONICAL_BOOKING_HEADINGS[targetSid]?.name) || 'Signature Salon Ritual';
+
         let fallback = await prisma.service.findFirst({
           where: {
             OR: [
-              { id: serviceId || (requestedIds[0] || 'default') },
-              { name: { contains: serviceId || requestedIds[0] || '', mode: 'insensitive' } },
+              { id: targetSid },
+              { name: { equals: targetName, mode: 'insensitive' } },
+              { name: { contains: targetName, mode: 'insensitive' } },
             ],
           },
         });
+
         if (!fallback) {
-          fallback = await prisma.service.findFirst({ where: { isActive: true } });
+          try {
+            fallback = await prisma.service.create({
+              data: {
+                id: targetSid,
+                name: targetName,
+                category: gender === 'ladies' ? 'Ladies Salon' : 'Gents Salon',
+                gender: gender || 'unisex',
+                durationMins: 45,
+                price: 250,
+                description: targetName,
+                isActive: true,
+              },
+            });
+          } catch {
+            fallback = await prisma.service.findUnique({ where: { id: targetSid } });
+          }
         }
-        if (!fallback) {
-          fallback = await prisma.service.create({
-            data: {
-              id: serviceId || 'signature-treatment',
-              name: 'Signature Salon Treatment',
-              category: 'Hair & Styling',
-              gender: 'gents',
-              durationMins: 35,
-              price: 250,
-              description: 'Signature Salon Service',
-            },
-          });
+
+        if (fallback) {
+          matchedServices = [fallback];
         }
-        matchedServices = [fallback];
       }
 
       const primaryService = matchedServices[0];
       const hasMultipleServices = matchedServices.length > 1;
-      const combinedServiceName = matchedServices.map((s) => s.name).join(' + ');
+      const combinedServiceName = serviceName || matchedServices.map((s) => s.name).join(' + ');
 
       // Secondary service & combo details
       let secondaryService = null;
@@ -147,14 +216,36 @@ export class BookingController {
         secondaryName = secondaryGroup.map((s) => s.name).join(' + ');
         secondaryPrice = secondaryGroup.reduce((sum, s) => sum + s.price, 0);
       } else if (secondaryServiceId) {
-        secondaryService = await prisma.service.findFirst({
-          where: {
-            OR: [
-              { id: secondaryServiceId },
-              { name: { contains: secondaryServiceId, mode: 'insensitive' } },
-            ],
-          },
-        });
+        const secCanonical = CANONICAL_BOOKING_HEADINGS[secondaryServiceId];
+        if (secCanonical) {
+          try {
+            secondaryService = await prisma.service.upsert({
+              where: { id: secondaryServiceId },
+              update: { name: secCanonical.name },
+              create: {
+                id: secondaryServiceId,
+                name: secCanonical.name,
+                category: secCanonical.category,
+                gender: secCanonical.gender,
+                durationMins: secCanonical.durationMins,
+                price: secCanonical.price,
+                description: secCanonical.description,
+                isActive: true,
+              },
+            });
+          } catch {
+            secondaryService = await prisma.service.findUnique({ where: { id: secondaryServiceId } });
+          }
+        } else {
+          secondaryService = await prisma.service.findFirst({
+            where: {
+              OR: [
+                { id: secondaryServiceId },
+                { name: { contains: secondaryServiceId, mode: 'insensitive' } },
+              ],
+            },
+          });
+        }
         if (secondaryService) {
           secondaryPrice = secondaryService.price;
           secondaryName = secondaryService.name;
@@ -243,9 +334,9 @@ export class BookingController {
             status: 'CONFIRMED',
             subtotal,
             total,
-            notes: hasMultipleServices && (!notes || !notes.includes(combinedServiceName))
-              ? (notes ? `${notes}\n[Selected Services: ${combinedServiceName}]` : `[Selected Services: ${combinedServiceName}]`)
-              : notes,
+            notes: notes && notes.includes('[Selected Service')
+              ? notes
+              : (notes ? `${notes}\n[Selected Service: ${combinedServiceName || primaryService.name}]` : `[Selected Service: ${combinedServiceName || primaryService.name}]`),
             source,
             paymentStatus: 'PENDING',
           },
@@ -268,11 +359,13 @@ export class BookingController {
         : rawAppUrl.replace(/\/+$/, '');
       const manageUrl = `${clientPortalUrl}/?manage=${result.managementToken || result.bookingRef}`;
 
+      const confirmedServiceName = combinedServiceName || result.service.name;
+
       WhatsAppService.sendBookingConfirmation({
         bookingRef: result.bookingRef,
         customerName: result.customer.name,
         customerPhone: fullPhone,
-        serviceName: combinedServiceName || result.service.name,
+        serviceName: confirmedServiceName,
         date: result.date,
         timeSlot: result.timeSlot,
         total: result.total,
@@ -292,7 +385,7 @@ export class BookingController {
           toEmail: result.customer.email,
           customerName: result.customer.name,
           bookingRef: result.bookingRef,
-          serviceName: combinedServiceName || result.service.name,
+          serviceName: confirmedServiceName,
           date: result.date,
           timeSlot: result.timeSlot,
           total: result.total,
@@ -311,7 +404,7 @@ export class BookingController {
       // Generate direct WhatsApp chat URL for client confirmation (includes self-service link)
       const directWhatsAppUrl = WhatsAppService.generateDirectChatUrl(
         fullPhone,
-        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${combinedServiceName || result.service.name} on ${result.date} at ${result.timeSlot}.\n\nManage or Reschedule link: ${manageUrl}`
+        `Hello StyleX, I have booked appointment ${result.bookingRef} for ${confirmedServiceName} on ${result.date} at ${result.timeSlot}.\n\nManage or Reschedule link: ${manageUrl}`
       );
 
       res.status(201).json({
@@ -687,7 +780,13 @@ export class BookingController {
           customerEmail: booking.guestEmail || booking.customer.email,
           service: {
             id: booking.service.id,
-            name: booking.service.name,
+            name: (() => {
+              if (booking.notes) {
+                const m = booking.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+                if (m && m[1]) return m[1].trim();
+              }
+              return booking.service.name;
+            })(),
             duration: booking.service.durationMins,
             price: booking.service.price,
             category: booking.service.category,
@@ -758,7 +857,13 @@ export class BookingController {
           bookingRef: b.bookingRef,
           managementToken: b.managementToken || b.bookingRef,
           customerName: b.guestName,
-          serviceName: b.service.name,
+          serviceName: (() => {
+            if (b.notes) {
+              const m = b.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+              if (m && m[1]) return m[1].trim();
+            }
+            return b.service.name;
+          })(),
           stylistName: b.stylist?.name || 'Any Stylist',
           date: b.date,
           timeSlot: b.timeSlot,

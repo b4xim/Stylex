@@ -174,8 +174,11 @@ export class DashboardApi {
     customerPhone: string;
     customerEmail?: string;
     serviceId: string;
+    serviceIds?: string[];
+    serviceName?: string;
     secondaryServiceId?: string;
     stylistId?: string;
+    gender?: string;
     date: string;
     timeSlot: string;
     notes?: string;
@@ -596,6 +599,25 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
 
   const email = b.guestEmail || b.customer?.email || undefined;
 
+  let serviceName = b.service?.name;
+  if (b.notes) {
+    const match = b.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+    if (match && match[1]) {
+      serviceName = match[1].trim();
+    }
+  }
+  if (!serviceName || serviceName.toLowerCase().includes('save the date') || serviceName.toLowerCase() === 'default' || serviceName.toLowerCase() === 'signature-service') {
+    if (b.notes) {
+      const match = b.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+      if (match && match[1]) {
+        serviceName = match[1].trim();
+      }
+    }
+  }
+  if (!serviceName) {
+    serviceName = 'Signature Salon Ritual';
+  }
+
   return {
     id: b.id,
     time: b.timeSlot || '11:00 AM',
@@ -604,7 +626,7 @@ export function mapBackendBookingToAppointment(b: any): Appointment {
     clientPhone: fullPhone,
     clientEmail: email,
     clientInitials: initials,
-    serviceName: b.service?.name || 'Signature Salon Ritual',
+    serviceName,
     station: b.source === 'WALK_IN' ? 'Walk-in Express Station' : (b.stylist?.station || 'Styling Station 01'),
     stylistName: b.stylist?.name || 'Any Stylist',
     stylistAvatar: b.stylist?.imageUrl || '',

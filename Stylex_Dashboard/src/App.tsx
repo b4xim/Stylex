@@ -1139,10 +1139,14 @@ export default function App() {
         customerPhone: cleanPhone || newBooking.clientPhone.replace(/\s+/g, ''),
         customerEmail: newBooking.clientEmail,
         serviceId: newBooking.serviceId || selectedService?.id || 'signature-service',
+        serviceName: newBooking.serviceName,
+        gender: newBooking.gender,
         stylistId: newBooking.stylistId || selectedStylist?.id,
         date: newBooking.dateStr,
         timeSlot: newBooking.time,
-        notes: newBooking.notes,
+        notes: newBooking.notes
+          ? `${newBooking.notes}\n[Selected Service: ${newBooking.serviceName}]`
+          : `[Selected Service: ${newBooking.serviceName}]`,
         source: 'ADMIN_DASHBOARD',
       });
 
@@ -1191,10 +1195,14 @@ export default function App() {
         customerName: walkIn.clientName,
         customerPhone: cleanPhone || walkIn.clientPhone.replace(/\s+/g, ''),
         serviceId: walkIn.serviceId || selectedService?.id || 'signature-service',
+        serviceName: walkIn.serviceName,
+        gender: walkIn.gender,
         stylistId: walkIn.stylistId || selectedStylist?.id,
         date: todayYMD,
         timeSlot: walkIn.time,
-        notes: walkIn.notes || 'Walk-in Guest',
+        notes: walkIn.notes
+          ? `${walkIn.notes}\n[Selected Service: ${walkIn.serviceName}]`
+          : `[Selected Service: ${walkIn.serviceName}]`,
         source: 'WALK_IN',
       });
 

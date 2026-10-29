@@ -924,11 +924,14 @@ export const BookingEngine: React.FC<BookingEngineProps> = ({
         customerEmail: email.trim() || undefined,
         serviceId: selectedServices[0].id,
         serviceIds: selectedServices.map((s) => s.id),
+        serviceName: combinedServiceName,
         stylistId: cleanStylist,
         gender: selectedGender,
         date: isoDateStr,
         timeSlot: selectedTime,
-        notes: notes.trim() || undefined,
+        notes: notes.trim()
+          ? `${notes.trim()}\n[Selected Service: ${combinedServiceName}]`
+          : `[Selected Service: ${combinedServiceName}]`,
         source: 'WEBSITE',
       };
 
