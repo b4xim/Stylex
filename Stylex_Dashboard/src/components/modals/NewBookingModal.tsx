@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Appointment, ServiceItem, Stylist, StylistLeave, BlackoutDate } from '../../types';
-import { BOOKING_HEADINGS, matchesStylistGender } from '../../data/bookingHeadings';
+import { BOOKING_HEADINGS, matchesStylistGender, DASHBOARD_BOOKING_SLOTS } from '../../data/bookingHeadings';
 
 interface NewBookingModalProps {
   isOpen: boolean;
@@ -33,6 +33,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const [selectedServiceId, setSelectedServiceId] = useState(defaultHeading?.id || '');
   const [selectedStylistId, setSelectedStylistId] = useState(''); // "" = Any Available Stylist
   const [time, setTime] = useState('11:00 AM');
+  const [isCustomTime, setIsCustomTime] = useState(false);
   const todayYMD = new Date().toISOString().split('T')[0];
   const [dateStr, setDateStr] = useState(initialDate || todayYMD);
   const [notes, setNotes] = useState('');
@@ -130,13 +131,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     if (!clientName.trim()) return;
 
     if (fullDayClosure) {
-      alert(`Cannot book: Salon has a scheduled full day closure on this date.`);
-      return;
+      const proceed = window.confirm(`Notice: Salon has a scheduled full day closure on this date (${fullDayClosure.station || 'Entire Salon'}). Do you want to proceed as Salon Admin?`);
+      if (!proceed) return;
     }
 
     if (blockedSlotsList.includes(time)) {
-      alert(`Cannot book: Time slot "${time}" is blocked in Schedule Control.`);
-      return;
+      const proceed = window.confirm(`Notice: Time slot "${time}" is marked as blocked in Schedule Control. Do you want to proceed as Salon Admin?`);
+      if (!proceed) return;
     }
 
     const initials = clientName
@@ -365,85 +366,89 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-[#181d1b]">
-                Time Slot ({selectedGender === 'gents' ? 'Gents Section' : 'Ladies Salon Suite'})
+              <label className="block text-xs font-semibold text-[#181d1b] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px] text-[#2d6a4f]">schedule</span>
+                <span>Time Slot ({selectedGender === 'gents' ? 'Gents Section' : 'Ladies Salon Suite'})</span>
               </label>
-              {blockedSlotsList.length > 0 && (
-                <span className="text-[11px] text-amber-700 font-medium flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">lock_clock</span>
-                  {blockedSlotsList.length} slot{blockedSlotsList.length > 1 ? 's' : ''} blocked
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {blockedSlotsList.length > 0 && (
+                  <span className="text-[11px] text-amber-700 font-medium flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">lock_clock</span>
+                    {blockedSlotsList.length} blocked
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTime(!isCustomTime)}
+                  className="text-[11px] text-[#2d6a4f] hover:text-[#112e20] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  {isCustomTime ? 'Select from list' : 'Custom time'}
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-              {[
-                '10:00 AM',
-                '11:00 AM',
-                '12:00 PM',
-                '01:00 PM',
-                '02:00 PM',
-                '03:00 PM',
-                '04:00 PM',
-                '05:00 PM',
-                '06:00 PM',
-                '07:00 PM',
-                '08:00 PM',
-                '09:00 PM',
-                '10:00 PM',
-                '11:00 PM',
-                '12:00 AM',
-              ].map((slot) => {
-                const isBlocked = !!fullDayClosure || blockedSlotsList.includes(slot);
-                const occ = slotOccupancy[slot];
-                const bookedCount = occ?.bookedCount || 0;
-                const isFull = isBlocked || (occ ? !occ.isAvailable || occ.status === 'full' || bookedCount >= 3 : false);
-                const isFillingFast = !isFull && (occ ? occ.status === 'filling_fast' || bookedCount === 2 : false);
 
-                return (
-                  <button
-                    type="button"
-                    key={slot}
-                    disabled={isFull}
-                    onClick={() => setTime(slot)}
-                    title={
-                      isFull
-                        ? 'Fully Booked'
-                        : isFillingFast
-                        ? 'Filling Fast'
-                        : 'Available'
-                    }
-                    className={`py-2 px-1 text-xs rounded-lg font-semibold transition-all relative text-center select-none ${
-                      isFull
-                        ? 'bg-red-50 text-red-600/80 font-bold border-2 border-red-200 cursor-not-allowed opacity-75 shadow-2xs'
-                        : isFillingFast
-                        ? time === slot
-                          ? 'bg-amber-500 text-white font-bold ring-2 ring-amber-400 border-2 border-amber-600'
-                          : 'bg-amber-50 text-amber-900 font-bold border-2 border-amber-400/80 hover:bg-amber-100/70 cursor-pointer shadow-2xs'
-                        : time === slot
-                        ? 'bg-[#112e20] text-white shadow-xs font-bold border-2 border-[#112e20]'
-                        : 'bg-white text-[#185341] border-2 border-emerald-500/70 hover:bg-emerald-50/50 hover:border-emerald-600 cursor-pointer shadow-2xs'
-                    }`}
+            {isCustomTime ? (
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="e.g. 10:20 AM or 11:45 PM"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-sm font-semibold text-[#181d1b] focus:bg-white focus:ring-2 focus:ring-[#112e20]/20 focus:border-[#112e20] outline-none"
+                />
+                <p className="text-[11px] text-[#5c6460]">Enter any operating time between 10:00 AM – 1:00 AM.</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <select
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full appearance-none px-3.5 py-2.5 pr-10 rounded-xl bg-[#f0f5f1] border border-[#c2c8c2]/50 text-sm font-semibold text-[#181d1b] focus:bg-white focus:ring-2 focus:ring-[#112e20]/20 focus:border-[#112e20] outline-none transition-all cursor-pointer shadow-2xs"
                   >
-                    <span>{slot}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {/* Status Legend */}
-            <div className="flex items-center gap-4 pt-1 text-[11px] text-[#424844]">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600" />
-                <span className="text-[#185341] font-semibold">Available</span>
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500" />
-                <span className="text-amber-800 font-semibold">Filling Fast</span>
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-600" />
-                <span className="text-red-700 font-semibold">Fully Booked</span>
-              </span>
-            </div>
+                    {!DASHBOARD_BOOKING_SLOTS.some((s) => s.value === time) && (
+                      <option value={time}>{time} (Custom / Active)</option>
+                    )}
+
+                    {(['Morning', 'Afternoon', 'Evening', 'Night & Late Night'] as const).map((groupName) => {
+                      const groupSlots = DASHBOARD_BOOKING_SLOTS.filter((s) => s.group === groupName);
+                      return (
+                        <optgroup key={groupName} label={groupName} className="font-bold text-gray-700">
+                          {groupSlots.map((slotObj) => {
+                            const slot = slotObj.value;
+                            const isBlocked = !!fullDayClosure || blockedSlotsList.includes(slot);
+                            const occ = slotOccupancy[slot];
+                            const bookedCount = occ?.bookedCount || 0;
+                            let statusText = '';
+                            if (isBlocked) statusText = ' [Blocked in Schedule]';
+                            else if (occ && occ.status === 'full') statusText = ` [Full • ${bookedCount} Booked]`;
+                            else if (occ && occ.status === 'filling_fast') statusText = ` [Filling Fast • ${bookedCount} Booked]`;
+                            else if (bookedCount > 0) statusText = ` [${bookedCount} Booked]`;
+
+                            return (
+                              <option key={slot} value={slot} className="font-medium text-gray-900 py-1">
+                                {slotObj.label}{statusText}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#5c6460]">
+                    <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-[#5c6460] px-1">
+                  <span className="flex items-center gap-1 font-medium text-emerald-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    <span>10:00 AM – 1:00 AM Daily Range</span>
+                  </span>
+                  <span>15-min increments • Direct salon booking</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

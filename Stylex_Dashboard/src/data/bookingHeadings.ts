@@ -253,3 +253,80 @@ export const matchesStylistGender = (stylistGender: string | undefined, targetGe
   if (targetGender === 'ladies') return g === 'ladies' || g === 'female';
   return true;
 };
+
+export interface TimeSlotOption {
+  value: string;
+  label: string;
+  group: 'Morning' | 'Afternoon' | 'Evening' | 'Night & Late Night';
+}
+
+export const DASHBOARD_BOOKING_SLOTS: TimeSlotOption[] = [
+  // Morning (10:00 AM – 11:45 AM)
+  { value: '10:00 AM', label: '10:00 AM', group: 'Morning' },
+  { value: '10:15 AM', label: '10:15 AM', group: 'Morning' },
+  { value: '10:30 AM', label: '10:30 AM', group: 'Morning' },
+  { value: '10:45 AM', label: '10:45 AM', group: 'Morning' },
+  { value: '11:00 AM', label: '11:00 AM', group: 'Morning' },
+  { value: '11:15 AM', label: '11:15 AM', group: 'Morning' },
+  { value: '11:30 AM', label: '11:30 AM', group: 'Morning' },
+  { value: '11:45 AM', label: '11:45 AM', group: 'Morning' },
+
+  // Afternoon (12:00 PM – 04:45 PM)
+  { value: '12:00 PM', label: '12:00 PM', group: 'Afternoon' },
+  { value: '12:15 PM', label: '12:15 PM', group: 'Afternoon' },
+  { value: '12:30 PM', label: '12:30 PM', group: 'Afternoon' },
+  { value: '12:45 PM', label: '12:45 PM', group: 'Afternoon' },
+  { value: '01:00 PM', label: '01:00 PM', group: 'Afternoon' },
+  { value: '01:15 PM', label: '01:15 PM', group: 'Afternoon' },
+  { value: '01:30 PM', label: '01:30 PM', group: 'Afternoon' },
+  { value: '01:45 PM', label: '01:45 PM', group: 'Afternoon' },
+  { value: '02:00 PM', label: '02:00 PM', group: 'Afternoon' },
+  { value: '02:15 PM', label: '02:15 PM', group: 'Afternoon' },
+  { value: '02:30 PM', label: '02:30 PM', group: 'Afternoon' },
+  { value: '02:45 PM', label: '02:45 PM', group: 'Afternoon' },
+  { value: '03:00 PM', label: '03:00 PM', group: 'Afternoon' },
+  { value: '03:15 PM', label: '03:15 PM', group: 'Afternoon' },
+  { value: '03:30 PM', label: '03:30 PM', group: 'Afternoon' },
+  { value: '03:45 PM', label: '03:45 PM', group: 'Afternoon' },
+  { value: '04:00 PM', label: '04:00 PM', group: 'Afternoon' },
+  { value: '04:15 PM', label: '04:15 PM', group: 'Afternoon' },
+  { value: '04:30 PM', label: '04:30 PM', group: 'Afternoon' },
+  { value: '04:45 PM', label: '04:45 PM', group: 'Afternoon' },
+
+  // Evening (05:00 PM – 08:45 PM)
+  { value: '05:00 PM', label: '05:00 PM', group: 'Evening' },
+  { value: '05:15 PM', label: '05:15 PM', group: 'Evening' },
+  { value: '05:30 PM', label: '05:30 PM', group: 'Evening' },
+  { value: '05:45 PM', label: '05:45 PM', group: 'Evening' },
+  { value: '06:00 PM', label: '06:00 PM', group: 'Evening' },
+  { value: '06:15 PM', label: '06:15 PM', group: 'Evening' },
+  { value: '06:30 PM', label: '06:30 PM', group: 'Evening' },
+  { value: '06:45 PM', label: '06:45 PM', group: 'Evening' },
+  { value: '07:00 PM', label: '07:00 PM', group: 'Evening' },
+  { value: '07:15 PM', label: '07:15 PM', group: 'Evening' },
+  { value: '07:30 PM', label: '07:30 PM', group: 'Evening' },
+  { value: '07:45 PM', label: '07:45 PM', group: 'Evening' },
+  { value: '08:00 PM', label: '08:00 PM', group: 'Evening' },
+  { value: '08:15 PM', label: '08:15 PM', group: 'Evening' },
+  { value: '08:30 PM', label: '08:30 PM', group: 'Evening' },
+  { value: '08:45 PM', label: '08:45 PM', group: 'Evening' },
+
+  // Night & Late Night (09:00 PM – 01:00 AM)
+  { value: '09:00 PM', label: '09:00 PM', group: 'Night & Late Night' },
+  { value: '09:15 PM', label: '09:15 PM', group: 'Night & Late Night' },
+  { value: '09:30 PM', label: '09:30 PM', group: 'Night & Late Night' },
+  { value: '09:45 PM', label: '09:45 PM', group: 'Night & Late Night' },
+  { value: '10:00 PM', label: '10:00 PM', group: 'Night & Late Night' },
+  { value: '10:15 PM', label: '10:15 PM', group: 'Night & Late Night' },
+  { value: '10:30 PM', label: '10:30 PM', group: 'Night & Late Night' },
+  { value: '10:45 PM', label: '10:45 PM', group: 'Night & Late Night' },
+  { value: '11:00 PM', label: '11:00 PM', group: 'Night & Late Night' },
+  { value: '11:15 PM', label: '11:15 PM', group: 'Night & Late Night' },
+  { value: '11:30 PM', label: '11:30 PM', group: 'Night & Late Night' },
+  { value: '11:45 PM', label: '11:45 PM', group: 'Night & Late Night' },
+  { value: '12:00 AM', label: '12:00 AM (Midnight)', group: 'Night & Late Night' },
+  { value: '12:15 AM', label: '12:15 AM', group: 'Night & Late Night' },
+  { value: '12:30 AM', label: '12:30 AM', group: 'Night & Late Night' },
+  { value: '12:45 AM', label: '12:45 AM', group: 'Night & Late Night' },
+  { value: '01:00 AM', label: '01:00 AM (Closing)', group: 'Night & Late Night' },
+];

@@ -64,6 +64,8 @@ export const isPastSlotInIST = (dateStr: string, slotStr: string): boolean => {
 
     if (meridian === 'AM' && hours === 12) {
       hours = 24;
+    } else if (meridian === 'AM' && hours === 1) {
+      hours = 25;
     } else if (meridian === 'PM' && hours < 12) {
       hours += 12;
     }
@@ -515,7 +517,7 @@ export class SlotService {
         const range = parseOperatingHoursRange(dayConfig.hours);
         if (range) {
           const slotVal = parseHourToValue(timeSlot);
-          if (slotVal !== null && (slotVal < range.startHour || slotVal >= range.endHour)) {
+          if (slotVal !== null && (slotVal < range.startHour || slotVal > range.endHour)) {
             throw new AppError(
               `The requested slot ${timeSlot} on ${date} is outside salon operating hours (${dayConfig.hours}) for ${targetDayName}. Please select an available slot.`,
               409

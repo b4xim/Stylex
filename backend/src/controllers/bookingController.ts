@@ -270,8 +270,11 @@ export class BookingController {
 
       const targetGender = gender || primaryService.gender || 'gents';
 
-      // 2. Concurrency Guard: Verify slot availability (stylistId is null if customer chose Any Stylist; targetGender limits to 3 per slot)
-      await SlotService.assertSlotAvailable(normalizedDate, timeSlot, stylist?.id || null, targetGender);
+      // 2. Concurrency Guard: Verify slot availability for client website bookings
+      // (Admin dashboard manual bookings and salon walk-ins have operational priority)
+      if (source !== 'ADMIN_DASHBOARD' && source !== 'WALK_IN' && source !== 'DASHBOARD') {
+        await SlotService.assertSlotAvailable(normalizedDate, timeSlot, stylist?.id || null, targetGender);
+      }
 
       // 3. Generate unique Reference
       const bookingRef = await SlotService.generateBookingRef();

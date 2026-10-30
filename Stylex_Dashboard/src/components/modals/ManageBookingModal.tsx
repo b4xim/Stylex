@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Appointment, AppointmentStatus, Stylist, StylistLeave } from '../../types';
 import { getWhatsAppUrl, getClientManageUrl, getWhatsAppManageUrl, WhatsAppIcon } from '../../utils/whatsapp';
+import { DASHBOARD_BOOKING_SLOTS } from '../../data/bookingHeadings';
 
 interface ManageBookingModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
   const [status, setStatus] = useState<AppointmentStatus>('BOOKED');
   const [dateStr, setDateStr] = useState('');
   const [time, setTime] = useState('');
+  const [isCustomTime, setIsCustomTime] = useState(false);
   const [selectedStylistId, setSelectedStylistId] = useState('');
   const [notes, setNotes] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
@@ -285,17 +287,56 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#181d1b] dark:text-white mb-1.5 flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[15px] text-[#2d6a4f] dark:text-[#86efac]">schedule</span>
-                <span>Scheduled Time Slot</span>
-              </label>
-              <input
-                type="text"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                placeholder="e.g. 11:30 AM"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-[#181d1b] dark:text-white flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-[#2d6a4f] dark:text-[#86efac]">schedule</span>
+                  <span>Scheduled Time Slot</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTime(!isCustomTime)}
+                  className="text-[11px] text-[#2d6a4f] dark:text-[#86efac] hover:underline font-semibold cursor-pointer"
+                >
+                  {isCustomTime ? 'Select from list' : 'Custom'}
+                </button>
+              </div>
+
+              {isCustomTime ? (
+                <input
+                  type="text"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="e.g. 11:30 AM"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm font-semibold text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors"
+                />
+              ) : (
+                <div className="relative">
+                  <select
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full appearance-none px-3.5 py-2.5 pr-10 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm font-semibold text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors cursor-pointer"
+                  >
+                    {!DASHBOARD_BOOKING_SLOTS.some((s) => s.value === time) && (
+                      <option value={time}>{time} (Current)</option>
+                    )}
+                    {(['Morning', 'Afternoon', 'Evening', 'Night & Late Night'] as const).map((groupName) => {
+                      const groupSlots = DASHBOARD_BOOKING_SLOTS.filter((s) => s.group === groupName);
+                      return (
+                        <optgroup key={groupName} label={groupName} className="font-bold text-gray-700 dark:text-gray-300">
+                          {groupSlots.map((slotObj) => (
+                            <option key={slotObj.value} value={slotObj.value} className="dark:bg-[#15201a] dark:text-white">
+                              {slotObj.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#5c6460] dark:text-gray-400">
+                    <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
