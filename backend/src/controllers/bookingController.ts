@@ -485,7 +485,7 @@ export class BookingController {
       const id = req.params.id as string;
       const { status, paymentStatus, notes } = req.body;
 
-      const validStatuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+      const validStatuses = ['PENDING', 'CONFIRMED', 'BOOKED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
       if (status && !validStatuses.includes(status)) {
         throw new AppError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400);
       }
@@ -503,12 +503,13 @@ export class BookingController {
         throw new AppError('Booking not found', 404);
       }
 
-      const isCancellation = status === 'CANCELLED' && existing.status !== 'CANCELLED';
+      const targetStatus = status === 'BOOKED' ? 'CONFIRMED' : status;
+      const isCancellation = targetStatus === 'CANCELLED' && existing.status !== 'CANCELLED';
 
       const updated = await prisma.booking.update({
         where: { id },
         data: {
-          ...(status ? { status } : {}),
+          ...(targetStatus ? { status: targetStatus } : {}),
           ...(paymentStatus ? { paymentStatus } : {}),
           ...(notes !== undefined ? { notes } : {}),
         },
@@ -619,7 +620,8 @@ export class BookingController {
       // Do NOT send messages for changing stylist, service menu type, notes, payment, etc.
       const isDateChanged = normalizedDate !== existing.date;
       const isTimeChanged = normalizedTimeSlot.toLowerCase() !== existing.timeSlot.trim().toLowerCase();
-      const isCancellation = status === 'CANCELLED' && existing.status !== 'CANCELLED';
+      const targetStatus = status === 'BOOKED' ? 'CONFIRMED' : status;
+      const isCancellation = targetStatus === 'CANCELLED' && existing.status !== 'CANCELLED';
 
       let targetStylistId = existing.stylistId;
       if (stylistId !== undefined) {
@@ -633,7 +635,7 @@ export class BookingController {
           timeSlot: normalizedTimeSlot,
           ...(stylistId !== undefined ? { stylistId: targetStylistId } : {}),
           ...(serviceId !== undefined ? { serviceId } : {}),
-          ...(status ? { status } : {}),
+          ...(targetStatus ? { status: targetStatus } : {}),
           ...(paymentStatus ? { paymentStatus } : {}),
           ...(notes !== undefined ? { notes } : {}),
         },
@@ -911,7 +913,7 @@ export class BookingController {
             { guestPhone: { contains: last10 } },
             { customer: { phone: { contains: last10 } } },
           ],
-          status: { in: ['CONFIRMED', 'PENDING'] },
+          status: { in: ['CONFIRMED', 'PENDING', 'IN_PROGRESS'] },
         },
         include: {
           service: true,

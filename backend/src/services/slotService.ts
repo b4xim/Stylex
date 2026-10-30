@@ -267,7 +267,7 @@ export class SlotService {
     const bookings = await prisma.booking.findMany({
       where: {
         date,
-        status: { in: ['CONFIRMED', 'PENDING'] },
+        status: { in: ['CONFIRMED', 'PENDING', 'IN_PROGRESS'] },
         ...(resolvedStylistId ? { stylistId: resolvedStylistId } : {}),
       },
       select: {
@@ -561,7 +561,7 @@ export class SlotService {
         where: {
           date,
           timeSlot,
-          status: { in: ['CONFIRMED', 'PENDING'] },
+          status: { in: ['CONFIRMED', 'PENDING', 'IN_PROGRESS'] },
           stylistId: resolvedStylistId,
         },
       });
@@ -588,7 +588,7 @@ export class SlotService {
       where: {
         date,
         timeSlot,
-        status: { in: ['CONFIRMED', 'PENDING'] },
+        status: { in: ['CONFIRMED', 'PENDING', 'IN_PROGRESS'] },
         service: {
           gender: { contains: targetDepartment, mode: 'insensitive' },
         },
