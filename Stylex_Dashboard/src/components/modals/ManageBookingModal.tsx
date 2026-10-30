@@ -24,6 +24,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
   onDeleteBooking,
 }) => {
   const [status, setStatus] = useState<AppointmentStatus>('BOOKED');
+  const [dateStr, setDateStr] = useState('');
   const [time, setTime] = useState('');
   const [selectedStylistId, setSelectedStylistId] = useState('');
   const [notes, setNotes] = useState('');
@@ -35,6 +36,10 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
   useEffect(() => {
     if (appointment) {
       setStatus(appointment.status);
+      const initialDate = appointment.dateStr && appointment.dateStr.toLowerCase() !== 'today'
+        ? appointment.dateStr
+        : new Date().toISOString().split('T')[0];
+      setDateStr(initialDate);
       setTime(appointment.time);
       const foundStylist = stylists.find((s) => s.name === appointment.stylistName);
       setSelectedStylistId(foundStylist ? foundStylist.id : stylists[0]?.id || '');
@@ -60,6 +65,7 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
     const updated: Appointment = {
       ...appointment,
       status,
+      dateStr: dateStr || appointment.dateStr,
       time: time.trim() || appointment.time,
       stylistName: stylist ? stylist.name : appointment.stylistName,
       stylistAvatar: stylist ? stylist.avatar : appointment.stylistAvatar,
@@ -263,11 +269,25 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
             </div>
           </div>
 
-          {/* Time & Stylist Reassignment */}
+          {/* Schedule: Date & Time Slot */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
-              <label className="block text-xs font-semibold text-[#181d1b] dark:text-white mb-1.5">
-                Scheduled Time Slot
+              <label className="block text-xs font-semibold text-[#181d1b] dark:text-white mb-1.5 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px] text-[#2d6a4f] dark:text-[#86efac]">event</span>
+                <span>Scheduled Date</span>
+              </label>
+              <input
+                type="date"
+                value={dateStr}
+                onChange={(e) => setDateStr(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#181d1b] dark:text-white mb-1.5 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px] text-[#2d6a4f] dark:text-[#86efac]">schedule</span>
+                <span>Scheduled Time Slot</span>
               </label>
               <input
                 type="text"
@@ -277,29 +297,31 @@ export const ManageBookingModal: React.FC<ManageBookingModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors"
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#181d1b] dark:text-white mb-1.5">
-                Reassign Stylist & Station
-              </label>
-              <select
-                value={selectedStylistId}
-                onChange={(e) => setSelectedStylistId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors"
-              >
-                {stylists.map((st) => {
-                  const matchLeave = stylistLeaves.find(
-                    (l) => (l.stylistId === st.id || l.stylistName.toLowerCase() === st.name.toLowerCase()) &&
-                           (appointment?.dateStr === l.date || appointment?.dateStr === 'Today')
-                  );
-                  return (
-                    <option key={st.id} value={st.id} className="dark:bg-[#15201a] dark:text-white">
-                      {st.name} ({st.station}){matchLeave ? ` • ⚠️ [On Leave: ${matchLeave.duration === 'FULL_DAY' ? 'Full Day' : matchLeave.duration === 'FIRST_HALF' ? 'Morning' : 'Evening'}]` : ''}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
+          {/* Stylist Reassignment */}
+          <div>
+            <label className="block text-xs font-semibold text-[#181d1b] dark:text-white mb-1.5 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px] text-[#2d6a4f] dark:text-[#86efac]">person</span>
+              <span>Reassign Stylist & Station</span>
+            </label>
+            <select
+              value={selectedStylistId}
+              onChange={(e) => setSelectedStylistId(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-[#f0f5f1] dark:bg-[#1a2520] border border-[#c2c8c2]/40 dark:border-white/10 text-sm text-[#181d1b] dark:text-white focus:bg-white dark:focus:bg-[#15201a] focus:ring-1 focus:ring-[#112e20] dark:focus:ring-emerald-500 outline-none transition-colors"
+            >
+              {stylists.map((st) => {
+                const matchLeave = stylistLeaves.find(
+                  (l) => (l.stylistId === st.id || l.stylistName.toLowerCase() === st.name.toLowerCase()) &&
+                         (appointment?.dateStr === l.date || appointment?.dateStr === 'Today')
+                );
+                return (
+                  <option key={st.id} value={st.id} className="dark:bg-[#15201a] dark:text-white">
+                    {st.name} ({st.station}){matchLeave ? ` • ⚠️ [On Leave: ${matchLeave.duration === 'FULL_DAY' ? 'Full Day' : matchLeave.duration === 'FIRST_HALF' ? 'Morning' : 'Evening'}]` : ''}
+                  </option>
+                );
+              })}
+            </select>
           </div>
 
           {/* Operational Notes */}

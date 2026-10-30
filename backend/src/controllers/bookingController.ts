@@ -487,6 +487,21 @@ export class BookingController {
         throw new AppError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400);
       }
 
+      const existing = await prisma.booking.findUnique({
+        where: { id },
+        include: {
+          customer: true,
+          service: true,
+          stylist: true,
+        },
+      });
+
+      if (!existing) {
+        throw new AppError('Booking not found', 404);
+      }
+
+      const isCancellation = status === 'CANCELLED' && existing.status !== 'CANCELLED';
+
       const updated = await prisma.booking.update({
         where: { id },
         data: {
@@ -501,15 +516,23 @@ export class BookingController {
         },
       });
 
-      // If status changed to CANCELLED, send salon cancellation notification via WhatsApp & Email
-      if (status === 'CANCELLED') {
+      // ONLY send cancellation notification if status actually transitioned to CANCELLED
+      if (isCancellation) {
         const cleanPhoneDigits = (updated.guestPhone || updated.customer.phone || '').replace(/[^0-9]/g, '');
         const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
+        const serviceDisplayName = (() => {
+          if (updated.notes) {
+            const m = updated.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+            if (m && m[1]) return m[1].trim();
+          }
+          return updated.service.name;
+        })();
+
         WhatsAppService.sendBookingCancelled({
           customerName: updated.guestName || updated.customer.name,
           customerPhone: fullPhone,
           bookingRef: updated.bookingRef,
-          serviceName: updated.service.name,
+          serviceName: serviceDisplayName,
           date: updated.date,
           timeSlot: updated.timeSlot,
           cancelledBySalon: true,
@@ -522,7 +545,7 @@ export class BookingController {
             toEmail: clientEmail,
             customerName: updated.guestName || updated.customer.name,
             bookingRef: updated.bookingRef,
-            serviceName: updated.service.name,
+            serviceName: serviceDisplayName,
             date: updated.date,
             timeSlot: updated.timeSlot,
           }).catch((e) => console.error('Email cancellation error:', e));
@@ -541,11 +564,16 @@ export class BookingController {
 
   /**
    * Admin: Update booking details (date, time, stylist, status, notes)
+   * Strictly enforces that WhatsApp notifications are ONLY sent for:
+   * 1. Time Change
+   * 2. Date Change
+   * 3. Cancellation
+   * Changes to stylist, service menu type, notes, or payment do NOT send notifications.
    */
   public static async updateBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = req.params.id as string;
-      const { date, timeSlot, stylistId, status, notes, paymentStatus } = req.body;
+      const { date, timeSlot, stylistId, serviceId, status, notes, paymentStatus } = req.body;
 
       const existing = await prisma.booking.findUnique({
         where: { id },
@@ -556,20 +584,52 @@ export class BookingController {
         throw new AppError('Booking not found', 404);
       }
 
+      // 1. Normalize date if provided
+      let normalizedDate = existing.date;
+      if (date && typeof date === 'string' && date.trim() !== '') {
+        const dStr = date.trim();
+        if (dStr.toLowerCase() === 'today') {
+          normalizedDate = new Date().toISOString().split('T')[0];
+        } else {
+          const parsedD = new Date(dStr);
+          if (!isNaN(parsedD.getTime()) && !/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+            const y = parsedD.getFullYear();
+            const m = String(parsedD.getMonth() + 1).padStart(2, '0');
+            const d = String(parsedD.getDate()).padStart(2, '0');
+            normalizedDate = `${y}-${m}-${d}`;
+          } else {
+            normalizedDate = dStr;
+          }
+        }
+      }
+
+      // 2. Normalize timeSlot if provided
+      const normalizedTimeSlot = timeSlot && typeof timeSlot === 'string' && timeSlot.trim() !== ''
+        ? timeSlot.trim()
+        : existing.timeSlot;
+
+      // 3. Strict trigger checks per requirement:
+      // ONLY send WhatsApp notification for:
+      // 1) Time Change
+      // 2) Date Change
+      // 3) Cancellation
+      // Do NOT send messages for changing stylist, service menu type, notes, payment, etc.
+      const isDateChanged = normalizedDate !== existing.date;
+      const isTimeChanged = normalizedTimeSlot.toLowerCase() !== existing.timeSlot.trim().toLowerCase();
+      const isCancellation = status === 'CANCELLED' && existing.status !== 'CANCELLED';
+
       let targetStylistId = existing.stylistId;
       if (stylistId !== undefined) {
         targetStylistId = stylistId || null;
       }
 
-      const isRescheduled = (date && date !== existing.date) || (timeSlot && timeSlot !== existing.timeSlot) || (stylistId !== undefined && stylistId !== existing.stylistId);
-      const isCancellation = status === 'CANCELLED' && existing.status !== 'CANCELLED';
-
       const updated = await prisma.booking.update({
         where: { id },
         data: {
-          ...(date ? { date } : {}),
-          ...(timeSlot ? { timeSlot } : {}),
+          date: normalizedDate,
+          timeSlot: normalizedTimeSlot,
           ...(stylistId !== undefined ? { stylistId: targetStylistId } : {}),
+          ...(serviceId !== undefined ? { serviceId } : {}),
           ...(status ? { status } : {}),
           ...(paymentStatus ? { paymentStatus } : {}),
           ...(notes !== undefined ? { notes } : {}),
@@ -581,12 +641,21 @@ export class BookingController {
       const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
       const clientEmail = updated.guestEmail || updated.customer.email;
 
+      const serviceDisplayName = (() => {
+        if (updated.notes) {
+          const m = updated.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+          if (m && m[1]) return m[1].trim();
+        }
+        return updated.service.name;
+      })();
+
       if (isCancellation) {
+        // 3. Cancellation: Send cancellation WhatsApp notification
         WhatsAppService.sendBookingCancelled({
           customerName: updated.guestName || updated.customer.name,
           customerPhone: fullPhone,
           bookingRef: updated.bookingRef,
-          serviceName: updated.service.name,
+          serviceName: serviceDisplayName,
           date: updated.date,
           timeSlot: updated.timeSlot,
           cancelledBySalon: true,
@@ -598,12 +667,13 @@ export class BookingController {
             toEmail: clientEmail,
             customerName: updated.guestName || updated.customer.name,
             bookingRef: updated.bookingRef,
-            serviceName: updated.service.name,
+            serviceName: serviceDisplayName,
             date: updated.date,
             timeSlot: updated.timeSlot,
           }).catch((e) => console.error('Email cancellation error:', e));
         }
-      } else if (isRescheduled && updated.status !== 'CANCELLED') {
+      } else if ((isDateChanged || isTimeChanged) && updated.status !== 'CANCELLED') {
+        // 1. Time Change or 2. Date Change: Send reschedule notification
         const rawAppUrl = env.APP_URL || '';
         const clientPortalUrl = (!rawAppUrl || rawAppUrl.includes('localhost:5000') || rawAppUrl.includes('127.0.0.1'))
           ? 'https://stylexsalon.in'
@@ -614,7 +684,7 @@ export class BookingController {
           bookingRef: updated.bookingRef,
           customerName: updated.guestName || updated.customer.name,
           customerPhone: fullPhone,
-          serviceName: updated.service.name,
+          serviceName: serviceDisplayName,
           date: updated.date,
           timeSlot: updated.timeSlot,
           total: updated.total,
@@ -628,7 +698,7 @@ export class BookingController {
             toEmail: clientEmail,
             customerName: updated.guestName || updated.customer.name,
             bookingRef: updated.bookingRef,
-            serviceName: updated.service.name,
+            serviceName: serviceDisplayName,
             date: updated.date,
             timeSlot: updated.timeSlot,
             total: updated.total,
@@ -637,6 +707,7 @@ export class BookingController {
           }).catch((e) => console.error('Email reschedule notification error:', e));
         }
       }
+      // If ONLY stylist changed, service changed, notes changed, etc. -> NO notification sent!
 
       res.status(200).json({
         success: true,
@@ -1085,11 +1156,19 @@ export class BookingController {
       // Dispatch async notifications
       const cleanPhoneDigits = (booking.guestPhone || booking.customer.phone || '').replace(/[^0-9]/g, '');
       const fullPhone = `+91${cleanPhoneDigits.slice(-10)}`;
+      const serviceDisplayName = (() => {
+        if (booking.notes) {
+          const m = booking.notes.match(/\[Selected Services?: ([^\]\n]+)\]/);
+          if (m && m[1]) return m[1].trim();
+        }
+        return booking.service.name;
+      })();
+
       WhatsAppService.sendBookingCancelled({
         customerName: booking.guestName || booking.customer.name,
         customerPhone: fullPhone,
         bookingRef: booking.bookingRef,
-        serviceName: booking.service.name,
+        serviceName: serviceDisplayName,
         date: booking.date,
         timeSlot: booking.timeSlot,
         cancelledBySalon: false,
@@ -1102,7 +1181,7 @@ export class BookingController {
           toEmail: clientEmail,
           customerName: booking.guestName || booking.customer.name,
           bookingRef: booking.bookingRef,
-          serviceName: booking.service.name,
+          serviceName: serviceDisplayName,
           date: booking.date,
           timeSlot: booking.timeSlot,
         }).catch((e) => console.error('Email cancellation error:', e));
